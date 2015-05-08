@@ -1,5 +1,5 @@
 %we assume images are aligned and each PSF is transformed appropiately
-function J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, numIters, lambdaTV, debug, saveIterBasename)
+function J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numIters, lambdaTV, debug, saveIterBasename)
 
 sigmaDer = 2.0;%smoothing to calculate the Gaussian derivatives
 
@@ -8,10 +8,28 @@ numIm = length(imCell);
 
 %normalize elements
 J = zeros(size(imCell{1}));
+
+if( ~isempty(weightsCell) )
+    ww = single(weightsCell{1});
+    for ii = 2:numIm
+        ww = ww + single(weightsCell{ii});
+    end
+    
+    ww( ww < eps('single') ) = inf;%this pixel is dead from all views
+    for ii = 1:numIm
+        weightsCell{ii} = weightsCell{ii} / ww;
+    end
+    clear ww;
+end
 for ii = 1:numIm
    PSFcell{ii} = single(PSFcell{ii}) / sum(PSFcell{ii}(:)); 
-   imCell{ii} = single(imCell{ii}) / sum(imCell{ii}(:)); 
-   J = J + imCell{ii} / numIm;%initialize with average
+   imCell{ii} = single(imCell{ii}) / sum(imCell{ii}(:));
+   
+   if( isempty(weightsCell) )
+       J = J + imCell{ii} / numIm;%initialize with average
+   else
+       J = J + weightsCell{ii} .* imCell{ii};%initialize with weighted average
+   end
 end
 
 %start iterations
@@ -20,8 +38,14 @@ for iter = 1:numIters
     aux = zeros(size(J));
     
     %basic lucy richardson
-    for ii = 1:numIm
-        aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, J) / numIm;
+    if( isempty(weightsCell) )
+        for ii = 1:numIm
+            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, J) / numIm;
+        end
+    else
+        for ii = 1:numIm
+            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, J) .* weightsCell{ii};
+        end
     end
     
     

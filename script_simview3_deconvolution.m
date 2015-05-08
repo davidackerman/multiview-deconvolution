@@ -38,4 +38,4 @@ end
 %%
 %perform lucy richardson
 numIters = 20;
-J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, numIters, lambdaTV, 0, 'E:/temp/deconvolution/simview3_fft_denoised');
+J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, [], numIters, lambdaTV, 0, 'E:/temp/deconvolution/simview3_fft_denoised');

@@ -33,7 +33,7 @@ for ii = 1:numViews
 end
 
 %%
-J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, numIters, lambdaTV, 1, './temp/test_');
+J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, [], numIters, lambdaTV, 1, './temp/test_');
 
 %%
 %run regular lucy richardson for one view
