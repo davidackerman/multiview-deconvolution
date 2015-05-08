@@ -17,7 +17,7 @@ if( ~isempty(weightsCell) )
     
     ww( ww < eps('single') ) = inf;%this pixel is dead from all views
     for ii = 1:numIm
-        weightsCell{ii} = weightsCell{ii} / ww;
+        weightsCell{ii} = weightsCell{ii} ./ ww;
     end
     clear ww;
 end
