@@ -22,7 +22,7 @@ end
 %calculate weights based DCT Shannon entropy contrast
 weightsCell = cell(numImg,1);
 for ii = 1:numImg
-    weightsCell{ii} = estimateDeconvolutionWeights(imCell{ii}, 1, 15, []);
+    weightsCell{ii} = single(estimateDeconvolutionWeights(imCell{ii}, 1, 15, []));
 end
 
 %%
