@@ -25,14 +25,20 @@ end
 %%
 %generate PSF
 sampling = 0.40625 * ones(1,3);%in um
-FWHMpsf = [0.6 0.6 3.0];%in um
+FWHMpsfOdd = [0.8 0.8 6.0];%in um
+FWHMpsfEven = [6.0 0.8 0.8];%in um
 PSFcell = cell(numImg,1);
 for ii = 1:numImg    
     
-    filenameOut = [imPath 'PSF_view' num2str(ii) '.raw'];
-    PSFcell{ii} = generatePSF(sampling,FWHMpsf, filenameOut);
+    if( mod(ii,2) == 0 )%even
+        FWHMpsf = FWHMpsfEven;
+    else
+        FWHMpsf = FWHMpsfOdd;
+    end
     
-    FWHMpsf = circshift(FWHMpsf,[0 1]);
+    
+    filenameOut = [imPath 'PSF_view' num2str(ii) '.raw'];
+    PSFcell{ii} = generatePSF(sampling,FWHMpsf, filenameOut);        
 end
 
 %%

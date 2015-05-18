@@ -4,7 +4,11 @@
 imPath = 'E:\mouse_deconvolution\15-04-03\TM0010_v2\'
 imFilename = {'TP0_Channel0_Illum0_Angle0.tif', 'TP0_Channel0_Illum0_Angle90.tif', 'TP0_Channel0_Illum0_Angle180.tif','TP0_Channel0_Illum0_Angle270.tif'};%images are already registered in a common framework (Fiji Plugin withlinear interpolation
 
-imPSF = {'transfomed PSF of viewsetup 0.tif', 'transfomed PSF of viewsetup 1.tif', 'transfomed PSF of viewsetup 2.tif', 'transfomed PSF of viewsetup 3.tif'};
+%theoretical one
+%imPSF = {'transfomed PSF of viewsetup 0.tif', 'transfomed PSF of viewsetup 1.tif', 'transfomed PSF of viewsetup 2.tif', 'transfomed PSF of viewsetup 3.tif'};
+%practical one
+imPSF = {'transfomed_PSF_experimental_mouse_angle0000.tif', 'transfomed_PSF_experimental_mouse_angle0090.tif', 'transfomed_PSF_experimental_mouse_angle0180.tif', 'transfomed_PSF_experimental_mouse_angle0270.tif'};
+
 
 lambdaTV = 0.008; %0.002 is value recommended by paper
 
