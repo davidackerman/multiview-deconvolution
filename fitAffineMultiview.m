@@ -1,6 +1,6 @@
 function tformCell = fitAffineMultiview(Tcell)
 %%
-confidenceRatio = 1.01;
+confidenceRatio = 1.00;
 
 %%
 ii = 1;
@@ -31,6 +31,8 @@ end
 X(nn + 1:end,:) = [];
 Y(nn + 1:end,:) = [];
 W(nn + 1:end) = [];
+
+%figure;plot3(X(:,1),X(:,2), X(:,3),'o');grid on; hold on;plot3(Y(:,1),Y(:,2), Y(:,3),'r+');
 
 %%
 %rigid transformation (plus scaling)

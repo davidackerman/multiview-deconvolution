@@ -4,7 +4,9 @@
 %T us the translation that we need to apply to im to register with imRef
 function T = imRegistrationTranslationMultipleHypothesis(imRef, im, numHypothesis)
 
-winErase = 5;
+%TODO: local maxima search (window is too small: it has ot be adaptive)
+
+winErase = 10;
 
 options.GPU = false;
 options.Power2Flag = false;%memory consumption can be ridiculous
