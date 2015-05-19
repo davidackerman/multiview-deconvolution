@@ -16,7 +16,7 @@ end
 interestPts = round(interestPts);
 
 %disp '===================WARNING: parfor disconnected for debugging purposes=========================='
-parfor count = 1:N
+for count = 1:N
     
     ii = interestPts(count,1);
     jj = interestPts(count,2);

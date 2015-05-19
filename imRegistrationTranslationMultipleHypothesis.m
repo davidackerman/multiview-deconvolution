@@ -12,7 +12,7 @@ options.GPU = false;
 options.Power2Flag = false;%memory consumption can be ridiculous
 %im can be considered as the template that is beiong moved around
 
-fv = convnfft(imRef, im,'same',[1:max(ndims(im),ndims(imRef))],options);%fv is the same size as imRef
+fv = normxcorrn(im, imRef);%fv is the same size as imRef
 
 T = zeros(numHypothesis, 4);
 for ii = 1:numHypothesis
