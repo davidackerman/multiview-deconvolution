@@ -5,20 +5,20 @@ imPath = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_c
 
 imFilename = {'imRegister_Matlab_CM00', 'imRegister_Matlab_CM01', 'imRegister_Matlab_CM02', 'imRegister_Matlab_CM03'};
 
-numHypothesis = 5;
+numHypothesis = 3;
 numWorkers = 10;
 
 minIntensityValue = 150;
-blockSize = 96;%critical to make sure NCC discriminates enough
-searchRadius = 64;
+blockSize = 144;%96;%critical to make sure NCC discriminates enough
+searchRadius = 64 * 2;
 
 maxNumPeaks = 100;
-sigmaDOG = 3.0;
+sigmaDOG = 3.0 * 2;
 thrPeakDOG = 15;
 
 
 numTrialsRANSAC = 50000;
-maxRadiusResidualInPixels = 10.0;
+maxRadiusResidualInPixels = 15.0;
 
 %%
 %constant parameters
@@ -65,7 +65,7 @@ end
 
 %save transform
 tformCell = Acell;
-save([imPath '\imRegister_Matlab_tform_fine.mat'],'tformCell');
+save([imPath '\imRegister_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
 %%
 %apply transformation to each stack
 parfor ii = 1:numViews       

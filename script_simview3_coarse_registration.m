@@ -13,7 +13,7 @@ sampling = 0.40625 * ones(1,3);%in um
 FWHMpsfOdd = [0.8 0.8 6.0];%in um
 FWHMpsfEven = [6.0 0.8 0.8];%in um
 
-numLevels = 1; %2^numLevels downsampling to perform this operations
+numLevels = 0; %2^numLevels downsampling to perform this operations
 
 
 options.GPU = false;
@@ -25,10 +25,14 @@ PSFeven = generatePSF(sampling,FWHMpsfEven, []);
 PSFodd = generatePSF(sampling,FWHMpsfOdd, []); 
 
 %%
+%genarate transformation
+tformCell = cell(length(angles),1);
+
 %prepare image reference (0 degrees angles)
 filename = [imPath imFilenameCell{1}];
 imRef = readKLBstack(filename);
-[~,imRef] = coarseRegistrationBasedOnMicGeometry(imRef,0, anisotropyZ);
+[A,imRef] = coarseRegistrationBasedOnMicGeometry(imRef,0, anisotropyZ);
+tformCell{1} = A;
 
 %"double blur" image, so all images "look" the same
 imRef = convnfft(imRef, PSFeven,'same',[1:max(ndims(PSFeven),ndims(imRef))],options);
@@ -39,21 +43,21 @@ imRef = stackDownsample(imRef, numLevels);
 %save image reference
 writeKLBstack(imRef, [outputFolder 'imRegister_Matlab_CM' num2str(0,'%.2d') '.klb']);
 
+%save image reference
+disp '=====================debugging 0========================='
+im = readKLBstack(filename);
+im = imwarp(im, affine3d(tformCell{1}), 'Outputview', imref3d(size(imRef)), 'interp', 'linear');
+writeKLBstack(im, [outputFolder 'imWarp_Matlab_CM' num2str(0,'%.2d') '.klb']);
 
-%genarate transformation
-tformCell = cell(length(angles),1);
-tformCell{1} = eye(4);
-tformCell{1}(3,3) = anisotropyZ;
 %%
 %calculate alignment for each view
-
-for ii = 2:length(angles)
+for ii = 2:length(angles) %parfor here is not advisable because of memory usage
     %apply coarse transformation
     filename = [imPath imFilenameCell{ii}];
     im = readKLBstack(filename);
     
     %flip and permutation and interpolation in z
-    [A, im] = coarseRegistrationBasedOnMicGeometry(im,angles(ii), anisotropyZ);
+    [A, im] = coarseRegistrationBasedOnMicGeometry(im,angles(ii), anisotropyZ, size(imRef));
             
     %"double blur" image, so all images "look" the same
     if( mod(ii,2) == 0 )
@@ -69,7 +73,8 @@ for ii = 2:length(angles)
     [T, im] = imRegistrationTranslationFFT(imRef, im);
     
     %generate affine matrix
-    tformCell{ii} = [A zeros(3,1);T 1];
+    A(4,1:3) = A(4,1:3) + T([2 1 3]);%imwarp permutes x y wrt to imtranslate
+    tformCell{ii} = A;
     
     
     %adjust image to imRef size
@@ -90,11 +95,15 @@ for ii = 2:length(angles)
     end
     
     
-    %save image reference
+    %save image 
     writeKLBstack(im, [outputFolder 'imRegister_Matlab_CM' num2str(ii-1,'%.2d') '.klb']);
     
+    %save image using imwarp
+    disp '=====================debugging 2========================='
+    im = readKLBstack(filename);
+    im = imwarp(im, affine3d(tformCell{ii}), 'Outputview', imref3d(size(imRef)), 'interp', 'linear');
+    writeKLBstack(im, [outputFolder 'imWarp_Matlab_CM' num2str(ii-1,'%.2d') '.klb']);
 end
-
 save([outputFolder 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'anisotropyZ', 'numLevels');
 
 %%

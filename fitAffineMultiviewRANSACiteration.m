@@ -1,6 +1,6 @@
 function [A, stats] = fitAffineMultiviewRANSACiteration(Tcell, maxRadiusResidualInPixels)
 
-
+warning off;
 numViews = size(Tcell,2);
 
 %4 3D points to fit affine and we have numViews * (numViews - 1) pairs.
@@ -180,23 +180,10 @@ rr = Hall * A - Ball;
 step = size(Hall,1) / 3;
 stats.residuals = [rr(1:step) rr(step + 1: 2* step)  rr(2* step + 1:end)];
 
+
+
+warning on;
 %%
 %rigid transformation (plus scaling)
 %[d,Z,transform] = procrustes(X,Y, 'reflection', false);%Z = b*Y*T + c;
 
-%%
-%{
-%generate matrices to fit multi-view affine using least squares
-X = [X ones(size(X,1),1)];
-H = sparse(size(X,1) * 3, size(X,2) * 3);
-for ii = 1:3
-    H((ii-1) * size(X,1) + 1: ii * size(X,1),(ii-1) * size(X,2) + 1: ii * size(X,2)) = X;
-end
-
-Y = Y(:);
-
-A = H \ Y;
-%[A, stats] = robustfit(full(H), Y, 'cauchy');
-
-rr = H * A - Y;
-%}
