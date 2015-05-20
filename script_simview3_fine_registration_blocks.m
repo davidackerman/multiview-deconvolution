@@ -9,12 +9,16 @@ numHypothesis = 5;
 numWorkers = 10;
 
 minIntensityValue = 150;
-blockSize = 32;
+blockSize = 96;%critical to make sure NCC discriminates enough
 searchRadius = 64;
 
 maxNumPeaks = 100;
 sigmaDOG = 3.0;
 thrPeakDOG = 15;
+
+
+numTrialsRANSAC = 50000;
+maxRadiusResidualInPixels = 10.0;
 
 %%
 %constant parameters
@@ -31,7 +35,10 @@ for ii = 1:numIm
     interestPts = detectInterestPoints_DOG(imRef, sigmaDOG, maxNumPeaks, thrPeakDOG, imRef > minIntensityValue,0);
     
     %find correspondence for point of interest in the other images
-    for jj = ii+1:numIm
+    for jj = 1:numIm
+        if( ii == jj )
+            continue;
+        end
         im = readKLBstack([imPath '\' imFilename{jj} '.klb']);
         Tcell{ii,jj} = pairwiseImageBlockMatching(imRef,im, blockSize, searchRadius, numHypothesis, interestPts(:,1:3), numWorkers);
     end
@@ -39,4 +46,4 @@ end
 
 %%
 %fit affine transformation for all views
-%tformCell = fitAffineMultiview(Tcell);
+[Acell, statsCell] = fitAffineMultiviewRANSAC(Tcell, maxRadiusResidualInPixels, numTrialsRANSAC, numWorkers);

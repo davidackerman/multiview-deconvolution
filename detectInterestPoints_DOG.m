@@ -16,7 +16,7 @@ if( ~isempty(mask) )
     im( mask == 0 ) = 0;
 end
 
-L = bwlabeln(im > 0);
+L = bwlabeln(im > 0, 6);
 
 xyzs = zeros(maxNumPeaks,4);
 

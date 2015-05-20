@@ -35,6 +35,7 @@ end
 
 %calculate std
 Astd = sqrt(Astd - (Amean.^2)) * (tSize-0.5);%-0.5 is to compensate between N and N-1 for std and get the same result as normxcorr2
+Astd( Astd < eps ) = inf;
 
 %calculate correlation
 options.GPU = false;
