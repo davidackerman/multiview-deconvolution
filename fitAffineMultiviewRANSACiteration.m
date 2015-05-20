@@ -1,14 +1,14 @@
 function [A, stats] = fitAffineMultiviewRANSACiteration(Tcell, maxRadiusResidualInPixels)
 
 
-numViews = size(Tcell,2) - 1;%we assume the first one is empty (fixed view)
+numViews = size(Tcell,2);
 
-%4 3D points to fit affine and we have numViews * (numViews + 1) / 2 pairs.
-Hransac = zeros(4 * 3 * numViews * (numViews + 1) / 2, 12 * numViews);
-Bransac = zeros(4 * 3 * numViews * (numViews + 1) / 2,1);
+%4 3D points to fit affine and we have numViews * (numViews - 1) pairs.
+Hransac = zeros(4 * 3 * numViews * (numViews - 1), 12 * (numViews-1));%the first view is fixed, so not unknown parameters
+Bransac = zeros(4 * 3 * numViews * (numViews - 1),1);
 
 %matrix to hold all the points (full system)
-Hall = zeros(10000, 12 * numViews);
+Hall = zeros(10000, 12 * (numViews-1));%the first view is fixed, so not unknown parameters
 Ball = zeros(10000, 1);
 Nobs = 0;
 
@@ -81,18 +81,22 @@ for ii = 1:size(Tcell,1)
             Wy = Wy(:);
             Bransac((countV-1) * 12 + 1: countV * 12) = Yransac;
         else
-            if( jj ~= 1)
-                Bransac((countV-1) * 12 + 1: countV * 12) = 0; 
-            end
             
-            
+            %Bransac((countV-1) * 12 + 1: countV * 12) = 0;            
+                        
             %add Y as a constrain
             Yransac = [Yransac ones(size(Yransac,1),1)];
             H = zeros(size(Yransac,1) * 3, size(Yransac,2) * 3);
             for kk = 1:3
                 H((kk-1) * size(Yransac,1) + 1: kk * size(Yransac,1),(kk-1) * size(Yransac,2) + 1: kk * size(Yransac,2)) = Yransac;
             end
-            Hransac((countV-1) * 12 + 1: countV * 12,(ii-2) * 12 + 1:(ii-1) * 12) = -H;
+            
+            if( jj == 1 )
+                ss = 1;
+            else
+                ss = -1;
+            end
+            Hransac((countV-1) * 12 + 1: countV * 12,(ii-2) * 12 + 1:(ii-1) * 12) = ss * H;
         end
         
         %generate matrices to fit multi-view affine using least squares
@@ -123,19 +127,22 @@ for ii = 1:size(Tcell,1)
             Ball(Nobs +1:Nobs+ nn) = Y;%Y .* Wy;
             
         else
-            if( jj ~= 1)
-                Ball(Nobs +1:Nobs+ nn) = 0;
-            end
+            %Ball(Nobs +1:Nobs+ nn) = 0;
             Y = [Y ones(size(Y,1),1)];
             H = zeros(size(Y,1) * 3, size(Y,2) * 3);
             for kk = 1:3
                 H((kk-1) * size(Y,1) + 1: kk * size(Y,1),(kk-1) * size(Y,2) + 1: kk * size(Y,2)) = Y;
             end
-            Hall(Nobs +1:Nobs+ nn, (ii-2) * 12 + 1:(ii-1) * 12) = -H;
+            if( jj == 1 )
+                ss = 1;
+            else
+                ss = -1;
+            end
+            Hall(Nobs +1:Nobs+ nn, (ii-2) * 12 + 1:(ii-1) * 12) = ss * H;
         end
         Nobs = Nobs + nn;
-        
-    end
+       
+    end        
 end
 
 %"clean" matrices
