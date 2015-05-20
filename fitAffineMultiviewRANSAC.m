@@ -11,9 +11,13 @@ if( matlabpool('size') ~= numWorkers )
     matlabpool(numWorkers);
 end
 
+warning off
+%disp '===================WARNING: parfor disconnected for debugging purposes=========================='
 parfor ii = 1:numIters
    [Acell{ii}, statsCell{ii}] = fitAffineMultiviewRANSACiteration(Tcell, maxRadiusResidualInPixels); 
 end
+
+warning on
 
 
 

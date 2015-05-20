@@ -46,4 +46,31 @@ end
 
 %%
 %fit affine transformation for all views
-[Acell, statsCell] = fitAffineMultiviewRANSAC(Tcell, maxRadiusResidualInPixels, numTrialsRANSAC, numWorkers);
+[AcellRansac, statsCell] = fitAffineMultiviewRANSAC(Tcell, maxRadiusResidualInPixels, numTrialsRANSAC, numWorkers);
+
+%%
+%select best RANSAC match
+[idxMaxInliers, idxMinAvgResidual] = parseRANSACstats(statsCell);
+disp(['Avg. residual = ' num2str(mean(sqrt(sum(statsCell{idxMaxInliers}.residuals.^2,2)))) ' pixels for ' num2str(statsCell{idxMaxInliers}.numInliers) ' inliers'])
+
+%collect final transform matrices
+A = AcellRansac{idxMaxInliers};%final affines transformation
+numViews = length(imFilename);
+Acell = cell(numViews,1);
+Acell{1} = eye(4);
+for ii = 2:numViews
+   Acell{ii} = [reshape(A(12 * (ii-2) + 1: 12 *(ii-1)),[4 3]), [0;0;0;1]]; 
+   Acell{ii}
+end
+
+%save transform
+tformCell = Acell;
+save([imPath '\imRegister_Matlab_tform_fine.mat'],'tformCell');
+%%
+%apply transformation to each stack
+parfor ii = 1:numViews       
+    im = readKLBstack([imPath '\' imFilename{ii} '.klb']);
+    im = imwarp(im, affine3d(Acell{ii}), 'Outputview', imref3d(size(im)), 'interp', 'linear');
+    
+    writeKLBstack(uint16(im),[imPath '\' imFilename{ii} '_regRANSAC.klb']);
+end

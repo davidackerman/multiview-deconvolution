@@ -15,8 +15,8 @@ end
 
 interestPts = round(interestPts);
 
-disp '===================WARNING: parfor disconnected for debugging purposes=========================='
-for count = 1:N
+%disp '===================WARNING: parfor disconnected for debugging purposes=========================='
+parfor count = 1:N
     
     ii = interestPts(count,1);
     jj = interestPts(count,2);
@@ -36,8 +36,8 @@ for count = 1:N
           
     Taux(:, 1:3) = Taux(:, 1:3) + repmat(offset, [size(Taux,1) 1]);
     
-    xyz = repmat([ii jj kk],[size(Taux,1) 1]);
-    Tcell{count} = [xyz, xyz + Taux(:,1:3), Taux(:,4)];
+    xyz = repmat([jj ii kk],[size(Taux,1) 1]);
+    Tcell{count} = [xyz, xyz - Taux(:,[2 1 3]), Taux(:,4)];%to match imwarp when fitting affine
     
     
 end

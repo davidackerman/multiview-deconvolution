@@ -43,7 +43,7 @@ writeKLBstack(imRef, [outputFolder 'imRegister_Matlab_CM' num2str(0,'%.2d') '.kl
 %genarate transformation
 tformCell = cell(length(angles),1);
 tformCell{1} = eye(4);
-
+tformCell{1}(3,3) = anisotropyZ;
 %%
 %calculate alignment for each view
 
@@ -99,7 +99,4 @@ save([outputFolder 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilena
 
 %%
 %fine registration
-
-%use matlab stuff
-disp '=====================TODO: maybe calculate contrast weights so we can weight which areas we register;================'
-disp '=====================TODO: aligning all to view angle 0 is not optimal, since some views are totally complementary (so it is hard to find common points)================'
+%look at scriot_simview3_fine_registration_block.m

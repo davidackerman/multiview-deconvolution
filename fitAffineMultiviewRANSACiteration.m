@@ -45,6 +45,10 @@ for ii = 1:size(Tcell,1)
             
         end
         
+        if( nn < 4 )%we need at least 4 points
+            continue;
+        end
+        
         if( nn < size(X,1) )
             X(nn + 1:end,:) = [];
             Y(nn + 1:end,:) = [];
