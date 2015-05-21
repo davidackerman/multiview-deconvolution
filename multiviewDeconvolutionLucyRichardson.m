@@ -22,6 +22,7 @@ if( ~isempty(weightsCell) )
         weightsCell{ii} = weightsCell{ii} ./ ww;
     end
     clear ww;
+        
 end
 for ii = 1:numIm
    PSFcell{ii} = single(PSFcell{ii}) / sum(PSFcell{ii}(:)); 
@@ -54,7 +55,7 @@ for ii = 1:numIm
        end
     end
     %normalize
-    PSFcompound{ii} = single(PSFcompound{ii}) / sum(PSFcompound{ii}(:));
+    PSFcompound{ii} = single(PSFcompound{ii}) / sum(PSFcompound{ii}(:));       
 end
 
 %start iterations
@@ -65,7 +66,31 @@ for iter = 1:numIters
     if( lambdaTV > 0 )
         nl = normalizedLaplacian(J, sigmaDer);
     end
-    %sequential lucy richardson
+    
+    
+    %lucy-richardson
+    aux = zeros(size(J),'single');
+    for ii = 1:numIm
+        aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J);
+        if( isempty(weightsCell) )            
+            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J) / numIm;
+        else
+            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J) .* weightsCell{ii};            
+        end                        
+    end
+    %update final result
+    J = J .* aux;
+    %add total variation regularization: from Dey et al. "Richardson–Lucy Algorithm
+    %With Total Variation Regularization for 3D Confocal Microscope
+    %Deconvolution" 2006
+    if( lambdaTV > 0 )
+        J = J ./ (1.0 - lambdaTV * nl);
+    end
+    %normalize
+    J = J / sum(J(:));
+    
+    %{
+    %sequential lucy richardson: TODO so far I cannot make it converge (it becomes NAN very fast)
     for ii = 1:numIm
         aux = stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J);
         if( isempty(weightsCell) )            
@@ -85,7 +110,7 @@ for iter = 1:numIters
         
         J = J / sum(J(:));
     end
-       
+    %}   
     
     
     if( debug > 0  && ndims(J) == 2)
@@ -95,7 +120,7 @@ for iter = 1:numIters
     end
         
     
-    if( ~isempty(saveIterBasename) && mod(iter,5) == 0 )
+    if( ~isempty(saveIterBasename) && mod(iter,1) == 0 )
        disp(['Writing iteration ' num2str(iter) '. Iter took ' num2str(toc) 'secs' ])
        writeKLBstack(single(J), [saveIterBasename num2str(iter,'%.5d') '.klb']); 
     end

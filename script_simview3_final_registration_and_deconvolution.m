@@ -82,4 +82,7 @@ end
 %%
 %perform lucy richardson
 disp 'Calculating multi-view deconvolution...'
-J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numItersLR, lambdaTV, 0, debugBasename);
+J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numItersLR, lambdaTV, 0, [debugBasename 'LR_iter']);
+
+[pathstr,name,ext] = fileparts(coarse.imFilenameCell{1});
+writeKLBstack(single(J), [baseRegistrationFolder filesep name 'LR_deconvolution.klb']);
