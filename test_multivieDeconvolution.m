@@ -6,7 +6,7 @@ sigma = [1 2;...
      
 sigmaNoise = 0;
 
-numIters = 20;
+numIters = 10;
 
 lambdaTV = 0.008; %0.002 is value recommended by paper
 

@@ -2,7 +2,7 @@
 function J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numIters, lambdaTV, debug, saveIterBasename)
 
 sigmaDer = 2.0;%smoothing to calculate the Gaussian derivatives
-
+minWeightVal = 0.001;%to avoid multiplication by zero in weights
 numIm = length(imCell);
 
 
@@ -10,12 +10,14 @@ numIm = length(imCell);
 J = zeros(size(imCell{1}));
 
 if( ~isempty(weightsCell) )
-    ww = single(weightsCell{1});
-    for ii = 2:numIm
-        ww = ww + single(weightsCell{ii});
+    ww = ones(size(weightsCell{1}), 'single');
+    for ii = 1:numIm
+        weightsCell{ii}(weightsCell{ii} < minWeightVal) = minWeightVal;
+        ww = ww .* single(weightsCell{ii});
     end
     
-    ww( ww < eps('single') ) = inf;%this pixel is dead from all views
+    ww = ww.^(1.0/numIm);%geometric mean
+    
     for ii = 1:numIm
         weightsCell{ii} = weightsCell{ii} ./ ww;
     end
@@ -32,35 +34,58 @@ for ii = 1:numIm
    end
 end
 
+
+%calculate "compund kernel": optimization I from Preibisch's paper
+PSFcompound = PSFcell;
+options.GPU = false;
+options.Power2Flag = true;
+for ii = 1:numIm
+   
+    %Hermitian
+    psf = PSFcell{ii};
+    for jj = 1:ndims(psf)
+        psf = flip(psf,jj);
+    end
+    PSFcompound{ii} = ones(size(psf));
+    %convolve with other views    
+    for jj = 1:numIm
+       if( ii ~= jj )
+            PSFcompound{ii} = PSFcompound{ii} .* convnfft( psf, PSFcell{jj}, 'same',1:ndims(psf),options);
+       end
+    end
+    %normalize
+    PSFcompound{ii} = single(PSFcompound{ii}) / sum(PSFcompound{ii}(:));
+end
+
 %start iterations
 for iter = 1:numIters
-    tic;
-    aux = zeros(size(J));
+    tic;    
     
-    %basic lucy richardson
-    if( isempty(weightsCell) )
-        for ii = 1:numIm
-            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, J) / numIm;
-        end
-    else
-        for ii = 1:numIm
-            aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, J) .* weightsCell{ii};
-        end
+    %precompute laplacian (even if we do sequential update
+    if( lambdaTV > 0 )
+        nl = normalizedLaplacian(J, sigmaDer);
     end
-    
-    
-    
-    %add total variation regularization: from Dey et al. "Richardson–Lucy Algorithm
-    %With Total Variation Regularization for 3D Confocal Microscope
-    %Deconvolution" 2006
-    if( lambdaTV > 0 )        
-        J = J .* aux ./ (1.0 - lambdaTV * normalizedLaplacian(J, sigmaDer));
+    %sequential lucy richardson
+    for ii = 1:numIm
+        aux = stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J);
+        if( isempty(weightsCell) )            
+            aux = aux / numIm;
+        else
+            aux = aux .* weightsCell{ii};            
+        end        
         
-    else%regular lucy richardson
+        %update final result
         J = J .* aux;
+        %add total variation regularization: from Dey et al. "Richardson–Lucy Algorithm
+        %With Total Variation Regularization for 3D Confocal Microscope
+        %Deconvolution" 2006
+        if( lambdaTV > 0 )
+            J = J ./ (1.0 - lambdaTV * nl);            
+        end
+        
+        J = J / sum(J(:));
     end
-    
-    
+       
     
     
     if( debug > 0  && ndims(J) == 2)
@@ -68,8 +93,7 @@ for iter = 1:numIters
        imagesc(J);
        title(['Lucy Richardson iter =' num2str(iter)]);
     end
-    
-    J = J / sum(J(:));
+        
     
     if( ~isempty(saveIterBasename) )
        disp(['Writing iteration ' num2str(iter) '. Iter took ' num2str(toc) 'secs' ])

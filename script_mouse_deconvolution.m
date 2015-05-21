@@ -4,6 +4,8 @@
 imPath = 'E:\mouse_deconvolution\15-04-03\TM0010_v2\'
 imFilename = {'TP0_Channel0_Illum0_Angle0.tif', 'TP0_Channel0_Illum0_Angle90.tif', 'TP0_Channel0_Illum0_Angle180.tif','TP0_Channel0_Illum0_Angle270.tif'};%images are already registered in a common framework (Fiji Plugin withlinear interpolation
 
+outputBasename = 'E:/temp/deconvolution/mouse_fft_denoised'
+
 %theoretical one
 %imPSF = {'transfomed PSF of viewsetup 0.tif', 'transfomed PSF of viewsetup 1.tif', 'transfomed PSF of viewsetup 2.tif', 'transfomed PSF of viewsetup 3.tif'};
 %practical one
@@ -32,4 +34,4 @@ end
 %%
 %perform lucy richardson
 numIters = 20;
-J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numIters, lambdaTV, 0, 'E:/temp/deconvolution/mouse_fft_denoised');
+J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numIters, lambdaTV, 0, outputBasename);
