@@ -13,6 +13,7 @@ minIntensityValue = 150;
 blockSize = 144;%96;%critical to make sure NCC discriminates enough
 searchRadius = 64 * 2;
 
+%it is better to find 
 maxNumPeaks = 100;
 sigmaDOG = 3.0 * 2;
 thrPeakDOG = 15;
@@ -69,7 +70,8 @@ tformCell = Acell;
 save([imPath '\imWarp_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
 %%
 %apply transformation to each stack
-parfor ii = 1:numViews       
+%parfor here can run out of memory for full resolution plus imwarp is already multi-thread (about 50% core usage)
+for ii = 1:numViews       
     im = readKLBstack([imPath '\' imFilename{ii} '.klb']);
     im = imwarp(im, affine3d(Acell{ii}), 'Outputview', imref3d(size(im)), 'interp', 'linear');
     

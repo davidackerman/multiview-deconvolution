@@ -1,6 +1,6 @@
 %function debug_NCCCdiscriminationPower(Tcell)
 
-topN = 3;
+topN = 1;
 NCCscores = zeros(10000,topN);
 
 
@@ -9,6 +9,9 @@ for ii = 1:size(Tcell,1)
     for jj = 1:size(Tcell,1)
         
         for kk = 1:length(Tcell{ii,jj})
+            if( size(Tcell{ii,jj}{kk},1) < topN )
+                continue;
+            end
            count = count + 1;
            NCCscores(count,:) = Tcell{ii,jj}{kk}(1:topN,7)';
         end

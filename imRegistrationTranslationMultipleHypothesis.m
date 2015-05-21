@@ -6,7 +6,7 @@ function T = imRegistrationTranslationMultipleHypothesis(imRef, im, numHypothesi
 
 %TODO: local maxima search (window is too small: it has ot be adaptive with some sort of watershed)
 
-thrNCC = 0.5;
+thrNCC = 0.8;%it is better to keep only very good matches but try a lot of interest points
 
 options.GPU = false;
 options.Power2Flag = false;%memory consumption can be ridiculous
@@ -34,9 +34,9 @@ for ii = 1:numHypothesis
     fv( fvL == fvL(pos) ) = 0;
 end
 
-if( ii < numHypothesis )
-   T(ii+1:end,:) = []; 
-end
+T(T(:,4) == 0,:) = [];
+
+
 
 
 

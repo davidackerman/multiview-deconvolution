@@ -95,7 +95,7 @@ for iter = 1:numIters
     end
         
     
-    if( ~isempty(saveIterBasename) )
+    if( ~isempty(saveIterBasename) && mod(iter,5) == 0 )
        disp(['Writing iteration ' num2str(iter) '. Iter took ' num2str(toc) 'secs' ])
        size(J)
        fid = fopen([saveIterBasename num2str(iter,'%.5d') '.raw'],'wb'); 
