@@ -97,9 +97,6 @@ for iter = 1:numIters
     
     if( ~isempty(saveIterBasename) && mod(iter,5) == 0 )
        disp(['Writing iteration ' num2str(iter) '. Iter took ' num2str(toc) 'secs' ])
-       size(J)
-       fid = fopen([saveIterBasename num2str(iter,'%.5d') '.raw'],'wb'); 
-       fwrite(fid, single(J(:)), 'float32');
-       fclose(fid);
+       writeKLBstack(single(J), [saveIterBasename num2str(iter,'%.5d') '.klb']); 
     end
 end

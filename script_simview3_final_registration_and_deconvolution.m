@@ -7,9 +7,9 @@
 
 %%
 %fixed parameters
-baseRegistrationFolder = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_register_downsample2x_doubleBlurred'
+baseRegistrationFolder = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_fine_register_blockRANSAC_full_resolution'
 
-PSFfilename = 'TODO.klb'
+PSFfilename = 'PSF_synthetic.klb'
 
 debugBasename = 'E:\temp\deconvolution\simview3_';%to save intermediate steps
 
@@ -34,34 +34,46 @@ PSFcell = cell(Nviews,1);
 weightsCell = cell(Nviews,1);
 
 for ii = 1:Nviews
-    %load image
+    %load image    
     filename = [coarse.imPath filesep coarse.imFilenameCell{ii}];
+    disp(['Loading image ' filename]);
     imCell{ii} = readKLBstack(filename);
     
-    disp '=============debug 1=========================='
-    imCell(ii) = stackDownsample(imCell{ii}, 2);
+    %load PSF(we assume the same PSF for all views)
+    disp(['Loading PSF ' baseRegistrationFolder filesep PSFfilename]);
+    PSF = readKLBstack([baseRegistrationFolder filesep PSFfilename]);
     
-    imSizeRef = ceil(size(imCell{1}) .* [1 1 coarse.anisotropyZ]);
+    %--------------------------------
+    disp '=============debug 1: downsample=========================='
+    imCell{ii} = stackDownsample(imCell{ii}, 2);
+    PSF = stackDownsample(PSF, 2);
+    fine.tformCell{ii}(4,1:3) = fine.tformCell{ii}(4,1:3) / 4;
+    coarse.tformCell{ii}(4,1:3) = coarse.tformCell{ii}(4,1:3) / 4;
+    %--------------------------------------
+    
+    if( ii == 1 )%calculate reference side only once
+        imSizeRef = ceil(size(imCell{1}) .* [1 1 coarse.anisotropyZ]);
+    end
     
     %calculate contrast weights
-    single(estimateDeconvolutionWeights(imCell{ii}, coarse.anisotropyZ , 15, []));
+    disp('Calculating contrast weights');
+    weightsCell{ii} = single(estimateDeconvolutionWeights(imCell{ii}, coarse.anisotropyZ , 15, []));
+        
     
-    %load PSF(we assume the same PSF for all views)
-    PSF = readKLBstack(PSFfilename);
-    
-    %calculate transform
-    disp '====================TODO:check with scaled data if this is correct================='
-    A = fine.tformCell{ii} * coarse.tformCell{ii};
+    %calculate transform    
+    A = coarse.tformCell{ii} * fine.tformCell{ii};
     
     %apply transformation
-    imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imSizeRef, 'interp', 'cubic');
-    weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imSizeRef, 'interp', 'linear');
+    disp 'Applying transformation to image, PSF and weights'
+    imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic');
+    weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
     PSFcell{ii} = imwarp(PSF, affine3d(A), 'interp', 'cubic');
     
-    %save results if requested
+    %save results if requested    
     if( ~isempty(debugBasename) )
+        disp(['Writing registered files to ' debugBasename '*Reg_' num2str(ii) '.klb']);
         writeKLBstack(imCell{ii},[debugBasename 'imReg_' num2str(ii) '.klb']);
-        writeKLBstack(psfCell{ii},[debugBasename 'psfReg_' num2str(ii) '.klb']);
+        writeKLBstack(PSFcell{ii},[debugBasename 'psfReg_' num2str(ii) '.klb']);
         writeKLBstack(weightsCell{ii},[debugBasename 'weightsReg_' num2str(ii) '.klb']);
     end
     
@@ -69,4 +81,5 @@ end
 
 %%
 %perform lucy richardson
+disp 'Calculating multi-view deconvolution...'
 J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numItersLR, lambdaTV, 0, debugBasename);
