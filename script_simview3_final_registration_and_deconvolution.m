@@ -44,11 +44,13 @@ for ii = 1:Nviews
     PSF = readKLBstack([baseRegistrationFolder filesep PSFfilename]);
     
     %--------------------------------
+    %{
     disp '=============debug 1: downsample=========================='
     imCell{ii} = stackDownsample(imCell{ii}, 2);
     PSF = stackDownsample(PSF, 2);
     fine.tformCell{ii}(4,1:3) = fine.tformCell{ii}(4,1:3) / 4;
     coarse.tformCell{ii}(4,1:3) = coarse.tformCell{ii}(4,1:3) / 4;
+    %}
     %--------------------------------------
     
     if( ii == 1 )%calculate reference side only once

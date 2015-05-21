@@ -5,6 +5,7 @@ sigmaDer = 2.0;%smoothing to calculate the Gaussian derivatives
 minWeightVal = 0.001;%to avoid multiplication by zero in weights
 numIm = length(imCell);
 
+stepWriteOutput = 5;
 
 %normalize elements
 J = zeros(size(imCell{1}));
@@ -120,7 +121,7 @@ for iter = 1:numIters
     end
         
     
-    if( ~isempty(saveIterBasename) && mod(iter,1) == 0 )
+    if( ~isempty(saveIterBasename) && mod(iter,stepWriteOutput) == 0 )
        disp(['Writing iteration ' num2str(iter) '. Iter took ' num2str(toc) 'secs' ])
        writeKLBstack(single(J), [saveIterBasename num2str(iter,'%.5d') '.klb']); 
     end
