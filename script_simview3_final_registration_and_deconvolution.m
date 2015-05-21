@@ -7,15 +7,15 @@
 
 %%
 %fixed parameters
-baseRegistrationFolder = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_fine_register_blockRANSAC_full_resolution'
+baseRegistrationFolder = 'D:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_fine_register_blockRANSAC_full_resolution'
 
 PSFfilename = 'PSF_synthetic.klb'
 
-debugBasename = 'E:\temp\deconvolution\simview3_';%to save intermediate steps
+debugBasename = 'D:\temp\deconvolution\simview3_';%to save intermediate steps
 
 %L-R options
 lambdaTV = 0.008; %0.002 is value recommended by paper
-numItersLR = 20;
+numItersLR = 30;
 
 
 %%

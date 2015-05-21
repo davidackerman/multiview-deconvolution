@@ -10,6 +10,9 @@ stepWriteOutput = 5;
 %normalize elements
 J = zeros(size(imCell{1}));
 
+
+%{
+%multiplicative weights
 if( ~isempty(weightsCell) )
     ww = ones(size(weightsCell{1}), 'single');
     for ii = 1:numIm
@@ -25,6 +28,25 @@ if( ~isempty(weightsCell) )
     clear ww;
         
 end
+%}
+
+
+%additive weights weights
+if( ~isempty(weightsCell) )
+    ww = ones(size(weightsCell{1}), 'single');
+    for ii = 1:numIm
+        ww = ww + single(weightsCell{ii});
+    end
+    ww( ww < eps ) = inf;
+    
+    for ii = 1:numIm
+        weightsCell{ii} = weightsCell{ii} ./ ww;
+    end
+    clear ww;
+        
+end
+
+
 for ii = 1:numIm
    PSFcell{ii} = single(PSFcell{ii}) / sum(PSFcell{ii}(:)); 
    imCell{ii} = single(imCell{ii}) / sum(imCell{ii}(:));
@@ -71,8 +93,7 @@ for iter = 1:numIters
     
     %lucy-richardson
     aux = zeros(size(J),'single');
-    for ii = 1:numIm
-        aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J);
+    for ii = 1:numIm        
         if( isempty(weightsCell) )            
             aux = aux + stepLucyRichardson(imCell{ii},PSFcell{ii}, PSFcompound{ii}, J) / numIm;
         else
