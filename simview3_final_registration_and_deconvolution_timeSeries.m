@@ -6,7 +6,7 @@ function simview3_final_registration_and_deconvolution_timeSeries(pathImPattern,
 
 %%
 %parameters
-numItersLR = 10;
+numItersLR = 20;
 
 %%
 %fixed parameters
