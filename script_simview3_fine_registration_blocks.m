@@ -1,9 +1,10 @@
 %we assume images have been coarsely aligned with
 %script_simview3_coarse_registration.m script
 
-imPath = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_register_downsample2x_doubleBlurred'
+imPath = 'E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445'
 
-imFilename = {'imRegister_Matlab_CM00', 'imRegister_Matlab_CM01', 'imRegister_Matlab_CM02', 'imRegister_Matlab_CM03'};
+%imFilename = {'imRegister_Matlab_CM00', 'imRegister_Matlab_CM01', 'imRegister_Matlab_CM02', 'imRegister_Matlab_CM03'};
+imFilename = {'imWarp_Matlab_CM00', 'imWarp_Matlab_CM01', 'imWarp_Matlab_CM02', 'imWarp_Matlab_CM03'};
 
 numHypothesis = 3;
 numWorkers = 10;
@@ -65,7 +66,7 @@ end
 
 %save transform
 tformCell = Acell;
-save([imPath '\imRegister_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
+save([imPath '\imWarp_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
 %%
 %apply transformation to each stack
 parfor ii = 1:numViews       

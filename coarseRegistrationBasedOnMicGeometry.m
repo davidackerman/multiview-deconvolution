@@ -54,7 +54,8 @@ end
 switch(angleDeg)
     
     case 0
-        A = eye(4);        
+        A = eye(4);
+        A(3,3) = anisotropyZ;
     case 90
         
         A = [1 0 0 0; 0 0 1 0; 0 -anisotropyZ 0 0; 0 sizeImRef(1) 0 1];

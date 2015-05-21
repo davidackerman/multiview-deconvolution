@@ -69,13 +69,15 @@ for ii = 2:length(angles) %parfor here is not advisable because of memory usage
     %downsample image
     im = stackDownsample(im, numLevels);
     
+    %{
+    TODO: fix this part of the code (translation estimation in X and Y
+    seems off): maybe use the multiple hypothesis code
     %find translation    
     [T, im] = imRegistrationTranslationFFT(imRef, im);
     
     %generate affine matrix
-    A(4,1:3) = A(4,1:3) + T([2 1 3]);%imwarp permutes x y wrt to imtranslate
-    tformCell{ii} = A;
-    
+    A(4,1:3) = A(4,1:3) + T([2 1 3]);%imwarp permutes x y wrt to imtranslate            
+    %}
     
     %adjust image to imRef size
     if( size(imRef,1) <= size(im,1) )
@@ -94,6 +96,8 @@ for ii = 2:length(angles) %parfor here is not advisable because of memory usage
         im = padarray(im,[0 0 size(imRef,3)-size(im,3)],0,'post');
     end
     
+    %save transform for imwarp
+    tformCell{ii} = A;
     
     %save image 
     writeKLBstack(im, [outputFolder 'imRegister_Matlab_CM' num2str(ii-1,'%.2d') '.klb']);
