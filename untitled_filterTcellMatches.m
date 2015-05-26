@@ -1,4 +1,4 @@
-NCCthr = 0.7;
+NCCthr = 0.8;
 
 Tcell = TcellOrig;
 %%
@@ -28,28 +28,48 @@ Acell = cell(numViews,1);
 Acell{1} = eye(4);
 for ii = 2:numViews
    Acell{ii} = [reshape(A(12 * (ii-2) + 1: 12 *(ii-1)),[4 3]), [0;0;0;1]]; 
-   Acell{ii}
 end
 
 %%
-%calculate plot fo rmathcing points
+%calculate plot for mathcing points
 stats = statsCell{idxMaxInliers};
 A = AcellRansac{idxMaxInliers};%final affines transformation
 xyz = [];
-for ii = 1:numViews-1
 
-    H = stats.H(:, (ii-1) * 12 + 1 : ii * 12);
-    Aaux = A((ii-1) * 12 + 1 : ii * 12);
-    %aux = reshape(H * Aaux, [size(H,1)/3 3]);
-    aux = H * Aaux;
-    aux(aux < 0 ) = -1 * aux(aux < 0 );
-    %xyz = [xyz; aux];
+for ii = 1:length(stats.blockOffsetFinal)-1
+    Haux = stats.H(stats.blockOffsetFinal(ii)+1:stats.blockOffsetFinal(ii+1),:);
+    Baux = stats.B(stats.blockOffsetFinal(ii)+1:stats.blockOffsetFinal(ii+1));
+    step = size(Haux,1) / 3;%order is [x_1, x_2,...,y_1, y_2, 
     
-    
-    xyz = [xyz; H(:,1:3)];
+    for jj = 1:numViews-1
+        H = Haux( :,(jj-1) * 12 + 1: jj*12);
+        if( sum(H(:)) < 0 )
+            H = -H;
+        end
+        aux = H * A((jj-1) * 12 + 1: jj*12);
+        
+        if( sum(abs(aux)) > 0 )
+           xyz = [xyz; reshape(aux, [length(aux)/3, 3])]; 
+        end
+    end
 end
 
 xyz = unique(xyz,'rows');
 
 figure;
 plot3(xyz(:,1), xyz(:,2), xyz(:,3),'o' );grid on;
+
+%%
+%overlay with reference image
+im = readKLBstack('E:\simview3_deconvolution\15_04_24_fly_functionalImage\TM1445\Matlab_coarse_fine_register_blockRANSAC_full_resolution\imWarp_Matlab_CM00_regRANSAC.klb');
+zz = unique(round(xyz(:,3)));
+for ii = 1:length(zz)
+   pp = (find(round(xyz(:,3)) == zz(ii)));
+   
+   figure;
+   imagesc(im(:,:,zz(ii)));
+   colormap gray;
+   title(num2str(zz(ii)));
+   hold on;
+   plot(xyz(pp,1),xyz(pp,2),'go');
+end
