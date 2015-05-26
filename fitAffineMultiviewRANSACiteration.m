@@ -11,6 +11,7 @@ Bransac = zeros(4 * 3 * numViews * (numViews - 1),1);
 Hall = zeros(10000, 12 * (numViews-1));%the first view is fixed, so not unknown parameters
 Ball = zeros(10000, 1);
 Nobs = 0;
+blockOffset = zeros(size(Tcell,1) * size(Tcell,2),1);%to be able to calculate inliners
 
 countV = 0;
 for ii = 1:size(Tcell,1)
@@ -25,6 +26,7 @@ for ii = 1:size(Tcell,1)
         X = zeros(length(ctrpts),3);
         Y = X;
         W = zeros(size(X,1),1);
+        
         nn = 0;
         
         for kk = 1:length(ctrpts)
@@ -145,6 +147,7 @@ for ii = 1:size(Tcell,1)
             Hall(Nobs +1:Nobs+ nn, (ii-2) * 12 + 1:(ii-1) * 12) = ss * H;
         end
         Nobs = Nobs + nn;
+        blockOffset(countV + 1) = Nobs;
        
     end        
 end
@@ -154,6 +157,7 @@ if( Nobs < size(Ball,1) )
    Hall(Nobs+1:end,:) = [];
    Ball(Nobs+1:end) = [];
 end
+blockOffset(countV + 2:end) = [];
 Hransac = sparse(Hransac);
 Hall = sparse(Hall);
 
@@ -162,23 +166,49 @@ Hall = sparse(Hall);
 Aransac = Hransac \ Bransac;
 
 %find inliers
-step = size(Hall,1) / 3;%order is [x_1, x_2,...,y_1, y_2, 
-rr = (Hall * Aransac - Ball).^2;
-dd = rr(1:step) + rr(step + 1: 2* step) + rr(2* step + 1:end);
-pp = find( dd < maxRadiusResidualInPixels );
+ppCell = cell(length(blockOffset)-1,1);
+for ii = 1:length(blockOffset)-1
+    Haux = Hall(blockOffset(ii)+1:blockOffset(ii+1),:);
+    Baux = Ball(blockOffset(ii)+1:blockOffset(ii+1));
+    step = size(Haux,1) / 3;%order is [x_1, x_2,...,y_1, y_2, 
+    rr = (Haux * Aransac - Baux).^2;
+    dd = rr(1:step) + rr(step + 1: 2* step) + rr(2* step + 1:end);
+    ppCell{ii} = find( dd < maxRadiusResidualInPixels );
+end
 
 
 stats.maxRadiusResidualInPixels = maxRadiusResidualInPixels;
-stats.numInliers = length(pp);
+stats.numInliers = sum(cellfun(@length,ppCell));
 
 %final fit with all the inliers
-Hall = [Hall(pp,:); Hall(step + pp,:); Hall(2*step + pp, :)];
-Ball = [Ball(pp,:); Ball(step + pp,:); Ball(2*step + pp, :)];
-A = Hall \ Ball;
+Hfinal = [];
+Bfinal = [];
+blockOffsetFinal = zeros(length(ppCell)+1,1);
+for ii = 1:length(ppCell)
+    Haux = Hall(blockOffset(ii)+1:blockOffset(ii+1),:);
+    Baux = Ball(blockOffset(ii)+1:blockOffset(ii+1));
+    step = size(Haux,1) / 3;%order is [x_1, x_2,...,y_1, y_2,
+    pp = ppCell{ii};
+    Hfinal = [Hfinal; [Haux(pp,:); Haux(step + pp,:); Haux(2*step + pp, :)] ];
+    Bfinal = [Bfinal; [Baux(pp,:); Baux(step + pp,:); Baux(2*step + pp, :)] ];    
+    blockOffsetFinal(ii+1) = size(Hfinal,1);
+end
+Hfinal = sparse(Hfinal);
+A = Hfinal \ Bfinal;
 
-rr = Hall * A - Ball;
-step = size(Hall,1) / 3;
-stats.residuals = [rr(1:step) rr(step + 1: 2* step)  rr(2* step + 1:end)];
+%calculate residuals
+stats.residuals = [];
+for ii = 1:length(blockOffsetFinal)-1
+    Haux = Hfinal(blockOffsetFinal(ii)+1:blockOffsetFinal(ii+1),:);
+    Baux = Bfinal(blockOffsetFinal(ii)+1:blockOffsetFinal(ii+1));
+    step = size(Haux,1) / 3;%order is [x_1, x_2,...,y_1, y_2, 
+    rr = (Haux * A - Baux).^2;    
+    stats.residuals = [stats.residuals; [rr(1:step) rr(step + 1: 2* step)  rr(2* step + 1:end)] ];
+end
+
+stats.H = Hfinal;
+stats.B = Bfinal;
+stats.blockOffsetFinal = blockOffsetFinal;
 
 
 
