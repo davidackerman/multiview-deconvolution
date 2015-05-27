@@ -1,0 +1,69 @@
+%called from function_simview3_coarse_fine_registration.m
+function imFilenameOutCell = simview3_coarse_registration(imPath, imFilenameCell, PSFcell, anisotropyZ, outputFolder, angles, numLevels)
+
+%%
+%parameters
+options.GPU = false;
+options.Power2Flag = false;%memory consumption can be ridiculous
+
+
+%%
+%downsample PSF if we downsample images
+for ii = 1:length(PSFcell)
+   PSFcell{ii} = stackDownsample(PSFcell{ii}, numLevels); 
+end
+
+%%
+%genarate transformations
+tformCell = cell(length(angles),1);
+imFilenameOutCell = cell(length(angles),1);
+%calculate alignment for each view
+for ii = 1:length(angles) %parfor here is not advisable because of memory usage
+    %apply coarse transformation
+    filename = [imPath imFilenameCell{ii}];
+    im = readKLBstack(filename);
+    
+    if( ii == 1)
+       imRefSize = ceil(size(im) .* [1 1 anisotropyZ]);
+    end
+    
+    %flip and permutation and interpolation in z
+    tformCell{ii} = coarseRegistrationBasedOnMicGeometry(im,angles(ii), anisotropyZ, imRefSize);
+    
+    %transform image
+    im = imwarp(im, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
+    
+    %downsample image
+    im = stackDownsample(im, numLevels);
+    
+    %"double blur" image, so all images "look" the same
+    if( mod(ii,2) == 0 )
+        im = uint16(convnfft(single(im), single(PSFcell{ii}),'same',[1:max(ndims(im),ndims(PSFcell{ii}))],options));
+    else
+        im = uint16(convnfft(single(im), single(PSFcell{ii}),'same',[1:max(ndims(im),ndims(PSFcell{ii}))],options));
+    end
+    
+    
+    
+    %{
+    if( ii == 1 )
+        imRef = im;
+    else
+        TODO: fix this part of the code (translation estimation in X and Y
+    seems off): maybe use the multiple hypothesis code
+    %find translation    
+    [T, im] = imRegistrationTranslationFFT(imRef, im);
+    
+    %generate affine matrix
+    A(4,1:3) = A(4,1:3) + T([2 1 3]);%imwarp permutes x y wrt to imtranslate            
+    end    
+    %}
+        
+    
+    %save image     
+    imFilenameOutCell{ii} = ['imWarp_Matlab_CM' num2str(ii-1,'%.2d')];
+    writeKLBstack(im, [outputFolder imFilenameOutCell{ii} '.klb']);
+end
+save([outputFolder 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'anisotropyZ', 'numLevels');
+
+

@@ -3,50 +3,47 @@ function [A, im] = coarseRegistrationBasedOnMicGeometry(im,angleDeg, anisotropyZ
 
 %%
 
-%%
-%apply linear interpolation in z planes
-if( anisotropyZ > 1.0 )
-    imOrig = im;
-    im = zeros(floor([size(im,1) size(im,2), size(im,3)-1] .* [1 1 anisotropyZ]),'single');
-    
-    for ii = 1:size(im,3)
-        ww = (ii-1) / anisotropyZ;
-        zz = floor(ww);
-        ww = ww - zz;
-        im(:,:,ii) = ww .* imOrig(:,:,zz+2) + (1.0-ww) .* imOrig(:,:,zz+1);
+if( nargout > 1 )
+    %%
+    %apply linear interpolation in z planes
+    if( anisotropyZ > 1.0 )
+        imOrig = im;
+        im = zeros(floor([size(im,1) size(im,2), size(im,3)-1] .* [1 1 anisotropyZ]),'single');
+        
+        for ii = 1:size(im,3)
+            ww = (ii-1) / anisotropyZ;
+            zz = floor(ww);
+            ww = ww - zz;
+            im(:,:,ii) = ww .* imOrig(:,:,zz+2) + (1.0-ww) .* imOrig(:,:,zz+1);
+        end
+    else
+        im = single(im);
     end
-else
-    im = single(im);
-end
-
-%%
-%apply rotations
-switch(angleDeg)
     
-    case 0
-        %nothing to do
-    case 90
-        im = permute(im, [3 2 1]);
-        im = flipdim(im,1);
+    %%
+    %apply rotations
+    switch(angleDeg)
         
-    case 180
-        im = flipdim(im,1);
-        
-    case 270
-        im = permute(im, [3 2 1]);
-        im = flipdim(im,1);
-        im = flipdim(im,3);
-        
-    otherwise
-        error 'Angle not coded here'
-        
+        case 0
+            %nothing to do
+        case 90
+            im = permute(im, [3 2 1]);
+            im = flipdim(im,1);
+            
+        case 180
+            im = flipdim(im,1);
+            
+        case 270
+            im = permute(im, [3 2 1]);
+            im = flipdim(im,1);
+            im = flipdim(im,3);
+            
+        otherwise
+            error 'Angle not coded here'
+            
+    end
+    
 end
-
-%%
-if( angleDeg == 0 )
-   sizeImRef = size(im); 
-end
-
 %%
 %save transformations: these are the transformations that will be apply to
 %imWarp to obtain the same results. Check code
