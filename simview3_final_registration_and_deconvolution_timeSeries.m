@@ -6,7 +6,9 @@ function simview3_final_registration_and_deconvolution_timeSeries(pathImPattern,
 
 %%
 %parameters
-numItersLR = 20;
+numItersLR = 40;
+
+backgroundOffset = 102;
 
 %%
 %fixed parameters
@@ -74,7 +76,7 @@ for ii = 1:Nviews
     
     %apply transformation
     disp 'Applying transformation to image, PSF and weights'
-    imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic');
+    imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic', 'FillValues', backgroundOffset);%to avoid "edge" effect
     weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
     PSFcell{ii} = imwarp(PSF, affine3d(A), 'interp', 'cubic');
     
@@ -91,7 +93,7 @@ end
 %%
 %perform lucy richardson
 disp 'Calculating multi-view deconvolution...'
-J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, numItersLR, lambdaTV, 0, [debugBasename 'TM' num2str(TM,'%6d') '_LR_iter']);
+J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, backgroundOffset, numItersLR, lambdaTV, 0, [debugBasename 'TM' num2str(TM,'%6d') '_LR_iter']);
 
 filename = recoverFilenameFromPattern(pathImPattern,TM);
 LRfilename = [filename 'LRdeconv.klb'];
