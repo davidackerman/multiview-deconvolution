@@ -1,6 +1,6 @@
 %based on scripts script_simview3_fine_registration_blocks.m and
 %script_simview3_coarse_registration.m
-function function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder)
+function function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder, transposeOrigImage)
 
 
 %%
@@ -36,7 +36,7 @@ end
 
 %%
 %coarse registration (basically flipdim + permute + scale
-imFilenameOutCell = simview3_coarse_registration(imPath, imFilenameCell, PSFcell, anisotropyZ, outputFolder, angles, numLevels);
+imFilenameOutCell = simview3_coarse_registration(imPath, imFilenameCell, PSFcell, anisotropyZ, outputFolder, angles, numLevels, transposeOrigImage);
 
 %%
 %fine registration

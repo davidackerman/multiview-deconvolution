@@ -1,5 +1,5 @@
 %called from function_simview3_coarse_fine_registration.m
-function imFilenameOutCell = simview3_coarse_registration(imPath, imFilenameCell, PSFcell, anisotropyZ, outputFolder, angles, numLevels)
+function imFilenameOutCell = simview3_coarse_registration(imPath, imFilenameCell, PSFcell, anisotropyZ, outputFolder, angles, numLevels, transposeOrigImage)
 
 %%
 %parameters
@@ -22,6 +22,10 @@ for ii = 1:length(angles) %parfor here is not advisable because of memory usage
     %apply coarse transformation
     filename = [imPath imFilenameCell{ii}];
     im = readKLBstack(filename);
+    
+    if( transposeOrigImage )
+       im = permute(im,[2 1 3]); 
+    end
     
     if( ii == 1)
        imRefSize = ceil(size(im) .* [1 1 anisotropyZ]);

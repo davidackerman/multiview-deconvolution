@@ -1,7 +1,7 @@
 function simview3_fine_registration(imPath, imFilename)
 
 numHypothesis = 3;
-numWorkers = 10;
+numWorkers = min(12, feature('numCores'));
 
 minIntensityValue = 150;
 blockSize = 144;%96;%critical to make sure NCC discriminates enough

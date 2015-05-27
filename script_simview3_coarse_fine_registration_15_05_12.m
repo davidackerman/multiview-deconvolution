@@ -13,6 +13,8 @@ FWHMpsfZ = 6.0; %in um. full width half-max of the psf in Z
 
 outputFolder = ['T:\temp\deconvolution\15_05_12_fly_functionalImage\TM' TMstr '\']
 
+transposeOrigImage = false;
+
 %%
 if( exist(outputFolder) == 0 )
     mkdir(outputFolder);
@@ -20,4 +22,4 @@ end
 
 %%
 %call registration function
-function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder);
+function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder, transposeOrigImage);
