@@ -61,9 +61,9 @@ for ii = 2:length(angles) %parfor here is not advisable because of memory usage
             
     %"double blur" image, so all images "look" the same
     if( mod(ii,2) == 0 )
-        im = convnfft(im, PSFodd,'same',[1:max(ndims(im),ndims(PSFeven))],options);
+        im = convnfft(im, PSFeven,'same',[1:max(ndims(im),ndims(PSFeven))],options);
     else
-        im = convnfft(im, PSFeven,'same',[1:max(ndims(im),ndims(PSFodd))],options);
+        im = convnfft(im, PSFodd,'same',[1:max(ndims(im),ndims(PSFodd))],options);
     end
     
     %downsample image
