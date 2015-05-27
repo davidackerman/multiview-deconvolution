@@ -2,23 +2,20 @@
 %single interpolation)
 
 %pathImPattern = 'S:/SiMView3/15-04-24/Dme_L1_57C10-GCaMP6s_20150424_142342.corrected/SPM00/TM??????/SPM00_TM??????_'
-function simview3_final_registration_and_deconvolution_timeSeries(pathImPattern, TM)
+function function_simview3_final_registration_and_deconvolution(pathImPattern, TM, numItersLR, backgroundOffset, baseRegistrationFolder, PSFfilename)
 
 %%
 %parameters
-numItersLR = 40;
-
-backgroundOffset = 102;
+%numItersLR = 40;
+%backgroundOffset = 100;
 
 %%
 %fixed parameters
-baseRegistrationFolder = 'registrationFiles';
-prefixRegistrationFiles = 'simview3_15_04_24_';
-
+%baseRegistrationFolder = 'registrationFiles';
 imSuffix = {'CM00_CHN01', 'CM02_CHN00', 'CM01_CHN01', 'CM03_CHN00'};
-PSFfilename = 'PSF_synthetic.klb';
+%PSFfilename = 'PSF_synthetic.klb';
 
-debugBasename = 'T:\temp\deconvolution\simview3_';%to save intermediate steps
+debugBasename = [baseRegistrationFolder filesep 'simview3_'];%to save intermediate steps
 
 %L-R options
 lambdaTV = 0.008; %0.002 is value recommended by paper
@@ -27,10 +24,10 @@ lambdaTV = 0.008; %0.002 is value recommended by paper
 
 %%
 %load coarse registration
-coarse = load([baseRegistrationFolder filesep prefixRegistrationFiles 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'numLevels', 'anisotropyZ');
+coarse = load([baseRegistrationFolder filesep  'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'numLevels', 'anisotropyZ');
 
 %load fine registration
-fine = load([baseRegistrationFolder filesep prefixRegistrationFiles 'imWarp_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
+fine = load([baseRegistrationFolder filesep  'imWarp_Matlab_tform_fine.mat'],'tformCell', 'Tcell', 'imPath', 'imFilename');
 
 %%
 %main loop to apply transformation to each image
@@ -48,7 +45,7 @@ for ii = 1:Nviews
     imCell{ii} = readKLBstack(imFilename);
     
     %load PSF(we assume the same PSF for all views)
-    filename = [baseRegistrationFolder filesep prefixRegistrationFiles PSFfilename];
+    filename = [baseRegistrationFolder filesep  PSFfilename];
     disp(['Loading PSF ' filename]);
     PSF = readKLBstack(filename);
     
