@@ -10,7 +10,8 @@ backgroundOffset = 102;
 
 PSFfilename = 'PSF_synthetic.klb';
 
+transposeOrigImage = false;
 
 %%
 %run deconvolution and registration
-function_simview3_final_registration_and_deconvolution(pathImPattern, TM, numItersLR, backgroundOffset, baseRegistrationFolder, PSFfilename)
+function_simview3_final_registration_and_deconvolution(pathImPattern, TM, numItersLR, backgroundOffset, baseRegistrationFolder, PSFfilename, transposeOrigImage);

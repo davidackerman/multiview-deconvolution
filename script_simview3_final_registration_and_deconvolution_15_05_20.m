@@ -1,18 +1,18 @@
 %parameters
 
-pathImPattern = 'S:\SiMView3\15-05-12\Dme_E1_57C10_GCaMP6s_20150512_134538.corrected\SPM00\TM??????\SPM00_TM??????_'
+pathImPattern = 'S:\SiMView3\15-05-20\Dme_L1_57C10_GCaMP6s_Simul_Confocal_1Hz_20150520_201919.corrected\SPM00\TM??????\SPM00_TM??????_'
 
-TM = 39
+TM = 24
 
 TMstr = num2str(TM,'%.6d');
-baseRegistrationFolder = ['T:\temp\deconvolution\15_05_12_fly_functionalImage\TM' TMstr] %where .mat files are located to read affine transformations
+baseRegistrationFolder = ['T:\temp\deconvolution\15_05_20_fly_functionalImage_TM' TMstr] %where .mat files are located to read affine transformations
 
 numItersLR = 40;
 backgroundOffset = 100;
 
 PSFfilename = 'PSF_synthetic.klb';
 
-transposeOrigImage = false;
+transposeOrigImage = true;
 
 %%
 %run deconvolution and registration

@@ -2,7 +2,7 @@
 %single interpolation)
 
 %pathImPattern = 'S:/SiMView3/15-04-24/Dme_L1_57C10-GCaMP6s_20150424_142342.corrected/SPM00/TM??????/SPM00_TM??????_'
-function function_simview3_final_registration_and_deconvolution(pathImPattern, TM, numItersLR, backgroundOffset, baseRegistrationFolder, PSFfilename)
+function function_simview3_final_registration_and_deconvolution(pathImPattern, TM, numItersLR, backgroundOffset, baseRegistrationFolder, PSFfilename, transposeOrigImage)
 
 %%
 %parameters
@@ -43,6 +43,10 @@ for ii = 1:Nviews
     imFilename = [filename imSuffix{ii} '.klb'];
     disp(['Loading image ' imFilename]);
     imCell{ii} = readKLBstack(imFilename);
+    
+    if( transposeOrigImage )
+       imCell{ii} = permute(imCell{ii},[2 1 3]); 
+    end
     
     %load PSF(we assume the same PSF for all views)
     filename = [baseRegistrationFolder filesep  PSFfilename];
