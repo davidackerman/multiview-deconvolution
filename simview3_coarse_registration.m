@@ -35,33 +35,34 @@ for ii = 1:length(angles) %parfor here is not advisable because of memory usage
     tformCell{ii} = coarseRegistrationBasedOnMicGeometry(im,angles(ii), anisotropyZ, imRefSize);
     
     %transform image
-    im = imwarp(im, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
+    imTemp = imwarp(im, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
     
     %downsample image
-    im = stackDownsample(im, numLevels);
+    imTemp = stackDownsample(imTemp, numLevels);
     
     %"double blur" image, so all images "look" the same
     if( mod(ii,2) == 0 )
-        im = uint16(convnfft(single(im), single(PSFcell{ii}),'same',[1:max(ndims(im),ndims(PSFcell{ii}))],options));
+        imTemp = uint16(convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options));
     else
-        im = uint16(convnfft(single(im), single(PSFcell{ii}),'same',[1:max(ndims(im),ndims(PSFcell{ii}))],options));
+        imTemp = uint16(convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options));
     end
     
     
     
-    %{
-    if( ii == 1 )
-        imRef = im;
-    else
-        TODO: fix this part of the code (translation estimation in X and Y
-    seems off): maybe use the multiple hypothesis code
-    %find translation    
-    [T, im] = imRegistrationTranslationFFT(imRef, im);
     
-    %generate affine matrix
-    A(4,1:3) = A(4,1:3) + T([2 1 3]);%imwarp permutes x y wrt to imtranslate            
+    if( ii == 1 )
+        numLevelsT = 2;
+        imRefD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster
+        im = imTemp;
+    else
+        imD = stackDownsample(imTemp,2);%downsample to make it faster
+        [Atr,nccVal] = fitTranslation(imRefD, imD, round(min(size(imD))/6));
+        Atr(4,1:3) = Atr(4,1:3) * (2^numLevelsT);%to compensate for downsample
+        tformCell{ii} = tformCell{ii} * Atr;
+        
+        im = imwarp(im, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
     end    
-    %}
+    
         
     
     %save image     

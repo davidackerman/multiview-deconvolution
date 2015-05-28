@@ -2,11 +2,12 @@
 % translation
 
 %T us the translation that we need to apply to im to register with imRef
-function T = imRegistrationTranslationMultipleHypothesis(imRef, im, numHypothesis)
+function T = imRegistrationTranslationMultipleHypothesis(imRef, im, numHypothesis, thrNCC)
 
 %TODO: local maxima search (window is too small: it has ot be adaptive with some sort of watershed)
-
-thrNCC = 0.8;%it is better to keep only very good matches but try a lot of interest points
+if( nargin < 4 )
+    thrNCC = 0.8;%it is better to keep only very good matches but try a lot of interest points
+end
 
 options.GPU = false;
 options.Power2Flag = false;%memory consumption can be ridiculous
