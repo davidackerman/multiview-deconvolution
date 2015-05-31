@@ -12,6 +12,7 @@ maxNumPeaks = 100;
 sigmaDOG = 3.0 * 2;
 thrPeakDOG = 15;
 
+thrMask = 110;% a little bit above background level
 
 numTrialsRANSAC = 50000;
 maxRadiusResidualInPixels = 15.0;
@@ -27,8 +28,13 @@ Tcell = cell(numIm, numIm);
 for ii = 1:numIm
     imRef = readKLBstack([imPath '\' imFilename{ii} '.klb']);
     
+    %generate mask (to get features only in the embryo): in case we also have beads
+    mask = maskEmbryo(imRef, thrMask);
+    %mask also areas with low intensity
+    mask = mask & imRef > minIntensityValue;
+    
     %detect points of interest in reference image
-    interestPts = detectInterestPoints_DOG(imRef, sigmaDOG, maxNumPeaks, thrPeakDOG, imRef > minIntensityValue,0);
+    interestPts = detectInterestPoints_DOG(imRef, sigmaDOG, maxNumPeaks, thrPeakDOG, mask ,0);
     
     %find correspondence for point of interest in the other images
     for jj = 1:numIm
