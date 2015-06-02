@@ -34,8 +34,8 @@ fine = load([baseRegistrationFolder filesep  'imWarp_Matlab_tform_fine.mat'],'tf
 Nviews = length(coarse.imFilenameCell);
 
 imCell = cell(Nviews,1);
-PSFcell = cell(Nviews,1);
-weightsCell = cell(Nviews,1);
+PSFcell = imCell;
+weightsCell = imCell;
 
 for ii = 1:Nviews
     %load image
@@ -51,20 +51,20 @@ for ii = 1:Nviews
     %load PSF(we assume the same PSF for all views)
     filename = [baseRegistrationFolder filesep  PSFfilename];
     disp(['Loading PSF ' filename]);
-    PSF = readKLBstack(filename);
+    PSFcell{ii} = readKLBstack(filename);
     
     %--------------------------------
     %{
     disp '=============debug 1: downsample=========================='
     imCell{ii} = stackDownsample(imCell{ii}, 3);
-    PSF = stackDownsample(PSF, 3);
+    PSFcell{ii} = stackDownsample(PSFcell{ii}, 3);
     fine.tformCell{ii}(4,1:3) = fine.tformCell{ii}(4,1:3) / 8;
     coarse.tformCell{ii}(4,1:3) = coarse.tformCell{ii}(4,1:3) / 8;
     %}
     %--------------------------------------
     
     if( ii == 1 )%calculate reference side only once
-        imSizeRef = ceil(size(imCell{1}) .* [1 1 coarse.anisotropyZ]);
+        imSizeRef = ceil(size(imCell{ii}) .* [1 1 coarse.anisotropyZ]);
     end
     
     %calculate contrast weights
@@ -79,9 +79,9 @@ for ii = 1:Nviews
     disp 'Applying transformation to image, PSF and weights'
     imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic', 'FillValues', backgroundOffset);%to avoid "edge" effect
     weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
-    PSFcell{ii} = imwarp(PSF, affine3d(A), 'interp', 'cubic');
+    PSFcell{ii} = imwarp(PSFcell{ii}, affine3d(A), 'interp', 'cubic');
     
-    %save results if requested    
+    %save results if requested        
     if( ~isempty(debugBasename) )
         disp(['Writing registered files to ' debugBasename '*Reg_' num2str(ii) '.klb']);
         writeKLBstack(imCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_imReg_' num2str(ii) '.klb']);
@@ -90,6 +90,7 @@ for ii = 1:Nviews
     end
     
 end
+
 
 %%
 %perform lucy richardson
