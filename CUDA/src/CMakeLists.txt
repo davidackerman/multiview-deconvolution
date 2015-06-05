@@ -1,4 +1,4 @@
-#CMake file to build Tracking_GMM project
+#CMake file to build multi-view deconvolution in CUDA
 
 #define important variables for the rest of the project
 
@@ -7,25 +7,20 @@
 #The FindCUDA script is distributed since version 2.8
 
 cmake_minimum_required (VERSION 2.8)
-project (Convolution3D_fft_project)
+project (multi-view_deconvolution_src)
 
 
 
 #
 #Set important flags
 #
+#add flags for the C++11 
+if(CMAKE_COMPILER_IS_GNUCXX) 
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
+endif()
 
-# Call  "cmake-gui -DCMAKE_BUILD_TYPE=Release .." on the command line to specify a particular build, take their definition
-# and dump it in the cache along with proper documentation, otherwise set CMAKE_BUILD_TYPE
-# to Debug prior to calling PROJECT()
-#
-IF( CMAKE_BUILD_TYPE STREQUAL "")
-	SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
-ELSE() #Debug is the default
-	SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
-ENDIF()
-
-MESSAGE("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
 #to locate scripts
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake") 
@@ -52,13 +47,14 @@ INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 file(GLOB CUDA_HDRS *.h)
 file(GLOB CUDA_CUDA_SRCS *.cu)
 
-
+file(GLOB CPP_SRCS *.cpp)
 
 CUDA_COMPILE(CUDA_CUDA_OBJ STATIC ${CUDA_CUDA_SRCS} OPTIONS ${CUOPTS})
 
 
-#generate also dll
-add_library(Convolution3D_fftCUDAlib SHARED ${CUDA_SRCS} ${CUDA_CUDA_OBJ} ${CUDA_HDRS} ${CUDA_CUDA_SRCS} ${TICTOC_HDRS} ${TICTOC_SRCS})
+#generate library
+add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ} ${CUDA_HDRS} ${CUDA_CUDA_SRCS})
+
 #link libraries
-TARGET_LINK_LIBRARIES(Convolution3D_fftCUDAlib ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-SET_TARGET_PROPERTIES(Convolution3D_fftCUDAlib PROPERTIES LINKER_LANGUAGE CXX)
+TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX)

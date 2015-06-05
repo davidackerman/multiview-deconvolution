@@ -1,5 +1,5 @@
 
-project ( TGMMoutputParser_project )
+project ( multiview_deconvolution )
 cmake_minimum_required ( VERSION 2.8 )
 
 #folder where all the executables go (this is seens by all elements called using add_subdirectory)
