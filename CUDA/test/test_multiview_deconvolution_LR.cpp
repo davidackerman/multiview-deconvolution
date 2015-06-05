@@ -23,6 +23,7 @@ int main(int argc, const char** argv)
 	//parameters
 	int numIters = 1;
 	int numViews = 4;
+	float lambdaTV = 0.008;
 	string filePatternPSF = "write something";
 	string filePatternWeights = "write something";
 	string filePatternImg = "write something";
@@ -34,28 +35,52 @@ int main(int argc, const char** argv)
 	J = new multiviewDeconvolution<uint16_t>;
 
 	//set number of views
-	J.setNumberOfViews(numViews);
+	J->setNumberOfViews(numViews);
 
 	//read images
 	string filename;
+	int err;
 	for (int ii = 0; ii < numViews; ii++)
 	{
-		filename = recoverFilenamePatternFromString(filePatternPSF, ii);
-		J.readImage(filename, ii, 'psf');//this function should just read image
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternPSF, ii);
+		err = J->readImage(filename, ii, std::string("psf"));//this function should just read image
+		if (err > 0)
+		{
+			cout << "ERROR: reading file " << filename << endl;
+			return err;
+		}
 
-		filename = recoverFilenamePatternFromString(filePatternWeights, ii);
-		J.readImage(filename, ii, 'weight');
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternWeights, ii);
+		err = J->readImage(filename, ii, std::string("weight"));
+		if (err > 0)
+		{
+			cout << "ERROR: reading file " << filename << endl;
+			return err;
+		}
 
-		filename = recoverFilenamePatternFromString(filePatternImg, ii);
-		J.readImage(filename, ii, 'img');
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternImg, ii);
+		err = J->readImage(filename, ii, std::string("img"));
+		if (err > 0)
+		{
+			cout << "ERROR: reading file " << filename << endl;
+			return err;
+		}
 	}
 
 	//upload everything to GPU and precompute as much as needed
-	J.allocate_workspace();
+	err = J->allocate_workspace();
+	if (err > 0)
+	{
+		cout << "ERROR: allocating workspace" << endl;
+		return err;
+	}
 
 	//compute deconvolution iterations
-	J.deconvolution(numIters);
+	J->deconvolution_LR_TV(numIters, lambdaTV);
 
 	//release memory
 	delete J;
+
+
+	return 0;
 }

@@ -40,6 +40,12 @@ INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 #lcudart and lcuda  are already added as variables with find package
 #SET(LIBS_CUDA_CUSPARSE "cusparse" CACHE STRING "")#add CUDA libraries ignored in CUDA.cmake
 
+#
+#submodules: KLB I/O
+#
+include_directories("${PROJECT_SOURCE_DIR}/external/klb/src")
+add_subdirectory("${PROJECT_SOURCE_DIR}/external/klb/src" "${CMAKE_CURRENT_BINARY_DIR}/KLB")
+LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/klb/src")
 
 #
 # submodules: add source and header files from subfolders

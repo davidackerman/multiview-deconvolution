@@ -30,10 +30,19 @@ int main(int argc, const char** argv)
 	//read object
 	for (int ii = 0; ii < numViews; ii++)
 	{
-		string filename = recoverFilenamePatternFromString(filePattern, ii);
-		img.readImage(filename, -1);
+		string filename = img.recoverFilenamePatternFromString(filePattern, ii);
+		int err = img.readImage(filename, -1);
+
+		if (err != 0)
+		{
+			cout << "ERROR: loading image " << filename << endl;
+			return err;
+		}
 	}
 
 	//release memory
 
+
+	std::cout << "...OK" << endl;
+	return 0;
 }

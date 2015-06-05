@@ -13,12 +13,12 @@ include_directories(../src/)
 
 IF(NOT TARGET test_load_multiview_img )
 	add_executable(test_load_multiview_img test_load_multiview_images.cpp)
-	target_link_libraries(test_load_multiview_img TGMM_parser_lib)
+	target_link_libraries(test_load_multiview_img multiview_deconvolution_GPU klblib)
 ENDIF()
 
 
 IF(NOT TARGET test_multiview_deconvolution_LR )
 	add_executable(test_multiview_deconvolution_LR test_multiview_deconvolution_LR.cpp)
-	target_link_libraries(test_multiview_deconvolution_LR TGMM_parser_lib)
+	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU klblib)
 ENDIF()
 

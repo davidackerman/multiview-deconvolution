@@ -8,14 +8,14 @@
 *  Created on : June 5th, 2015
 * Author : Fernando Amat
 *
-* \brief main interface to execute multiview deconvolution (it has ome abstract methods)
+* \brief main interface to execute multiview deconvolution 
 */
 
 #ifndef __MULTI_VIEW_DECONVOLUTION_IMAGE_HEADER_H__
 #define __MULTI_VIEW_DECONVOLUTION_IMAGE_HEADER_H__
 
 #include "multiviewImage.h"
-
+#include <string>
 
 typedef float weightType;
 typedef float psfType;
@@ -29,11 +29,19 @@ public:
 
 	multiviewDeconvolution();	
 	~multiviewDeconvolution();
+
+
+	void setNumberOfViews(int numViews);
+	int readImage(const std::string& filename, int pos, const std::string& type);
+	//perfoms all the preallocation and precalculation for the deconvolution
+	int allocate_workspace();
 	
+	//different deconvolution methods
+	void deconvolution_LR_TV(int numIters, float lambdaTV);//lucy-richardson with totalvariation regularization
+
 protected:
 
-	//implements main deconvolution ste using variables
-	virtual void deconvolution(int numIters);
+	
 
 
 	//main objects to hold values
@@ -41,7 +49,7 @@ protected:
 	multiviewImage<psfType> psf;
 	multiviewImage<imgType> img;
 
-	outputType* J;
+	multiviewImage<outputType> J;//holds the output, so it is going to have a different number of views
 
 
 private:

@@ -34,6 +34,7 @@ public:
 
 	//short IO functions
 	size_t getNumberOfViews(){ return imgVec_CPU.size(); };
+	void resize(size_t numViews){ imgVec_CPU.resize(numViews, NULL); imgVec_GPU.resize(numViews, NULL); };
 	
 protected:
 
