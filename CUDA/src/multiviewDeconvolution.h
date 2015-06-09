@@ -14,12 +14,16 @@
 #ifndef __MULTI_VIEW_DECONVOLUTION_IMAGE_HEADER_H__
 #define __MULTI_VIEW_DECONVOLUTION_IMAGE_HEADER_H__
 
-#include "multiviewImage.h"
 #include <string>
+#include "multiviewImage.h"
+
 
 typedef float weightType;
 typedef float psfType;
 typedef float outputType;
+
+//from cufft.h to avoid including a cuda header here
+typedef int cufftHandle;
 
 template<class imgType>
 class multiviewDeconvolution
@@ -39,9 +43,7 @@ public:
 	//different deconvolution methods
 	void deconvolution_LR_TV(int numIters, float lambdaTV);//lucy-richardson with totalvariation regularization
 
-protected:
-
-	
+protected:	
 
 
 	//main objects to hold values
@@ -51,6 +53,8 @@ protected:
 
 	multiviewImage<outputType> J;//holds the output, so it is going to have a different number of views
 
+	//holds the fft plans 
+	cufftHandle fftPlanFwd, fftPlanInv;
 
 private:
 };

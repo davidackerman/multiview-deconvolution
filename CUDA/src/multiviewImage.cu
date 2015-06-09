@@ -13,6 +13,8 @@
 
 #include "multiviewImage.h"
 #include "klb_imageIO.h"
+#include "cuda.h"
+#include "book.h"
 
 
 using namespace std;
@@ -20,7 +22,7 @@ using namespace std;
 
 template<class imgType>
 multiviewImage<imgType>::multiviewImage()
-{
+{	
 };
 
 
@@ -29,6 +31,7 @@ multiviewImage<imgType>::multiviewImage(size_t numViews)
 {
 	imgVec_CPU.resize(numViews, NULL);
 	imgVec_GPU.resize(numViews, NULL);
+	dimsImgVec.resize(numViews);
 };
 
 template<class imgType>
@@ -40,7 +43,42 @@ multiviewImage<imgType>::~multiviewImage()
 			delete[]imgVec_CPU[ii];
 
 		if (imgVec_GPU[ii] != NULL)
-			delete[]imgVec_GPU[ii];
+			HANDLE_ERROR(cudaFree(imgVec_GPU[ii]));
+	}
+};
+
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::deallocateView_CPU(size_t pos)
+{
+	if (pos < imgVec_CPU.size() && imgVec_CPU[pos] != NULL )
+	{
+		delete[] imgVec_CPU[pos];
+		imgVec_CPU[pos] = NULL;
+	}
+};
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::deallocateView_GPU(size_t pos)
+{
+	if (pos < imgVec_GPU.size() && imgVec_GPU[pos] != NULL)
+	{
+		HANDLE_ERROR(cudaFree(imgVec_GPU[pos]));
+	}
+};
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::allocateView_GPU(size_t pos, size_t numBytes)
+{
+	if (pos < imgVec_GPU.size())
+	{
+		if (imgVec_GPU[pos] != NULL)
+			deallocateView_GPU(pos);
+
+		HANDLE_ERROR(cudaMalloc((void**)&(imgVec_GPU[pos]), numBytes));
 	}
 };
 
@@ -109,6 +147,21 @@ string multiviewImage<imgType>::recoverFilenamePatternFromString(const string& i
 
 }
 
+
+
+//===========================================================================================
+template<class imgType>
+std::int64_t multiviewImage<imgType>::numElements(size_t pos) const
+{
+	if (pos >= dimsImgVec.size() || dimsImgVec[pos].ndims == 0)
+		return 0;
+
+	std::int64_t n = 1;
+	for (int ii = 0; ii < dimsImgVec[pos].ndims; ii++)
+		n *= dimsImgVec[pos].dims[ii];
+
+	return n;
+};
 //===========================================================================================
 template<class imgType>
 int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
@@ -139,6 +192,7 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 	{
 		imgVec_CPU.push_back(imgA);
 		imgVec_GPU.push_back(NULL);
+		pos = imgVec_GPU.size() - 1;
 	}
 	else if (pos >= imgVec_CPU.size()){
 		cout << "ERROR: multiviewImage<imgType>::readImage: trying to place image in a view that does not exist" << endl;
@@ -149,6 +203,17 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 		imgVec_CPU[pos] = imgA;
 		imgVec_GPU[pos] = NULL;
 	}
+
+
+	//aupdate dimensions if necessary
+	int ndims = 0;
+	while (ndims < KLB_DATA_DIMS && imgFull.header.xyzct[ndims] > 1)
+	{
+		dimsImgVec[pos].dims[ndims] = imgFull.header.xyzct[ndims];
+		ndims++;
+	}
+	dimsImgVec[pos].ndims = ndims;
+
 	return err;
 }
 
