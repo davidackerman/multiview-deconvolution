@@ -58,7 +58,71 @@ __global__ void __launch_bounds__(MAX_THREADS_CUDA) fftShiftKernel(imageType* ke
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Modulate Fourier image of padded data by Fourier image of padded kernel
+// and normalize by FFT size
+////////////////////////////////////////////////////////////////////////////////
+//Adapted from CUDA SDK examples
+__device__ void mulAndScale(cufftComplex& a, const cufftComplex& b, const float& c)
+{
+	cufftComplex t = { c * (a.x * b.x - a.y * b.y), c * (a.y * b.x + a.x * b.y) };
+	a = t;
+};
 
+//we multiply by conj(b) = {b.x, -b.y}
+__device__ void mulAndScale_conj(cufftComplex& a, const cufftComplex& b, const float& c)
+{
+	cufftComplex t = { c * (a.x * b.x + a.y * b.y), c * (a.y * b.x - a.x * b.y) };
+	a = t;
+};
+
+__device__ cufftComplex mulAndScale_outOfPlace(const cufftComplex& a, const cufftComplex& b, const float& c)
+{
+	return  { c * (a.x * b.x - a.y * b.y), c * (a.y * b.x + a.x * b.y) };	
+};
+
+__global__ void modulateAndNormalize_kernel(cufftComplex *d_Dst, const cufftComplex *d_Src, long long int dataSize, float c)
+{
+	std::int64_t i = (std::int64_t)blockDim.x * (std::int64_t)blockIdx.x + (std::int64_t)threadIdx.x;
+	std::int64_t offset = (std::int64_t)blockDim.x * (std::int64_t)gridDim.x;
+	while (i < dataSize)
+	{
+		//TODO: try speed difference without intermediate variables
+		cufftComplex a = d_Src[i];
+		cufftComplex b = d_Dst[i];
+		mulAndScale(b, a, c);
+		d_Dst[i] = b;
+
+		i += offset;
+	}
+};
+
+__global__ void modulateAndNormalize_conj_kernel(cufftComplex *d_Dst, const cufftComplex *d_Src, long long int dataSize, float c)
+{
+	std::int64_t i = (std::int64_t)blockDim.x * (std::int64_t)blockIdx.x + (std::int64_t)threadIdx.x;
+	std::int64_t offset = (std::int64_t)blockDim.x * (std::int64_t)gridDim.x;
+	while (i < dataSize)
+	{
+		//TODO: try speed difference without intermediate variables
+		cufftComplex a = d_Src[i];
+		cufftComplex b = d_Dst[i];
+		mulAndScale_conj(b, a, c);
+		d_Dst[i] = b;
+
+		i += offset;
+	}
+};
+
+__global__ void modulateAndNormalize_outOfPlace_kernel(cufftComplex *d_Dst, const cufftComplex *d_Src1, const cufftComplex *d_Src2, long long int dataSize, float c)
+{
+	std::int64_t i = (std::int64_t)blockDim.x * (std::int64_t)blockIdx.x + (std::int64_t)threadIdx.x;
+	std::int64_t offset = (std::int64_t)blockDim.x * (std::int64_t)gridDim.x;
+	while (i < dataSize)
+	{
+		d_Dst[i] = mulAndScale_outOfPlace(d_Src1[i], d_Src2[i], c);
+		i += offset;
+	}
+};
 //===========================================================================
 
 template<class imgType>
@@ -224,6 +288,86 @@ template<class imgType>
 void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float lambdaTV)
 {
 	cout << "===================TODO=================" << endl;
+
+
+	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
+	const int64_t nImg = img.numElements(0);
+	const size_t nViews = img.getNumberOfViews();
+	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[0] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
+
+	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
+	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
+
+	//allocate extra memory required for intermediate calculations
+	outputType *J_GPU_FFT, *aux_FFT, *aux_LR;
+	outputType *TV_GPU = NULL;
+	HANDLE_ERROR(cudaMalloc((void**)&(J_GPU_FFT), imSizeFFT * sizeof(outputType)));//for J FFT
+	HANDLE_ERROR(cudaMalloc((void**)&(aux_FFT), imSizeFFT * sizeof(outputType)));//to hold products between FFT
+	HANDLE_ERROR(cudaMalloc((void**)&(aux_LR), nImg * sizeof(outputType)));//to hold LR update 
+
+	//loop for each iteration
+	for (int iter = 0; iter < numIters; iter++)
+	{
+		//copy current solution
+		elementwiseOperationInPlace(J_GPU_FFT, J.getPointer_GPU(0), nImg, op_elementwise_type::copy);
+		//precompute FFT for current solution
+		cufftExecR2C(fftPlanFwd, J_GPU_FFT, (cufftComplex *)J_GPU_FFT); HANDLE_ERROR_KERNEL;
+
+		//precalculate TV on J
+		if (lambdaTV > 0)
+		{
+			cout << "==============TODO: calculate total variation==================" << endl;
+		}
+
+		//reset update
+		HANDLE_ERROR(cudaMemset(aux_LR, 0, nImg * sizeof(outputType)));
+		//main loop over the different views
+		for (int vv = 0; vv < nViews; vv++)
+		{
+			//multiply LR currant result and kernel in fourier space (and normalize)
+			//NOTE: from CUFFT manual: CUFFT performs un-normalized FFTs; that is, performing a forward FFT on an input data set followed by an inverse FFT on the resulting set yields data that is equal to the input scaled by the number of elements.			
+			modulateAndNormalize_outOfPlace_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(J_GPU_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));//last parameter is the size of the FFT
+
+			//inverse FFT 
+			cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); HANDLE_ERROR_KERNEL;
+
+			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
+			elementwiseOperationInPlace(aux_FFT, img.getPointer_GPU(vv), nImg, op_elementwise_type::divide_inv);
+
+			//calculate FFT of ratio (for convolution)
+			cufftExecR2C(fftPlanFwd, aux_FFT, (cufftComplex *)aux_FFT); HANDLE_ERROR_KERNEL;
+
+			//multiply auxFFT and FFT(PSF)*
+			modulateAndNormalize_conj_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));
+
+			//inverse FFT
+			cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); HANDLE_ERROR_KERNEL;
+
+			//add the value
+			if (useWeights)
+			{
+				elementwiseOperationOutOfPlace(aux_LR, weights.getPointer_GPU(vv), aux_FFT, nImg, op_elementwise_type::compound_multiply);
+			}
+			else{
+				elementwiseOperationInPlace(aux_LR, aux_FFT, nImg, op_elementwise_type::plus);
+			}
+			
+		}
+
+		//normalize weights if we are just using averaging
+		if (!useWeights)
+			elementwiseOperationInPlace(aux_LR, 1.0f / (float)nViews, nImg, op_elementwise_type::multiply);		
+
+		//apply TV
+		if (lambdaTV > 0)
+		{
+			elementwiseOperationInPlace(aux_LR, TV_GPU, nImg, op_elementwise_type::divide);
+		}
+
+		//update LR 
+		elementwiseOperationInPlace(J.getPointer_GPU(0), aux_LR, nImg, op_elementwise_type::multiply);
+		
+	}
 }
 
 
