@@ -215,6 +215,7 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 	{
 		imgVec_CPU.push_back(imgA);
 		imgVec_GPU.push_back(NULL);
+		dimsImgVec.push_back(dimsImg());
 		pos = imgVec_GPU.size() - 1;
 	}
 	else if (pos >= imgVec_CPU.size()){

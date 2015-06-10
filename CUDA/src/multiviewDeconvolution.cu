@@ -287,9 +287,6 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 template<class imgType>
 void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float lambdaTV)
 {
-	cout << "===================TODO=================" << endl;
-
-
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();

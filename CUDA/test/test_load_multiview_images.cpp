@@ -22,15 +22,17 @@ int main(int argc, const char** argv)
 
 	//parameters
 	int numViews = 4;
-	string filePattern = "write something";
+	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+
+	string filePattern( filepath + "imReg_?.klb" );
 
 	//declare object
-	multiviewImage<uint16_t> img;
+	multiviewImage<float> img;
 
 	//read object
 	for (int ii = 0; ii < numViews; ii++)
 	{
-		string filename = img.recoverFilenamePatternFromString(filePattern, ii);
+		string filename = img.recoverFilenamePatternFromString(filePattern, ii+1);
 		int err = img.readImage(filename, -1);
 
 		if (err != 0)

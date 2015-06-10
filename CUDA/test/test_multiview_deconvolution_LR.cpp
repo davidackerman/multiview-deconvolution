@@ -20,13 +20,19 @@ int main(int argc, const char** argv)
 {
 	std::cout << "testing a full iteration of multi-view lucy richardson (without splitting image in blocks) running..." << std::endl;
 
+
 	//parameters
-	int numIters = 1;
+	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	int numIters = 2;
 	int numViews = 4;
 	float lambdaTV = 0.008;
-	string filePatternPSF = "write something";
-	string filePatternWeights = "write something";
-	string filePatternImg = "write something";
+	string filePatternPSF = "psfReg_?.klb";
+	string filePatternWeights = "weightsReg_?.klb";
+	string filePatternImg = "imReg_?.klb";
+
+
+	if (argc > 1)
+		filepath = string(argv[1]);
 
 	//declare object
 	cout << "TODO: allow reading uint16 images and convert them to float on the fly" << endl;
@@ -42,7 +48,7 @@ int main(int argc, const char** argv)
 	int err;
 	for (int ii = 0; ii < numViews; ii++)
 	{
-		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternPSF, ii);
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternPSF, ii+1);
 		err = J->readImage(filename, ii, std::string("psf"));//this function should just read image
 		if (err > 0)
 		{
@@ -50,7 +56,7 @@ int main(int argc, const char** argv)
 			return err;
 		}
 
-		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternWeights, ii);
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternWeights, ii+1);
 		err = J->readImage(filename, ii, std::string("weight"));
 		if (err > 0)
 		{
@@ -58,7 +64,7 @@ int main(int argc, const char** argv)
 			return err;
 		}
 
-		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternImg, ii);
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(filePatternImg, ii+1);
 		err = J->readImage(filename, ii, std::string("img"));
 		if (err > 0)
 		{
