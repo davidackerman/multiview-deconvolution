@@ -17,6 +17,7 @@
 #include <iostream>
 #include "commonCUDA.h"
 #include "cuda.h"
+#include "book.h"
 
 using namespace std;
 
@@ -122,32 +123,32 @@ template<class T>
 void elementwiseOperationInPlace(T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
 {
 
-	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA, arrayLength);
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
 	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
 
 
 	switch (op)
 	{
 	case op_elementwise_type::plus:
-		elementwiseOperationInPlace_kernel<< <numBlocks, numThreads >> > (A, B, arrayLength, add_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::minus:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::multiply:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, mul_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::divide:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	case op_elementwise_type::divide_inv:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_inv_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_inv_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	case op_elementwise_type::copy:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
@@ -160,29 +161,29 @@ template<class T>
 void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_elementwise_type op)
 {
 
-	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA, arrayLength);
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
 	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
 
 
 	switch (op)
 	{
 	case op_elementwise_type::plus:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, add_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::minus:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::multiply:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, mul_func<T>());
-		break;
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;HANDLE_ERROR_KERNEL;
 
 	case op_elementwise_type::divide:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	case op_elementwise_type::copy:
-		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>());
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
@@ -196,32 +197,32 @@ template<class T>
 void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
 {
 
-	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA, arrayLength);
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
 	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
 
 
 	switch (op)
 	{
 	case op_elementwise_type::plus:
-		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>());
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::minus:
-		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_func<T>());
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::multiply:
-		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>());
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 
 	case op_elementwise_type::divide:
-		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, div_func<T>());
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	case op_elementwise_type::compound_plus:
-		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>());
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	case op_elementwise_type::compound_multiply:
-		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>());
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
