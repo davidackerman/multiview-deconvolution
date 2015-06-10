@@ -30,7 +30,7 @@ static const int MAX_BLOCKS_CUDA = 2147483647;
 #endif
 
 //defines the types of operations implement for elementwise function
-enum op_elementwise_type {plus, minus, multiply, divide};
+enum op_elementwise_type {plus, minus, multiply, divide, compound_plus};
 
 /*
 \brief A[i] = f(A[i],B[i])  where f is defined by the enum op
@@ -38,5 +38,10 @@ enum op_elementwise_type {plus, minus, multiply, divide};
 template<class T>
 void elementwiseOperationInPlace(T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
+/*
+\brief C[i] = f(A[i],B[i])  where f is defined by the enum op
+*/
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
 #endif

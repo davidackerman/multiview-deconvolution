@@ -29,10 +29,10 @@ int main(int argc, const char** argv)
 	string filePatternImg = "write something";
 
 	//declare object
-	cout << "TODO: use a derived class implementing LR" << endl;
-	multiviewDeconvolution<uint16_t> *J;
+	cout << "TODO: allow reading uint16 images and convert them to float on the fly" << endl;
+	multiviewDeconvolution<float> *J;
 
-	J = new multiviewDeconvolution<uint16_t>;
+	J = new multiviewDeconvolution<float>;
 
 	//set number of views
 	J->setNumberOfViews(numViews);

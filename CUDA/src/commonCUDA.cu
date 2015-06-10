@@ -67,6 +67,31 @@ __global__ void elementwiseOperationInPlace_kernel(T *A, const T *B, std::uint64
 	}
 }
 
+//==============================================================================================
+template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_kernel(T* C, const T *A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] = op(A[tid], B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
+
+//==============================================================================================
+template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] += op(A[tid], B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
+
+//==============================================================================================
 template<class T>
 void elementwiseOperationInPlace(T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
 {
@@ -99,9 +124,49 @@ void elementwiseOperationInPlace(T* A, const T* B, std::uint64_t arrayLength, op
 	
 }
 
+//==========================================================================================================
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
+{
+
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA, arrayLength);
+	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
+
+
+	switch (op)
+	{
+	case op_elementwise_type::plus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>());
+		break;
+
+	case op_elementwise_type::minus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_func<T>());
+		break;
+
+	case op_elementwise_type::multiply:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>());
+		break;
+
+	case op_elementwise_type::divide:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, div_func<T>());
+		break;
+	case op_elementwise_type::compound_plus:
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>());
+		break;
+	default:
+		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
+	}
+
+}
+
 
 //======================================================================
 //instantiate templates
 template void elementwiseOperationInPlace<std::uint8_t>(std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 template void elementwiseOperationInPlace<std::uint16_t>(std::uint16_t* A, const std::uint16_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 template void elementwiseOperationInPlace<float>(float* A, const float* B, std::uint64_t arrayLength, op_elementwise_type op);
+
+
+template void elementwiseOperationOutOfPlace<float>(float* C, const float* A, const float* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint16_t>(std::uint16_t* C, const std::uint16_t* A, const std::uint16_t* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint8_t>(std::uint8_t* C, const std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);

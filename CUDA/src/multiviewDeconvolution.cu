@@ -105,8 +105,6 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 template<class imgType>
 int multiviewDeconvolution<imgType>::allocate_workspace()
 {
-	cout << "===================TODO: finish=================" << endl;
-
 	//const values throughout the function
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
@@ -185,19 +183,37 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 		//release memory for PSF
 		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
 		psf.deallocateView_CPU(ii);
-	}
-
-	//normalize weights	
-	cout << "TODO: CONTINUE HERE WITH WEIGHT NORMALIZATION : i NEED TO DEFINE A GENERIC ELEMENTWISE OPERATION(WITH A FUNCTOR)" << endl;
-
-
-
-	//deallocate temporary memory to nromalize weights
+	}	
+	
+	
 	if (useWeights)
 	{
+		cout << "======TODO: during normalization check elements with all zero weights====" << endl;
+		//normalize weights	
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationInPlace(weights.getPointer_GPU(ii), weightAvg_GPU, nImg, op_elementwise_type::divide);
+		}
+
+		//deallocate temporary memory to nromalize weights
 		HANDLE_ERROR(cudaFree(weightAvg_GPU));
 		weightAvg_GPU = NULL; 
 	}
+
+
+	//allocate memory for final result
+	J.resize(1);
+	J.setImgDims(0, img.dimsImgVec[0]);
+	J.allocateView_GPU(0, nImg * sizeof(outputType));
+	J.allocateView_CPU(0, nImg );
+
+	//initialize final results as weighted average of all views
+	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+	for (size_t ii = 0; ii < nViews; ii++)
+	{
+		elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+	}
+
 
 	return 0;
 }
@@ -213,6 +229,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 //=================================================================
 //declare all possible instantitation for the template
-template class multiviewDeconvolution<uint16_t>;
-template class multiviewDeconvolution<uint8_t>;
+//TODO: right now the code can only handle float images since the rest of operations are carried in float point
+//template class multiviewDeconvolution<uint16_t>;
+//template class multiviewDeconvolution<uint8_t>;
 template class multiviewDeconvolution<float>;

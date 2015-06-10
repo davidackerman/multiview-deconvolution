@@ -32,6 +32,19 @@ struct dimsImg
 	{
 		ndims = 0;
 	}
+	dimsImg::dimsImg(const dimsImg& p) : ndims(p.ndims)
+	{
+		memcpy(dims, p.dims, sizeof(std::int64_t) * MAX_DATA_DIMS);
+	}
+	dimsImg& dimsImg::operator=(const dimsImg& p)
+	{
+		if (this != &p)
+		{
+			ndims = p.ndims;
+			memcpy(dims, p.dims, sizeof(std::int64_t) * MAX_DATA_DIMS);
+		}
+		return *this;
+	}
 };
 
 template<class imgType>
@@ -61,6 +74,8 @@ public:
 	void deallocateView_CPU(size_t pos);
 	void deallocateView_GPU(size_t pos);
 	void allocateView_GPU(size_t pos, size_t numBytes);
+	void allocateView_CPU(size_t pos, size_t numElements); //this function does not setup dimsImgVec
+	void setImgDims(size_t pos, const dimsImg &d);
 	
 protected:
 

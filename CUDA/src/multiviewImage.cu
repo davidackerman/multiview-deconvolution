@@ -83,6 +83,29 @@ void multiviewImage<imgType>::allocateView_GPU(size_t pos, size_t numBytes)
 };
 
 //===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::allocateView_CPU(size_t pos, size_t numElements)
+{
+	if (pos < imgVec_CPU.size())
+	{
+		if (imgVec_CPU[pos] != NULL)
+			delete[] imgVec_CPU[pos];
+
+		imgVec_CPU[pos] = new imgType[numElements];
+	}
+}
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::setImgDims(size_t pos, const dimsImg &d)
+{
+	if (pos < dimsImgVec.size())
+	{
+		dimsImgVec[pos] = d;
+	}
+}
+
+
+//===========================================================================================
 
 template<class imgType>
 string multiviewImage<imgType>::recoverFilenamePatternFromString(const string& imgPath, int frame)
