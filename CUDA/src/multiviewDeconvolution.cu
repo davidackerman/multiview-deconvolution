@@ -174,7 +174,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();
-	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[0] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
+	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
 	//variables needed for this function	
 	psfType *psf_notPadded_GPU = NULL;//to store original PSF
@@ -196,9 +196,9 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 
 
 	//preparing FFT plans
-	cufftPlan3d(&fftPlanFwd, img.dimsImgVec[0].dims[0], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[2], CUFFT_R2C); HANDLE_ERROR_KERNEL;
+	cufftPlan3d(&fftPlanFwd, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_R2C); HANDLE_ERROR_KERNEL;
 	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
-	cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[0], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[2], CUFFT_C2R); HANDLE_ERROR_KERNEL;
+	cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_C2R); HANDLE_ERROR_KERNEL;
 	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
 
 	//allocate memory and precompute things for each view things for each vieww
@@ -240,7 +240,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 		int numThreads = std::min((int64_t)MAX_THREADS_CUDA, psfSize);
 		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
 		HANDLE_ERROR(cudaMemset(psf.getPointer_GPU(ii), 0, imSizeFFT * sizeof(psfType)));		
-		fftShiftKernel << <numBlocks, numThreads >> >(psf_notPadded_GPU, psf.getPointer_GPU(ii), psf.dimsImgVec[ii].dims[0], psf.dimsImgVec[ii].dims[1], psf.dimsImgVec[ii].dims[2], img.dimsImgVec[ii].dims[0], img.dimsImgVec[ii].dims[1], img.dimsImgVec[ii].dims[2]); HANDLE_ERROR_KERNEL;
+		fftShiftKernel << <numBlocks, numThreads >> >(psf_notPadded_GPU, psf.getPointer_GPU(ii), psf.dimsImgVec[ii].dims[2], psf.dimsImgVec[ii].dims[1], psf.dimsImgVec[ii].dims[0], img.dimsImgVec[ii].dims[2], img.dimsImgVec[ii].dims[1], img.dimsImgVec[ii].dims[0]); HANDLE_ERROR_KERNEL;
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
 		cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); HANDLE_ERROR_KERNEL;
@@ -291,7 +291,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();
-	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[0] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
+	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
 	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
 	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
@@ -448,6 +448,119 @@ void multiviewDeconvolution<imgType>::debug_writeCPUarray(float* ptr_CPU, dimsIm
 	
 }
 
+
+//=====================================================================
+//WARNING: for cuFFT the fastest running index is z direction!!! so pos = z + imDim[2] * (y + imDim[1] * x)
+//NOTE: to avoid transferring a large padded kernel, since memcpy is a limiting factor 
+template<class imgType>
+imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im, const std::int64_t* imDim, const imgType* kernel, const std::int64_t* kernelDim, int devCUDA)
+{
+	imgType* convResult = NULL;
+	imgType* imCUDA = NULL;
+	imgType* kernelCUDA = NULL;
+	imgType* kernelPaddedCUDA = NULL;
+
+	int dimsImage = 3;
+
+	cufftHandle fftPlanFwd, fftPlanInv;
+
+
+	HANDLE_ERROR(cudaSetDevice(devCUDA));
+
+	long long int imSize = 1;
+	long long int kernelSize = 1;
+	for (int ii = 0; ii<dimsImage; ii++)
+	{
+		imSize *= (long long int) (imDim[ii]);
+		kernelSize *= (long long int) (kernelDim[ii]);
+	}
+
+	long long int imSizeFFT = imSize + (long long int)(2 * imDim[0] * imDim[1]); //size of the R2C transform in cuFFTComplex
+
+	//allocate memory for output result
+	convResult = new imgType[imSize];
+
+	//allocat ememory in GPU
+	HANDLE_ERROR(cudaMalloc((void**)&(imCUDA), imSizeFFT*sizeof(imgType)));//a little bit larger to allow in-place FFT
+	HANDLE_ERROR(cudaMalloc((void**)&(kernelCUDA), (kernelSize)*sizeof(imgType)));
+	HANDLE_ERROR(cudaMalloc((void**)&(kernelPaddedCUDA), imSizeFFT*sizeof(imgType)));
+
+
+	//TODO: pad image to a power of 2 size in all dimensions (use whatever  boundary conditions you want to apply)
+	//TODO: pad kernel to image size
+	//TODO: pad kernel and image to xy(z/2 + 1) for in-place transform
+	//NOTE: in the example for 2D convolution using FFT in the Nvidia SDK they do the padding in the GPU, but in might be pushing the memory in the GPU for large images.
+
+	//printf("Copying memory (kernel and image) to GPU\n");
+	HANDLE_ERROR(cudaMemcpy(kernelCUDA, kernel, kernelSize*sizeof(imgType), cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(imCUDA, im, imSize*sizeof(imgType), cudaMemcpyHostToDevice));
+
+	//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
+	HANDLE_ERROR(cudaMemset(kernelPaddedCUDA, 0, imSizeFFT*sizeof(imgType)));
+	int numThreads = std::min((long long int)MAX_THREADS_CUDA, kernelSize);
+	int numBlocks = std::min((long long int)MAX_BLOCKS_CUDA, (long long int)(kernelSize + (long long int)(numThreads - 1)) / ((long long int)numThreads));
+	fftShiftKernel << <numBlocks, numThreads >> >(kernelCUDA, kernelPaddedCUDA, kernelDim[0], kernelDim[1], kernelDim[2], imDim[0], imDim[1], imDim[2]); HANDLE_ERROR_KERNEL;
+
+
+	//make sure GPU finishes before we launch two different streams
+	HANDLE_ERROR(cudaDeviceSynchronize());
+
+	//printf("Creating R2C & C2R FFT plans for size %i x %i x %i\n",imDim[0],imDim[1],imDim[2]);
+	cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C); HANDLE_ERROR_KERNEL;
+	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
+	cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R); HANDLE_ERROR_KERNEL;
+	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
+
+	//transforming convolution kernel; TODO: if I do multiple convolutions with the same kernel I could reuse the results at teh expense of using out-of place memory (and then teh layout of the data is different!!!! so imCUDAfft should also be out of place)
+	//NOTE: from CUFFT manual: If idata and odata are the same, this method does an in-place transform.
+	//NOTE: from CUFFT manual: inplace output data xy(z/2 + 1) with fcomplex. Therefore, in order to perform an in-place FFT, the user has to pad the input array in the last dimension to Nn2 + 1 complex elements interleaved. Note that the real-to-complex transform is implicitly forward.
+	cufftExecR2C(fftPlanFwd, imCUDA, (cufftComplex *)imCUDA); HANDLE_ERROR_KERNEL;
+	//transforming image
+	cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA); HANDLE_ERROR_KERNEL;
+
+
+	//multiply image and kernel in fourier space (and normalize)
+	//NOTE: from CUFFT manual: CUFFT performs un-normalized FFTs; that is, performing a forward FFT on an input data set followed by an inverse FFT on the resulting set yields data that is equal to the input scaled by the number of elements.
+	numThreads = std::min((long long int)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
+	numBlocks = std::min((long long int)MAX_BLOCKS_CUDA, (long long int)(imSizeFFT / 2 + (long long int)(numThreads - 1)) / ((long long int)numThreads));
+	modulateAndNormalize_kernel << <numBlocks, numThreads >> >((cufftComplex *)imCUDA, (cufftComplex *)kernelPaddedCUDA, imSizeFFT / 2, 1.0f / (float)(imSize));//last parameter is the size of the FFT
+
+	//inverse FFT 
+	cufftExecC2R(fftPlanInv, (cufftComplex *)imCUDA, imCUDA); HANDLE_ERROR_KERNEL;
+
+	//copy result to host
+	HANDLE_ERROR(cudaMemcpy(convResult, imCUDA, sizeof(imgType)*imSize, cudaMemcpyDeviceToHost));
+
+	//release memory
+	(cufftDestroy(fftPlanInv)); HANDLE_ERROR_KERNEL;
+	(cufftDestroy(fftPlanFwd)); HANDLE_ERROR_KERNEL;
+	HANDLE_ERROR(cudaFree(imCUDA));
+	HANDLE_ERROR(cudaFree(kernelCUDA));
+	HANDLE_ERROR(cudaFree(kernelPaddedCUDA));
+
+	return convResult;
+}
+
+//=================================================================
+template<class imgType>
+imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA_img_psf(size_t pos, int devCUDA)
+{ 
+	//we need to flip dimensions because cuFFT the fastest running dimension is the last one
+	int64_t dimsI[3], dimsP[3];
+
+	dimsI[0] = img.dimsImgVec[pos].dims[2];
+	dimsI[1] = img.dimsImgVec[pos].dims[1];
+	dimsI[2] = img.dimsImgVec[pos].dims[0];
+
+	dimsP[0] = psf.dimsImgVec[pos].dims[2];
+	dimsP[1] = psf.dimsImgVec[pos].dims[1];
+	dimsP[2] = psf.dimsImgVec[pos].dims[0];
+
+	imgType* aux = convolution3DfftCUDA(img.getPointer_CPU(pos), dimsI, psf.getPointer_CPU(pos), dimsP, devCUDA);
+	//imgType* aux = convolution3DfftCUDA(img.getPointer_CPU(pos), img.dimsImgVec[pos].dims, psf.getPointer_CPU(pos), psf.dimsImgVec[pos].dims, devCUDA); 
+
+	return aux;
+};
 
 //=================================================================
 //declare all possible instantitation for the template

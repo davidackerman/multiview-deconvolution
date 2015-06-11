@@ -47,7 +47,11 @@ public:
 	//set/get IO functions
 	void setNumberOfViews(int numViews);
 	void copyDeconvoutionResultToCPU(){ J.copyView_GPU_to_CPU(0); };
+	std::int64_t numElements_img(size_t pos){ return img.numElements(pos); };
 
+	//straight deconvolution from beginning to end
+	static imgType* convolution3DfftCUDA(const imgType* im, const std::int64_t* imDim, const imgType* kernel, const std::int64_t* kernelDim, int devCUDA);
+	imgType* convolution3DfftCUDA_img_psf(size_t pos, int devCUDA);
 
 	//debuggin methods
 	void debug_writDeconvolutionResultRaw(const std::string& filename);

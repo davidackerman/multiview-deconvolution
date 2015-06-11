@@ -27,6 +27,8 @@ INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 #SET(LIBS_CUDA_CUSPARSE "cusparse" CACHE STRING "")#add CUDA libraries ignored in CUDA.cmake
 
 
+
+#test units 
 IF(NOT TARGET test_load_multiview_img )
 	add_executable(test_load_multiview_img test_load_multiview_images.cpp)
 	target_link_libraries(test_load_multiview_img multiview_deconvolution_GPU klblib)
@@ -44,5 +46,13 @@ IF(NOT TARGET test_GPU_elementwise_op )
 	add_executable(test_GPU_elementwise_op test_gpu_elementwiseOp.cu ${CUDA_CUDA_OBJ})
 	target_link_libraries(test_GPU_elementwise_op multiview_deconvolution_GPU klblib)
 	TARGET_LINK_LIBRARIES(test_GPU_elementwise_op ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+ENDIF()
+
+
+IF(NOT TARGET test_GPU_convolution_pr )
+	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_convolution.cu  OPTIONS ${CUOPTS})
+	add_executable(test_GPU_convolution_pr test_GPU_convolution.cu ${CUDA_CUDA_OBJ})
+	target_link_libraries(test_GPU_convolution_pr multiview_deconvolution_GPU klblib)
+	TARGET_LINK_LIBRARIES(test_GPU_convolution_pr ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 ENDIF()
 
