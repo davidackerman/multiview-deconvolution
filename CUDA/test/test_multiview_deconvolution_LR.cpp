@@ -26,6 +26,7 @@ int main(int argc, const char** argv)
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
 	int numIters = 2;
 	int numViews = 4;
+	float imgBackground = 100;
 	cout << "===============TODO: activate total variations==============" << endl;
 	float lambdaTV = -1.0;//0.008;
 	string filePatternPSF( filepath + "psfReg_?.klb");
@@ -80,7 +81,7 @@ int main(int argc, const char** argv)
 	//upload everything to GPU and precompute as much as needed	
 	cout << "Allocating workspace for deconvolution" << endl;
 	time(&start);
-	err = J->allocate_workspace();
+	err = J->allocate_workspace(imgBackground);
 	if (err > 0)
 	{
 		cout << "ERROR: allocating workspace" << endl;

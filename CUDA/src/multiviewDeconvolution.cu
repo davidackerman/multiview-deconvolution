@@ -175,7 +175,7 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 
 //=======================================================
 template<class imgType>
-int multiviewDeconvolution<imgType>::allocate_workspace()
+int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 {
 	//const values throughout the function
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
@@ -220,6 +220,9 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 		HANDLE_ERROR(cudaMemcpy(img.getPointer_GPU(ii), img.getPointer_CPU(ii), nImg * sizeof(imgType), cudaMemcpyHostToDevice));
 		//deallocate memory from CPU
 		img.deallocateView_CPU(ii);
+        //subtract background
+		if ( imgBackground > 0)
+			elementwiseOperationInPlace<imgType>(img.getPointer_GPU(ii), imgBackground, nImg, op_elementwise_type::minus_positive);
 
 		if (useWeights)
 		{
@@ -309,7 +312,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
 	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA/4, imSizeFFT / 2);//we are using complex numbers
-	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
+	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));    
 
 	//allocate extra memory required for intermediate calculations
 	outputType *J_GPU_FFT, *aux_FFT, *aux_LR;

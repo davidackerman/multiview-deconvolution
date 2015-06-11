@@ -41,6 +41,13 @@ struct sub_func
 };
 
 template <class T>
+struct sub_pos_func
+{
+	sub_pos_func(){};
+	__device__ T operator () (const T& a, const T& b) { return (a > b ? a-b : 0); }//lower bounded by zero
+};
+
+template <class T>
 struct div_func
 {
 	div_func(){};
@@ -150,6 +157,9 @@ void elementwiseOperationInPlace(T* A, const T* B, std::uint64_t arrayLength, op
 	case op_elementwise_type::copy:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
+	case op_elementwise_type::minus_positive:
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
 	}
@@ -184,6 +194,10 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 		break;
 	case op_elementwise_type::copy:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, equal_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::minus_positive:
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
@@ -223,6 +237,9 @@ void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t 
 		break;
 	case op_elementwise_type::compound_multiply:
 		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::minus_positive:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;

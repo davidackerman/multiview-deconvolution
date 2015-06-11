@@ -39,7 +39,7 @@ public:
 	int writeDeconvoutionResult(const std::string& filename){ return J.writeImage(filename, 0); };
 
 	//perfoms all the preallocation and precalculation for the deconvolution
-	int allocate_workspace();
+	int allocate_workspace(imgType imgBackground);
 	
 	//different deconvolution methods
 	void deconvolution_LR_TV(int numIters, float lambdaTV);//lucy-richardson with totalvariation regularization
