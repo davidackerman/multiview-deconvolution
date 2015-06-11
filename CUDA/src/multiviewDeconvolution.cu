@@ -130,15 +130,22 @@ template<class imgType>
 multiviewDeconvolution<imgType>::multiviewDeconvolution()
 {
 	J.resize(1);//allocate for the output	
+	fftPlanInv = -1;
+	fftPlanFwd = -1;
 }
 
 //=======================================================
 template<class imgType>
 multiviewDeconvolution<imgType>::~multiviewDeconvolution()
 {
-	cout << "============TODO: multiviewDeconvolution<imgType>::~multiviewDeconvolution() verify typical values of cufftHandle to add a check before destroying them==============" << endl;
-	(cufftDestroy(fftPlanInv)); HANDLE_ERROR_KERNEL;
-	(cufftDestroy(fftPlanFwd)); HANDLE_ERROR_KERNEL;
+	if (fftPlanInv >= 0)
+	{
+		(cufftDestroy(fftPlanInv)); HANDLE_ERROR_KERNEL;
+	}
+	if (fftPlanFwd >= 0)
+	{
+		(cufftDestroy(fftPlanFwd)); HANDLE_ERROR_KERNEL;
+	}
 }
 
 
@@ -202,10 +209,11 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
 
 	//allocate memory and precompute things for each view things for each vieww
+	cout << "===================TODO: load img and weights on the fly to CPU to avoid consuming too much memory====================" << endl;
 	for (size_t ii = 0; ii < nViews; ii++)
 	{
 		//load img for ii-th to CPU 
-		cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
+		//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
 		//allocate memory for image in the GPU		
 		img.allocateView_GPU(ii, nImg * sizeof(imgType));
 		//transfer image
@@ -216,7 +224,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 		if (useWeights)
 		{
 			//load weights for ii-th to CPU 
-			cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
+			//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
 			//allocate memory for weights in the GPU			
 			weights.allocateView_GPU(ii, nImg * sizeof(weightType));
 			//transfer image
@@ -237,10 +245,17 @@ int multiviewDeconvolution<imgType>::allocate_workspace()
 		HANDLE_ERROR(cudaMemcpy(psf_notPadded_GPU, psf.getPointer_CPU(ii), psfSize * sizeof(psfType), cudaMemcpyHostToDevice));
 
 		//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
-		int numThreads = std::min((int64_t)MAX_THREADS_CUDA, psfSize);
+		int numThreads = std::min((int64_t)MAX_THREADS_CUDA/4, psfSize);
 		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
 		HANDLE_ERROR(cudaMemset(psf.getPointer_GPU(ii), 0, imSizeFFT * sizeof(psfType)));		
 		fftShiftKernel << <numBlocks, numThreads >> >(psf_notPadded_GPU, psf.getPointer_GPU(ii), psf.dimsImgVec[ii].dims[2], psf.dimsImgVec[ii].dims[1], psf.dimsImgVec[ii].dims[0], img.dimsImgVec[ii].dims[2], img.dimsImgVec[ii].dims[1], img.dimsImgVec[ii].dims[0]); HANDLE_ERROR_KERNEL;
+
+
+#ifdef _DEBUG
+		char buffer[256];
+		//sprintf(buffer, "E:/temp/deconvolution/PSFpadded_view%d.raw", ii);
+		//debug_writeGPUarray(psf.getPointer_GPU(ii), img.dimsImgVec[0], string(buffer));		
+#endif
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
 		cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); HANDLE_ERROR_KERNEL;
@@ -293,7 +308,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	const size_t nViews = img.getNumberOfViews();
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
-	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
+	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA/4, imSizeFFT / 2);//we are using complex numbers
 	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
 
 	//allocate extra memory required for intermediate calculations
@@ -333,9 +348,14 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 #ifdef _DEBUG
 			char buffer[256];
 			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
-			debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
-			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
+			if ( vv == 0 )
+				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
+			//sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
+			//debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
+			//sprintf(buffer, "E:/temp/deconvolution/JFFT_iter%.4d.raw", iter);
+			//debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
+			//sprintf(buffer, "E:/temp/deconvolution/PSFpaddedFfft_iter%.4d_view%d.raw", iter, vv);
+			//debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
 #endif
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
@@ -452,6 +472,10 @@ void multiviewDeconvolution<imgType>::debug_writeCPUarray(float* ptr_CPU, dimsIm
 //=====================================================================
 //WARNING: for cuFFT the fastest running index is z direction!!! so pos = z + imDim[2] * (y + imDim[1] * x)
 //NOTE: to avoid transferring a large padded kernel, since memcpy is a limiting factor 
+
+//uncomment to save intermediate steps
+#define DEBUG_FFT_INTERMEDIATE_STEPS
+
 template<class imgType>
 imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im, const std::int64_t* imDim, const imgType* kernel, const std::int64_t* kernelDim, int devCUDA)
 {
@@ -464,6 +488,9 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 
 	cufftHandle fftPlanFwd, fftPlanInv;
 
+#ifdef DEBUG_FFT_INTERMEDIATE_STEPS
+	string filepath("E:/temp/deconvolution/");
+#endif
 
 	HANDLE_ERROR(cudaSetDevice(devCUDA));
 
@@ -505,6 +532,15 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	//make sure GPU finishes before we launch two different streams
 	HANDLE_ERROR(cudaDeviceSynchronize());
 
+#ifdef DEBUG_FFT_INTERMEDIATE_STEPS
+	dimsImg auxDimsImg;
+	auxDimsImg.ndims = dimsImage;
+	for (int ii = 0; ii < dimsImage; ii++)
+		auxDimsImg.dims[ii] = imDim[dimsImage-1-ii];//flip coordinates
+
+	debug_writeGPUarray(kernelPaddedCUDA, auxDimsImg, string(filepath + "cudafft3d_kernelPaddedCuda.raw"));
+#endif
+
 	//printf("Creating R2C & C2R FFT plans for size %i x %i x %i\n",imDim[0],imDim[1],imDim[2]);
 	cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C); HANDLE_ERROR_KERNEL;
 	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
@@ -518,12 +554,21 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	//transforming image
 	cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA); HANDLE_ERROR_KERNEL;
 
+#ifdef DEBUG_FFT_INTERMEDIATE_STEPS
+	debug_writeGPUarray(kernelPaddedCUDA, auxDimsImg, string(filepath + "cudafft3d_kernelPaddedCuda_fft.raw"));
+	debug_writeGPUarray(imCUDA, auxDimsImg, string(filepath + "cudafft3d_im_fft.raw"));
+#endif
+
 
 	//multiply image and kernel in fourier space (and normalize)
 	//NOTE: from CUFFT manual: CUFFT performs un-normalized FFTs; that is, performing a forward FFT on an input data set followed by an inverse FFT on the resulting set yields data that is equal to the input scaled by the number of elements.
 	numThreads = std::min((long long int)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
 	numBlocks = std::min((long long int)MAX_BLOCKS_CUDA, (long long int)(imSizeFFT / 2 + (long long int)(numThreads - 1)) / ((long long int)numThreads));
 	modulateAndNormalize_kernel << <numBlocks, numThreads >> >((cufftComplex *)imCUDA, (cufftComplex *)kernelPaddedCUDA, imSizeFFT / 2, 1.0f / (float)(imSize));//last parameter is the size of the FFT
+
+#ifdef DEBUG_FFT_INTERMEDIATE_STEPS	
+	debug_writeGPUarray(imCUDA, auxDimsImg, string(filepath + "cudafft3d_imTimesPSF_fft.raw"));
+#endif
 
 	//inverse FFT 
 	cufftExecC2R(fftPlanInv, (cufftComplex *)imCUDA, imCUDA); HANDLE_ERROR_KERNEL;

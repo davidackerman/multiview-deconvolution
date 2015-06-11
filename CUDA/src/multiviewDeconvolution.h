@@ -55,8 +55,8 @@ public:
 
 	//debuggin methods
 	void debug_writDeconvolutionResultRaw(const std::string& filename);
-	void debug_writeGPUarray(float* ptr_GPU, dimsImg& dims, const std::string& filename);
-	void debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename);
+	static void debug_writeGPUarray(float* ptr_GPU, dimsImg& dims, const std::string& filename);
+	static void debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename);
 
 protected:	
 

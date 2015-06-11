@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <cstdint>
+#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
 #include "multiviewDeconvolution.h"
 
 
@@ -19,7 +20,7 @@ using namespace std;
 int main(int argc, const char** argv)
 {
 	std::cout << "testing a full iteration of multi-view lucy richardson (without splitting image in blocks) running..." << std::endl;
-
+	time_t start, end;
 
 	//parameters
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
@@ -76,20 +77,30 @@ int main(int argc, const char** argv)
 		}
 	}
 
-	//upload everything to GPU and precompute as much as needed
+	//upload everything to GPU and precompute as much as needed	
+	cout << "Allocating workspace for deconvolution" << endl;
+	time(&start);
 	err = J->allocate_workspace();
 	if (err > 0)
 	{
 		cout << "ERROR: allocating workspace" << endl;
 		return err;
 	}
+	time(&end);
+	cout << "Took " << difftime(end, start) << " secs" << endl;
 
 	//compute deconvolution iterations
+	cout << "Running multiviews deconvolution for " << numIters << " iterations" << endl;
 	J->deconvolution_LR_TV(numIters, lambdaTV);
-
+	
 	//copy results from GPU to CPU 
+	cout << " Copying deconvolution results from GPU to CPU" << endl;
 	J->copyDeconvoutionResultToCPU();
-	//save results	
+	time(&end);
+	cout << "Took " << difftime(end, start) << " secs" << endl;
+
+	//save results	    
+	cout << " Writing final result" << endl;
 	err = J->writeDeconvoutionResult(string(filepath + "test_mv_deconv_LR.klb"));
 	if (err > 0)
 	{

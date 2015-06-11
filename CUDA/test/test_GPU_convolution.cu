@@ -33,8 +33,8 @@ int main(int argc, const char** argv)
 	
 	//parameters
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
-	string filePatternPSF(filepath + "psfReg_1.klb");
-	string filePatternImg(filepath + "imReg_1.klb");
+	string filePatternPSF(filepath + "psfReg_?.klb");
+	string filePatternImg(filepath + "imReg_?.klb");
 	int numViews = 4;
 
 
@@ -87,6 +87,46 @@ int main(int argc, const char** argv)
 		cout << "Convolution results written successfully at " << fileout << endl;
 		delete[] imConv;
 	}
+
+	delete J;
+
+	//--------------------------------------------------
+	//second test 
+	std::cout << "testing GPU convolution kernel in the GPU running..." << std::endl;	
+	filePatternPSF = string(filepath + "psfReg_1.klb");
+	filePatternImg = string(filepath + "J_iter0000.klb");
+
+	J = new multiviewDeconvolution<float>;
+
+	//set number of views
+	J->setNumberOfViews(1);
+
+	//read images	
+	err = J->readImage(filePatternPSF, 0, std::string("psf"));//this function should just read image
+	if (err > 0)
+	{
+		cout << "ERROR: reading file " << filename << endl;
+		return err;
+	}	
+	err = J->readImage(filePatternImg, 0, std::string("img"));
+	if (err > 0)
+	{
+		cout << "ERROR: reading file " << filename << endl;
+		return err;
+	}
+
+	float* imConv = J->convolution3DfftCUDA_img_psf(0, devCUDA);	
+	//write file
+	char fileout[256];
+	sprintf(fileout, "%sout_test_convPSF_Jiter_.raw", filepath.c_str());
+	ofstream fid(fileout, ios::binary);
+	fid.write((char*)imConv, J->numElements_img(0) * sizeof(float));
+	fid.close();
+
+	cout << "Convolution results written successfully at " << fileout << endl;
+
+	delete[] imConv;
+	delete J;
 
 	return 0;
 }
