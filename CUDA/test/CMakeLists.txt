@@ -40,6 +40,10 @@ IF(NOT TARGET test_multiview_deconvolution_LR )
 	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU klblib)
 ENDIF()
 
+IF(NOT TARGET test_multiview_deconvolution_LR_multiGPU )
+	add_executable(test_multiview_deconvolution_LR_multiGPU test_multiview_deconvolution_LR_multiGPU.cpp)
+	target_link_libraries(test_multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU klblib)
+ENDIF()
 
 IF(NOT TARGET test_GPU_elementwise_op )
 	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_gpu_elementwiseOp.cu  OPTIONS ${CUOPTS})

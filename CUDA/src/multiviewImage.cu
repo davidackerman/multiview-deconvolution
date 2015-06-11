@@ -13,6 +13,7 @@
 
 #include "multiviewImage.h"
 #include "klb_imageIO.h"
+#include "klb_Cwrapper.h"
 #include "cuda.h"
 #include "book.h"
 
@@ -124,8 +125,29 @@ void multiviewImage<imgType>::setImgDims(size_t pos, const dimsImg &d)
 		dimsImgVec[pos] = d;
 	}
 }
+//===========================================================================================
+
+template<class imgType>
+int multiviewImage<imgType>::getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS])
+{
+    //read klb header
+	uint32_t	xyzctR[KLB_DATA_DIMS];
+	uint32_t	blockSizeR[KLB_DATA_DIMS];
+	char metadataR[KLB_METADATA_SIZE];
+	enum KLB_DATA_TYPE dataTypeR;
+	enum KLB_COMPRESSION_TYPE compressionTypeR;
+	float32_t pixelSizeR[KLB_METADATA_SIZE];
 
 
+	int err = readKLBheader(filename.c_str(), xyzctR, &dataTypeR, pixelSizeR, blockSizeR, &compressionTypeR, metadataR);
+
+	if (err > 0)
+		return err;
+
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		xyzct[ii] = xyzctR[ii];
+	return 0;
+}
 //===========================================================================================
 
 template<class imgType>

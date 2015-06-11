@@ -187,7 +187,7 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 
 	case op_elementwise_type::multiply:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
-		break;HANDLE_ERROR_KERNEL;
+		break;
 
 	case op_elementwise_type::divide:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
