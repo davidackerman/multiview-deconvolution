@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "multiviewDeconvolution.h"
 #include "book.h"
 #include "cuda.h"
@@ -328,6 +329,15 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			//inverse FFT 
 			cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); HANDLE_ERROR_KERNEL;
 
+
+#ifdef _DEBUG
+			char buffer[256];
+			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
+			debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
+			sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
+			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
+#endif
+
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
 			elementwiseOperationInPlace(aux_FFT, img.getPointer_GPU(vv), nImg, op_elementwise_type::divide_inv);
 
@@ -365,6 +375,77 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 		elementwiseOperationInPlace(J.getPointer_GPU(0), aux_LR, nImg, op_elementwise_type::multiply);
 		
 	}
+
+	//release memory
+	HANDLE_ERROR(cudaFree(aux_LR));
+	HANDLE_ERROR(cudaFree(aux_FFT));
+	HANDLE_ERROR(cudaFree(J_GPU_FFT));
+	if ( TV_GPU != NULL)
+		HANDLE_ERROR(cudaFree(TV_GPU));
+	
+}
+
+//===========================================================
+template<class imgType>
+void multiviewDeconvolution<imgType>::debug_writDeconvolutionResultRaw(const std::string& filename)
+{
+	cout << "======DEBUGGING:multiviewDeconvolution<imgType>::debug_writDeconvolutionResultRaw========" << endl;
+	cout << " writing raw file " << J.dimsImgVec[0].dims[0] << "x" << J.dimsImgVec[0].dims[1] << "x" << J.dimsImgVec[0].dims[2] << "x" << " in float to " << filename << endl;
+
+	ofstream fid(filename.c_str(), ios::binary);
+
+	fid.write((char*)(J.getPointer_CPU(0)), J.numElements(0) * sizeof(imgType)); 
+	fid.close();
+}
+
+//===========================================================
+template<class imgType>
+void multiviewDeconvolution<imgType>::debug_writeGPUarray(float* ptr_GPU, dimsImg& dims, const std::string& filename)
+{
+	cout << "======DEBUGGING:multiviewDeconvolution<imgType>::debug_writeGPUarray========" << endl;
+	cout << " writing raw file ";
+	int64_t numElements = 1;
+
+	for (int ii = 0; ii < dims.ndims; ii++)
+	{
+		numElements *= dims.dims[ii];
+		cout << dims.dims[ii] << "x";
+	}
+	cout << " in float format to " << filename << endl;
+
+
+	float* ptr_CPU = new float[numElements];
+	HANDLE_ERROR(cudaMemcpy(ptr_CPU, ptr_GPU, numElements * sizeof(float), cudaMemcpyDeviceToHost));
+
+	ofstream fid(filename.c_str(), ios::binary);
+	fid.write((char*)(ptr_CPU), numElements * sizeof(float));
+	fid.close();
+
+	delete[] ptr_CPU;
+}
+
+//===========================================================
+template<class imgType>
+void multiviewDeconvolution<imgType>::debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename)
+{
+	cout << "======DEBUGGING:multiviewDeconvolution<imgType>::debug_writeCPUarray========" << endl;
+	cout << " writing raw file ";
+	int64_t numElements = 1;
+
+	for (int ii = 0; ii < dims.ndims; ii++)
+	{
+		numElements *= dims.dims[ii];
+		cout << dims.dims[ii] << "x";
+	}
+	cout << " in float format to " << filename << endl;
+
+
+	
+	ofstream fid(filename.c_str(), ios::binary);
+	fid.write((char*)(ptr_CPU), numElements * sizeof(float));
+	fid.close();
+
+	
 }
 
 

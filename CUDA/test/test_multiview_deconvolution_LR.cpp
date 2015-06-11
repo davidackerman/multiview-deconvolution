@@ -25,14 +25,17 @@ int main(int argc, const char** argv)
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
 	int numIters = 2;
 	int numViews = 4;
-	float lambdaTV = 0.008;
-	string filePatternPSF = "psfReg_?.klb";
-	string filePatternWeights = "weightsReg_?.klb";
-	string filePatternImg = "imReg_?.klb";
+	cout << "===============TODO: activate total variations==============" << endl;
+	float lambdaTV = -1.0;//0.008;
+	string filePatternPSF( filepath + "psfReg_?.klb");
+	string filePatternWeights(filepath + "weightsReg_?.klb");
+	string filePatternImg(filepath + "imReg_?.klb");
 
 
 	if (argc > 1)
 		filepath = string(argv[1]);
+	if (argc > 2)
+		numIters = atoi(argv[2]);
 
 	//declare object
 	cout << "TODO: allow reading uint16 images and convert them to float on the fly" << endl;
@@ -83,6 +86,16 @@ int main(int argc, const char** argv)
 
 	//compute deconvolution iterations
 	J->deconvolution_LR_TV(numIters, lambdaTV);
+
+	//copy results from GPU to CPU 
+	J->copyDeconvoutionResultToCPU();
+	//save results	
+	err = J->writeDeconvoutionResult(string(filepath + "test_mv_deconv_LR.klb"));
+	if (err > 0)
+	{
+		cout << "ERROR: writing result" << endl;
+		return err;
+	}
 
 	//release memory
 	delete J;

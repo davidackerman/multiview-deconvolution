@@ -63,18 +63,21 @@ public:
 
 	//I/O functions
 	int readImage(const std::string& filename, int pos);//if pos<0 then we add one image to the vector
+	int writeImage(const std::string& filename, int pos);
 	static std::string recoverFilenamePatternFromString(const std::string& imgPath, int frame);
 
 	//short IO functions
 	size_t getNumberOfViews() const{ return imgVec_CPU.size(); };
-	void resize(size_t numViews) { imgVec_CPU.resize(numViews, NULL); imgVec_GPU.resize(numViews, NULL); };
-	imgType* getPointer_CPU(size_t pos) { return(imgVec_CPU.size() >= pos ? NULL : imgVec_CPU[pos]);};
-	imgType* getPointer_GPU(size_t pos) { return(imgVec_GPU.size() >= pos ? NULL : imgVec_GPU[pos]); };
+	void resize(size_t numViews) { imgVec_CPU.resize(numViews, NULL); imgVec_GPU.resize(numViews, NULL); dimsImgVec.resize(numViews); };
+	imgType* getPointer_CPU(size_t pos) { return(imgVec_CPU.size() <= pos ? NULL : imgVec_CPU[pos]);};
+	imgType* getPointer_GPU(size_t pos) { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	std::int64_t numElements(size_t pos) const;
 	void deallocateView_CPU(size_t pos);
 	void deallocateView_GPU(size_t pos);
 	void allocateView_GPU(size_t pos, size_t numBytes);
 	void allocateView_CPU(size_t pos, size_t numElements); //this function does not setup dimsImgVec
+	void copyView_GPU_to_CPU(size_t pos);
+	void copyView_CPU_to_GPU(size_t pos);
 	void setImgDims(size_t pos, const dimsImg &d);
 	
 protected:

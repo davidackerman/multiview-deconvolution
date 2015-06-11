@@ -34,14 +34,25 @@ public:
 	multiviewDeconvolution();	
 	~multiviewDeconvolution();
 
-
-	void setNumberOfViews(int numViews);
+	
 	int readImage(const std::string& filename, int pos, const std::string& type);
+	int writeDeconvoutionResult(const std::string& filename){ return J.writeImage(filename, 0); };
+
 	//perfoms all the preallocation and precalculation for the deconvolution
 	int allocate_workspace();
 	
 	//different deconvolution methods
 	void deconvolution_LR_TV(int numIters, float lambdaTV);//lucy-richardson with totalvariation regularization
+
+	//set/get IO functions
+	void setNumberOfViews(int numViews);
+	void copyDeconvoutionResultToCPU(){ J.copyView_GPU_to_CPU(0); };
+
+
+	//debuggin methods
+	void debug_writDeconvolutionResultRaw(const std::string& filename);
+	void debug_writeGPUarray(float* ptr_GPU, dimsImg& dims, const std::string& filename);
+	void debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename);
 
 protected:	
 

@@ -94,6 +94,27 @@ void multiviewImage<imgType>::allocateView_CPU(size_t pos, size_t numElements)
 		imgVec_CPU[pos] = new imgType[numElements];
 	}
 }
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::copyView_GPU_to_CPU(size_t pos)
+{
+	if (pos < imgVec_CPU.size() && imgVec_GPU[pos] != NULL)
+	{
+		HANDLE_ERROR( cudaMemcpy(imgVec_CPU[pos], imgVec_GPU[pos], numElements(pos) * sizeof(imgType), cudaMemcpyDeviceToHost) );
+	}
+}
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::copyView_CPU_to_GPU(size_t pos)
+{
+	if (pos < imgVec_CPU.size() && imgVec_GPU[pos] != NULL)
+	{
+		HANDLE_ERROR( cudaMemcpy(imgVec_GPU[pos], imgVec_CPU[pos], numElements(pos) * sizeof(imgType), cudaMemcpyHostToDevice) );
+	}
+}
+
 //===========================================================================================
 template<class imgType>
 void multiviewImage<imgType>::setImgDims(size_t pos, const dimsImg &d)
@@ -240,7 +261,63 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 
 	return err;
 }
+//===========================================================================================
+template<class imgType>
+int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
+{
+	if ( pos >= imgVec_CPU.size() || imgVec_CPU[pos] == NULL)
+		return 0;
 
+	//initialize I/O object	
+	klb_imageIO imgIO(filename);
+
+	uint32_t xyzct[KLB_DATA_DIMS];
+	for (int ii = 0; ii < dimsImgVec[pos].ndims; ii++)
+	{
+		xyzct[ii] = dimsImgVec[pos].dims[ii];
+	}
+	for (int ii = dimsImgVec[pos].ndims; ii <KLB_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = 1;
+	}
+
+	//set header
+	switch (sizeof(imgType))//TODO: this is not accurate since int8 will be written as uint8
+	{
+	case 1:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);
+		break;
+	case 2:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+		break;
+	case 4:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::FLOAT32_TYPE);
+		break;
+	default:
+		cout << "ERROR: format not supported yet" << endl;
+		return 10;
+	}	
+
+	//write image
+	int error = imgIO.writeImage((char*)(imgVec_CPU[pos]), -1);//all the threads available
+
+	if (error > 0)
+	{
+		switch (error)
+		{
+		case 2:
+			printf("Error during BZIP compression of one of the blocks");
+			break;
+		case 5:
+			printf("Error generating the output file in the specified location");
+			break;
+		default:
+			printf("Error writing the image");
+		}
+	}
+
+	return error;
+}
 
 
 //============================================================================
