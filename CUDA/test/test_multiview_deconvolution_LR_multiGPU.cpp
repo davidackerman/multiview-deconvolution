@@ -76,6 +76,13 @@ int main(int argc, const char** argv)
 	if (err > 0)
 		return err;
 
+    //write result
+	err = master.writeDeconvoutionResult(string(filepath + "test_mv_deconv_LR_multiGPU.klb"));
+	if (err > 0)
+	{
+		cout << "ERROR: writing result" << endl;
+		return err;
+	}
 
 	return 0;
 }

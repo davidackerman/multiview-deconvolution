@@ -46,12 +46,10 @@ imgType* fa_padArrayWithZeros(const imgType* im, const std::int64_t *dimsNow, co
     //copy "lines" of x	
 	size_t lineSize = dimsNow[0] * sizeof(imgType);
 	int64_t idx = 0;
-	int64_t count = 0;
-	
+	int64_t count = 0;	
 	for (int64_t zz = 0; zz < dimsNow[2]; zz++)
 	{        
-		idx = dimsAfterPad[0] * dimsAfterPad[1] * zz;
-		count = dimsNow[0] * dimsNow[1] * zz;
+		idx = dimsAfterPad[0] * dimsAfterPad[1] * zz;		
 		for (int64_t yy = 0; yy < dimsNow[1]; yy++)
 		{
 			//update for new array

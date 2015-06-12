@@ -75,7 +75,9 @@ public:
 	size_t getNumberOfViews() const{ return imgVec_CPU.size(); };
 	void resize(size_t numViews) { imgVec_CPU.resize(numViews, NULL); imgVec_GPU.resize(numViews, NULL); dimsImgVec.resize(numViews); };
 	imgType* getPointer_CPU(size_t pos) { return(imgVec_CPU.size() <= pos ? NULL : imgVec_CPU[pos]);};
+	imgType* getPointer_CPU(size_t pos) const { return(imgVec_CPU.size() <= pos ? NULL : imgVec_CPU[pos]); };
 	imgType* getPointer_GPU(size_t pos) { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
+	imgType* getPointer_GPU(size_t pos) const { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	std::int64_t numElements(size_t pos) const;
 	void deallocateView_CPU(size_t pos);
 	void deallocateView_GPU(size_t pos);

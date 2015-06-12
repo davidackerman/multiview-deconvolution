@@ -53,15 +53,17 @@ public:
     //short set/get methods
 	std::uint64_t numElements();
 	int memoryRequirements(){ return 4 * paramDec.Nviews + 4; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula)
+	int getImageDimensions();
+	size_t getNumGPU() const{ return GPUinfoVec.size(); };
+	int writeDeconvoutionResult(const std::string& filename);
+
 
     //methods
 	void queryGPUs(); 
 	int findBestBlockPartitionDimension();
 	void findMaxBlockPartitionDimensionPerGPU();
-	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks
-	int getImageDimensions();
-	size_t getNumGPU() const{ return GPUinfoVec.size(); };
-
+	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks	
+	void copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes);
 
     //debug functions
 	void debug_listGPUs();

@@ -17,6 +17,9 @@
 #include "multiGPUblockController.h"
 #include "standardCUDAfunctions.h"
 #include "klb_ROI.h"
+#include "klb_imageIO.h"
+#include "klb_Cwrapper.h"
+
 
 
 
@@ -296,11 +299,51 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx)
 		Jobj->deconvolution_LR_TV(paramDec.numIters, paramDec.lambdaTV);
 
         //copy block result to J
-		cout << "================TODO: copy results to global J==============" << endl;
+		Jobj->copyDeconvoutionResultToCPU();
+		copyBlockResultToJ(Jobj->getJpointer(), blockDims, JoffsetIni, BoffsetIni, JoffsetEnd - JoffsetIni);
 	}
 
 
 	delete Jobj;
+}
+
+//=========================================================
+void multiGPUblockController::copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes)
+{
+	if (dimBlockParition != 1)
+	{
+		cout << "TODO:ERROR: copyBlockResultToJ: function hardcoded to stitch in y-direction" << endl;
+		exit(3);
+	}
+
+	if ( MAX_DATA_DIMS != 3)
+	{
+		cout << "TODO:ERROR: copyBlockResultToJ: function hardcoded to stitch 3D arrays" << endl;
+		exit(3);
+	}
+
+	size_t lineSize = blockDims[0] * sizeof(imgTypeDeconvolution);
+	int64_t idx = 0;
+	int64_t count = 0;
+	for (int64_t zz = 0; zz < blockDims[2]; zz++)
+	{
+		idx = imgDims[0] * (Joffset + imgDims[1] * zz);
+		count = blockDims[0] * (Boffset + blockDims[1] * zz);
+		for (int64_t yy = Boffset; yy < Boffset + numPlanes; yy++)
+		{
+			//update for new array
+			//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);
+			//update for new array
+			//count = dimsNow[0] * (yy + dimsNow[1] * zz);
+
+			//copy elements
+			memcpy(&(J[idx]), &(Jsrc[count]), lineSize);
+
+			//update counters
+			idx += imgDims[0];
+			count += blockDims[0];
+		}
+	}
 }
 
 //==========================================================
@@ -328,4 +371,58 @@ void multiGPUblockController::debug_listGPUs()
 	{
 		cout << "Dev CUDA " << p.devCUDA << ": " << p.devName << " with mem = " << p.mem << " bytes" << endl;
 	}
+}
+//=============================================
+//===========================================================================================
+int multiGPUblockController::writeDeconvoutionResult(const std::string& filename)
+{
+	//initialize I/O object	
+	klb_imageIO imgIO(filename);
+
+	uint32_t xyzct[KLB_DATA_DIMS];
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = imgDims[ii];
+	}
+	for (int ii = MAX_DATA_DIMS; ii <KLB_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = 1;
+	}
+
+	//set header
+	switch (sizeof(imgTypeDeconvolution))//TODO: this is not accurate since int8 will be written as uint8
+	{
+	case 1:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);
+		break;
+	case 2:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+		break;
+	case 4:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::FLOAT32_TYPE);
+		break;
+	default:
+		cout << "ERROR: format not supported yet" << endl;
+		return 10;
+	}
+
+	//write image
+	int error = imgIO.writeImage((char*)(J), -1);//all the threads available
+
+	if (error > 0)
+	{
+		switch (error)
+		{
+		case 2:
+			printf("Error during BZIP compression of one of the blocks");
+			break;
+		case 5:
+			printf("Error generating the output file in the specified location");
+			break;
+		default:
+			printf("Error writing the image");
+		}
+	}
+
+	return error;
 }
