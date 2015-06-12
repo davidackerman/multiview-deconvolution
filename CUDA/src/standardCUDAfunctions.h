@@ -15,5 +15,6 @@ extern "C" __declspec(dllexport) int getCUDAcomputeCapabilityMajorVersion(int de
 extern "C" __declspec(dllexport) int getNumDevicesCUDA();
 extern "C" __declspec(dllexport) void getNameDeviceCUDA(int devCUDA, char *name);
 extern "C" __declspec(dllexport) long long int getMemDeviceCUDA(int devCUDA);
+extern "C" __declspec(dllexport) void setDeviceCUDA(int devCUDA);
 
 #endif /* STANDARDCUDAFUNCTIONS_H_ */

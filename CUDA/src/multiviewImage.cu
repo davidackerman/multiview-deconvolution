@@ -228,12 +228,14 @@ std::int64_t multiviewImage<imgType>::numElements(size_t pos) const
 
 	return n;
 };
+
+
 //===========================================================================================
 template<class imgType>
-int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
+int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const klb_ROI& ROI)
 {
 	//cout << "=======TODO readImage: we have to read images here!!!====develop a project for image reader wrapper======" << endl;
-	
+
 	klb_imageIO imgFull(filename);
 	int err = 0;
 
@@ -246,11 +248,10 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 		cout << "ERROR: multiviewImage<imgType>::readImage: class type does not match image type" << endl;
 		return 10;
 	}
-
-	imgType* imgA = new imgType[imgFull.header.getImageSizePixels()];
-
 	
-	err = imgFull.readImageFull((char*)imgA, -1);
+	imgType* imgA = new imgType[ROI.getSizePixels()];
+	
+	err = imgFull.readImage((char*)imgA, &ROI, -1);
 	if (err > 0)
 		return err;
 
@@ -266,22 +267,41 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 		delete[] imgA;
 		return 12;
 	}
-	else{
-		imgVec_CPU[pos] = imgA;
-		imgVec_GPU[pos] = NULL;
+	else{		
+		if (imgVec_CPU[pos] != NULL)
+			delete[] (imgVec_CPU[pos]);//TODO: if it was the same size, we do not need to reallocate
+
+		imgVec_CPU[pos] = imgA;		
 	}
 
 
 	//aupdate dimensions if necessary
 	int ndims = 0;
-	while (ndims < KLB_DATA_DIMS && imgFull.header.xyzct[ndims] > 1)
+	while (ndims < KLB_DATA_DIMS && ROI.getSizePixels(ndims) > 1)
 	{
-		dimsImgVec[pos].dims[ndims] = imgFull.header.xyzct[ndims];
+		dimsImgVec[pos].dims[ndims] = ROI.getSizePixels(ndims);
 		ndims++;
 	}
 	dimsImgVec[pos].ndims = ndims;
 
 	return err;
+}
+//===========================================================================================
+template<class imgType>
+int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
+{
+
+	klb_imageIO imgFull(filename);
+	int err = 0;
+
+	err = imgFull.readHeader();
+	if (err > 0)
+		return err;
+
+	klb_ROI ROI;
+	ROI.defineFullImage(imgFull.header.xyzct);
+
+	return readROI(filename, pos, ROI);
 }
 //===========================================================================================
 template<class imgType>

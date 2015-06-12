@@ -43,3 +43,7 @@ long long int getMemDeviceCUDA(int devCUDA)
 	HANDLE_ERROR( cudaGetDeviceProperties(&prop, devCUDA));
 	return ((long long int)prop.totalGlobalMem);
 }
+void setDeviceCUDA(int devCUDA)
+{
+	HANDLE_ERROR(cudaSetDevice(devCUDA));	
+}

@@ -11,9 +11,13 @@
 * \brief main interface to control splitting blocks to different resources and stitching them back together
 */
 
+#include <thread>
+#include <iostream>
+#include <algorithm>
 #include "multiGPUblockController.h"
 #include "standardCUDAfunctions.h"
-#include "multiviewDeconvolution.h"
+#include "klb_ROI.h"
+
 
 
 
@@ -23,11 +27,13 @@ using namespace std;
 multiGPUblockController::multiGPUblockController()
 {
 	dimBlockParition = -1;
+	J = NULL;
 }
 //============================================================
 multiGPUblockController::~multiGPUblockController()
 {
-
+	if (J != NULL)
+		delete[] J;
 }
 //============================================================
 void multiGPUblockController::queryGPUs()
@@ -95,17 +101,221 @@ void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU()
 //================================================================
 void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU(size_t pos)
 {
-	uint32_t auxDims[MAX_DATA_DIMS];
-
-	string filename = multiviewImage<imgTypeDeconvolution>::recoverFilenamePatternFromString(paramDec.filePatternImg, 1);
-	int err = multiviewImage<imgTypeDeconvolution>::getImageDimensionsFromHeader(filename, auxDims);
+	
+	int err = getImageDimensions();
+	if (err > 0)
+		exit(3);
 
 	int64_t sliceSize = sizeof(imgTypeDeconvolution);
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 	{   
 		if (ii != dimBlockParition)
-			sliceSize *= (uint64_t)(auxDims[ii]);
+			sliceSize *= (uint64_t)(imgDims[ii]);
 	}
 
 	GPUinfoVec[pos].maxSizeDimBlockPartition = GPUinfoVec[pos].mem / (sliceSize * memoryRequirements());
+
+}
+
+
+//================================================================
+int multiGPUblockController::runMultiviewDeconvoution()
+{
+    //calculate image size	
+	int err = getImageDimensions();
+	if (err > 0)
+		return err;
+
+	uint64_t nImg = numElements();
+	
+
+	//allocate memory for output
+	J = new imgTypeDeconvolution[nImg];
+
+    //define atomic offset variable to keep count
+	std::atomic<int64_t>	offsetBlockPartition;//defines the beginning for each block
+	atomic_store(&offsetBlockPartition, (uint64_t)0);
+
+    //launch threads (each thread will write into J disjointly)
+	// start the working threads
+	std::vector<std::thread> threads;	
+	for (size_t ii = 0; ii < GPUinfoVec.size(); ++ii)
+	{
+		threads.push_back(std::thread(&multiGPUblockController::multiviewDeconvolutionBlockWise, this, ii, &offsetBlockPartition));		
+	}
+
+	//wait for the workers to finish
+	for (auto& t : threads)
+		t.join();
+
+	return 0;
+}
+
+
+//==========================================================
+void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx, std::atomic<int64_t> *offsetBlockPartition)
+{
+	const int64_t PSFpadding = 1+ padBlockPartition / 2;//quantity that we have to pad on each side to avoid edge effects
+	const int64_t chunkSize = std::min((int64_t)(GPUinfoVec[threadIdx].maxSizeDimBlockPartition) - 2 * PSFpadding, int64_t(imgDims[dimBlockParition]));//effective size where we are calculating LR	
+	const int devCUDA = GPUinfoVec[threadIdx].devCUDA;
+    int64_t JoffsetIni, JoffsetEnd;//useful slices in J (global final outout) are from [JoffsetIni,JoffsetEnd)
+	int64_t BoffsetIni;//useful slices in ROI (local input) are from [BoffsetIni, BoffsetEnd]. Thus, at the end we copy J(:,.., JoffsetIni:JoffsetEnd-1,:,..:) = Jobj->J(:,.., BoffsetIni:BoffsetEnd-1,:,..:)
+	uint32_t xyzct[KLB_DATA_DIMS];
+    
+
+    //copy value to define klb ROI
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		xyzct[ii] = imgDims[ii];
+	for (int ii = MAX_DATA_DIMS; ii < KLB_DATA_DIMS; ii++)
+		xyzct[ii] = 1;
+
+    //make sure we have useful are of computation
+	if (chunkSize <= 0)
+	{
+		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName<<" cannot provess enough effective planes after padding" << endl;
+		return;
+	}
+
+    //set cuda device for this thread
+	setDeviceCUDA(devCUDA);
+
+#ifdef _DEBUG
+	cout << "Thread " << threadIdx << " initializing multiviewDeconvolution object" << endl;
+#endif
+    //instatiate multiview deconvolution object
+	multiviewDeconvolution<imgTypeDeconvolution> *Jobj;
+	Jobj = new multiviewDeconvolution<imgTypeDeconvolution>;
+	//set number of views
+	Jobj->setNumberOfViews(paramDec.Nviews);
+
+	//read PSF
+#ifdef _DEBUG
+	cout << "Thread " << threadIdx << " reading PSF" << endl;
+#endif
+	string filename;
+	int err;
+	for (int ii = 0; ii < paramDec.Nviews; ii++)
+	{
+		filename = multiviewImage<float>::recoverFilenamePatternFromString(paramDec.filePatternPSF, ii + 1);
+		err = Jobj->readImage(filename, ii, std::string("psf"));//this function should just read image
+		if (err > 0)
+		{
+			cout << "ERROR: reading file " << filename << endl;
+			exit(err);
+		}		
+	}
+
+    //define ROI dimensions	
+#ifdef _DEBUG
+	cout << "Thread " << threadIdx << " allocating initial workspace" << endl;
+#endif
+	uint32_t blockDims[MAX_DATA_DIMS];//maximum size of a block to preallocate memory
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		blockDims[ii] = xyzct[ii];//image size except a long the dimension of partition
+	blockDims[dimBlockParition] = std::min(GPUinfoVec[threadIdx].maxSizeDimBlockPartition, imgDims[dimBlockParition]);;
+
+	const bool useWeights = (paramDec.filePatternWeights.length() > 1 );    
+	Jobj->allocate_workspace_init_multiGPU(blockDims, useWeights);
+
+    //main loop
+	while (1)
+	{
+		JoffsetIni = atomic_fetch_add(offsetBlockPartition, (int64_t)chunkSize);
+
+		//check if we have more slices
+		if (JoffsetIni >= imgDims[dimBlockParition])
+			break;
+
+#ifdef _DEBUG
+		cout << "Thread " << threadIdx << " processing block with offset ini "<<JoffsetIni << endl;
+#endif
+        //generate ROI to define block        
+		klb_ROI ROI;
+		ROI.defineSlice(JoffsetIni, dimBlockParition, xyzct);//this would be a slice through dimsBlockParitiondimension equal to offset
+		BoffsetIni = PSFpadding;
+		if (JoffsetIni >= PSFpadding)//we cannot gain anything
+		{
+			ROI.xyzctLB[dimBlockParition] -= PSFpadding;
+		}
+		else{//we can process more slices in the block since we are at the beggining
+			ROI.xyzctLB[dimBlockParition] = 0;
+			BoffsetIni -= (PSFpadding - JoffsetIni);
+		}
+
+		JoffsetEnd = JoffsetIni + chunkSize + PSFpadding - BoffsetIni; 
+		JoffsetEnd = std::min((uint32_t)JoffsetEnd, xyzct[dimBlockParition]);//make sure we do not go over the end of the image
+
+		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding;
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
+
+        //read image and weights ROI
+		for (int ii = 0; ii < paramDec.Nviews; ii++)
+		{
+			filename = multiviewImage<float>::recoverFilenamePatternFromString(paramDec.filePatternImg, ii + 1);		
+            err = Jobj->readROI(filename, ii, std::string("img"), ROI);//this function should just read image
+			if (err > 0)
+			{
+				cout << "ERROR: reading file " << filename << endl;
+				exit(err);
+			}
+			filename = multiviewImage<float>::recoverFilenamePatternFromString(paramDec.filePatternWeights, ii + 1);
+			err = Jobj->readROI(filename, ii, std::string("weight"), ROI);//this function should just read image
+			if (err > 0)
+			{
+				cout << "ERROR: reading file " << filename << endl;
+				exit(err);
+			}
+		}
+
+        //the last block has to be padded at the end to match the block dimensions
+		if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
+		{
+			cout << "=======TODO: last block needs to be padded with zeros: this message should only appear once=========" << endl;
+		}
+
+        //update workspace with ROI image and weights	
+#ifdef _DEBUG
+		cout << "Thread " << threadIdx << " updating workspace for deconvolution" << endl;
+#endif	
+		Jobj->allocate_workspace_update_multiGPU(paramDec.imgBackground, useWeights);
+
+        //calculate multiview deconvolution
+#ifdef _DEBUG
+		cout << "Thread " << threadIdx << " running deconvolution" << endl;
+#endif
+		Jobj->deconvolution_LR_TV(paramDec.numIters, paramDec.lambdaTV);
+
+        //copy block result to J
+		cout << "================TODO: copy results to global J==============" << endl;
+	}
+
+
+	delete Jobj;
+}
+
+//==========================================================
+int multiGPUblockController::getImageDimensions()
+{
+	string filename = multiviewImage<imgTypeDeconvolution>::recoverFilenamePatternFromString(paramDec.filePatternImg, 1);
+	return multiviewImage<imgTypeDeconvolution>::getImageDimensionsFromHeader(filename, imgDims);	
+}
+
+//==========================================================
+uint64_t multiGPUblockController::numElements()
+{
+	uint64_t nImg = 1;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		nImg *= (uint64_t)(imgDims[ii]);
+
+	return nImg;
+}
+
+
+//==========================================================
+void multiGPUblockController::debug_listGPUs()
+{
+	for (const auto &p : GPUinfoVec)
+	{
+		cout << "Dev CUDA " << p.devCUDA << ": " << p.devName << " with mem = " << p.mem << " bytes" << endl;
+	}
 }

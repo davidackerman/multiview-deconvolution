@@ -22,6 +22,8 @@
 #include <cstdint>
 
 
+//forward declaration
+class klb_ROI;
 
 struct dimsImg
 {	
@@ -63,6 +65,7 @@ public:
 
 	//I/O functions
 	int readImage(const std::string& filename, int pos);//if pos<0 then we add one image to the vector
+	int readROI(const std::string& filename, int pos, const klb_ROI& ROI);
 	int writeImage(const std::string& filename, int pos);
 	static std::string recoverFilenamePatternFromString(const std::string& imgPath, int frame);
 	static int getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS]);

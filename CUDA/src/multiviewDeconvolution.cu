@@ -175,6 +175,21 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 
 //=======================================================
 template<class imgType>
+int multiviewDeconvolution<imgType>::readROI(const std::string& filename, int pos, const std::string& type, const klb_ROI& ROI)
+{
+	if (type.compare("weight") == 0)
+		return weights.readROI(filename, pos, ROI);
+	else if (type.compare("psf") == 0)
+		return psf.readROI(filename, pos, ROI);
+	else if (type.compare("img") == 0)
+		return img.readROI(filename, pos, ROI);
+
+	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;
+	return 3;
+}
+
+//=======================================================
+template<class imgType>
 int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 {
 	//const values throughout the function
@@ -255,7 +270,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 
 #ifdef _DEBUG
-		char buffer[256];
+		//char buffer[256];
 		//sprintf(buffer, "E:/temp/deconvolution/PSFpadded_view%d.raw", ii);
 		//debug_writeGPUarray(psf.getPointer_GPU(ii), img.dimsImgVec[0], string(buffer));		
 #endif
@@ -300,7 +315,175 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 	return 0;
 }
+//=======================================================
+template<class imgType>
+int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType imgBackground, bool useWeights)
+{
+	//const values throughout the function	
+	const int64_t nImg = img.numElements(0);
+	const size_t nViews = img.getNumberOfViews();
+	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
+	
+	if (nViews == 0)
+	{
+		cout << "ERROR:multiviewDeconvolution<imgType>::allocate_workspace(): no views loaded to start process" << endl;
+		return 2;
+	}
+
+	//allocate temporary memory to nromalize weights
+	weightType *weightAvg_GPU = NULL;
+	if (useWeights)
+	{
+		HANDLE_ERROR(cudaMalloc((void**)&(weightAvg_GPU), nImg * sizeof(weightType)));
+		HANDLE_ERROR(cudaMemset(weightAvg_GPU, 0, nImg * sizeof(weightType)));
+	}
+
+	
+	//allocate memory and precompute things for each view things for each vieww	
+	for (size_t ii = 0; ii < nViews; ii++)
+	{
+		//load img for ii-th to CPU 
+		//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
+		//allocate memory for image in the GPU		
+		//img.allocateView_GPU(ii, nImg * sizeof(imgType)); memory has already been allocate in the init phase
+		//transfer image
+		HANDLE_ERROR(cudaMemcpy(img.getPointer_GPU(ii), img.getPointer_CPU(ii), nImg * sizeof(imgType), cudaMemcpyHostToDevice));
+#ifdef _DEBUG
+		char buffer[256];
+		sprintf(buffer, "E:/temp/deconvolution/imgCPU_view%.4d.raw", ii);		
+		debug_writeCPUarray(img.getPointer_CPU(ii), img.dimsImgVec[ii], string(buffer));
+#endif
+		//deallocate memory from CPU
+		img.deallocateView_CPU(ii);
+		//subtract background
+		if (imgBackground > 0)
+			elementwiseOperationInPlace<imgType>(img.getPointer_GPU(ii), imgBackground, nImg, op_elementwise_type::minus_positive);
+
+		if (useWeights)
+		{
+			//load weights for ii-th to CPU 
+			//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;			
+			//transfer image
+			HANDLE_ERROR(cudaMemcpy(weights.getPointer_GPU(ii), weights.getPointer_CPU(ii), nImg * sizeof(weightType), cudaMemcpyHostToDevice));
+			//deallocate memory from CPU
+			weights.deallocateView_CPU(ii);
+
+			//call kernel to update weightAvg_GPU
+			elementwiseOperationInPlace<weightType>(weightAvg_GPU, weights.getPointer_GPU(ii), nImg, op_elementwise_type::plus);
+		}
+		
+	}
+
+
+	if (useWeights)
+	{
+		cout << "======TODO: during normalization check elements with all zero weights====" << endl;
+		//normalize weights	
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationInPlace(weights.getPointer_GPU(ii), weightAvg_GPU, nImg, op_elementwise_type::divide);
+		}
+
+		//deallocate temporary memory to nromalize weights
+		HANDLE_ERROR(cudaFree(weightAvg_GPU));
+		weightAvg_GPU = NULL;
+	}
+	
+	//initialize final results as weighted average of all views
+	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+	for (size_t ii = 0; ii < nViews; ii++)
+	{
+		elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+	}
+
+
+	return 0;
+}
+//=======================================================
+template<class imgType>
+int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint32_t blockDims[MAX_DATA_DIMS], bool useWeights)
+{
+
+	//const values throughout the function			
+	const size_t nViews = psf.getNumberOfViews();	
+	int64_t nImg = 1;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		nImg *= blockDims[ii];
+
+	const int64_t imSizeFFT = nImg + (2 * blockDims[2] * blockDims[1]); //size of the R2C transform in cuFFTComple
+
+	//variables needed for this function	
+	psfType *psf_notPadded_GPU = NULL;//to store original PSF
+
+	if (nViews == 0)
+	{
+		cout << "ERROR:multiviewDeconvolution<imgType>::allocate_workspace(): no views loaded to start process" << endl;
+		return 2;
+	}
+    
+
+	//preparing FFT plans
+	cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C); HANDLE_ERROR_KERNEL;
+	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
+	cufftPlan3d(&fftPlanInv, blockDims[2], blockDims[1], blockDims[0], CUFFT_C2R); HANDLE_ERROR_KERNEL;
+	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
+
+
+	//allocate memory and precompute things for each view things for each vieww	
+	for (size_t ii = 0; ii < nViews; ii++)
+	{
+		//load img for ii-th to CPU 
+		//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
+		//allocate memory for image in the GPU		
+		img.allocateView_GPU(ii, nImg * sizeof(imgType));
+        //we do not have anything to upload yet		
+		
+		if (useWeights)
+		{
+			//load weights for ii-th to CPU 
+			//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
+			//allocate memory for weights in the GPU			
+			weights.allocateView_GPU(ii, nImg * sizeof(weightType));
+			
+		}
+
+		//allocate memory for PSF FFT
+		const int64_t psfSize = psf.numElements(ii);
+		HANDLE_ERROR(cudaMalloc((void**)&(psf_notPadded_GPU), (psfSize)* sizeof(psfType)));
+		psf.allocateView_GPU(ii, imSizeFFT * sizeof(psfType));
+
+		//transfer psf
+		HANDLE_ERROR(cudaMemcpy(psf_notPadded_GPU, psf.getPointer_CPU(ii), psfSize * sizeof(psfType), cudaMemcpyHostToDevice));
+
+		//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
+		int numThreads = std::min((int64_t)MAX_THREADS_CUDA / 4, psfSize);
+		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
+		HANDLE_ERROR(cudaMemset(psf.getPointer_GPU(ii), 0, imSizeFFT * sizeof(psfType)));
+		fftShiftKernel << <numBlocks, numThreads >> >(psf_notPadded_GPU, psf.getPointer_GPU(ii), psf.dimsImgVec[ii].dims[2], psf.dimsImgVec[ii].dims[1], psf.dimsImgVec[ii].dims[0], blockDims[2], blockDims[1], blockDims[0]); HANDLE_ERROR_KERNEL;
+
+
+		//execute FFT.  If idata and odata are the same, this method does an in-place transform
+		cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); HANDLE_ERROR_KERNEL;
+
+		//release memory for PSF
+		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
+		psf.deallocateView_CPU(ii);
+	}	
+
+	//allocate memory for final result
+	J.resize(1);
+	dimsImg aux; 
+    aux.ndims = MAX_DATA_DIMS;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		aux.dims[ii] = blockDims[ii];
+	J.setImgDims(0, aux);
+	J.allocateView_GPU(0, nImg * sizeof(outputType));
+	J.allocateView_CPU(0, nImg);	
+
+
+	return 0;
+}
 
 //=======================================================
 template<class imgType>
@@ -349,16 +532,24 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 
 #ifdef _DEBUG
-			char buffer[256];
 			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
-			if ( vv == 0 )
+			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			//sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
-			//debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
-			//sprintf(buffer, "E:/temp/deconvolution/JFFT_iter%.4d.raw", iter);
-			//debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
-			//sprintf(buffer, "E:/temp/deconvolution/PSFpaddedFfft_iter%.4d_view%d.raw", iter, vv);
-			//debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
+			/*
+            char buffer[256];
+			sprintf(buffer, "E:/temp/deconvolution/img_view%.4d.raw", vv);
+			if ( iter == 0 )
+				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));
+			sprintf(buffer, "E:/temp/deconvolution/weights_view%.4d.raw", vv);
+			if (iter == 0)
+				debug_writeGPUarray(weights.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));			
+			sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
+			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
+			sprintf(buffer, "E:/temp/deconvolution/JFFT_iter%.4d.raw", iter);
+			debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
+			sprintf(buffer, "E:/temp/deconvolution/PSFpaddedFfft_iter%.4d_view%d.raw", iter, vv);
+			debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
+            */
 #endif
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT

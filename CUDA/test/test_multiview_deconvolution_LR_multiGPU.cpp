@@ -55,6 +55,10 @@ int main(int argc, const char** argv)
     //check number of GPUs and the memory available for each of them
 	master.queryGPUs();
 
+#ifdef _DEBUG
+	master.debug_listGPUs();
+#endif
+
     //find out best dimension to perform blocks for minimal padding
 	int err = master.findBestBlockPartitionDimension();
 	if (err > 0)
@@ -63,9 +67,13 @@ int main(int argc, const char** argv)
     //precalculate number of planes per GPU we can do (including padding to avoid border effect)
 	master.findMaxBlockPartitionDimensionPerGPU();
 
-    //launch multi-thread as a producer consumer queue to calculate blocks as they come
+	cout << "==============WARNING: manually modiying findMaxBlockPartitionDimensionPerGPU value to test with two GPUs==================" << endl;
+    //TODO;
 
-	
+    //launch multi-thread as a producer consumer queue to calculate blocks as they come
+	err = master.runMultiviewDeconvoution();
+	if (err > 0)
+		return err;
 
 
 	return 0;
