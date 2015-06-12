@@ -16,6 +16,7 @@
 #include "klb_Cwrapper.h"
 #include "cuda.h"
 #include "book.h"
+#include "imgUtils.h"
 
 
 using namespace std;
@@ -286,6 +287,22 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 
 	return err;
 }
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad)
+{ 
+	imgType *aux = fa_padArrayWithZeros(imgVec_CPU[pos],dimsImgVec[pos].dims, dimsAfterPad, dimsImgVec[pos].ndims); 
+
+    //swap
+	delete[] (imgVec_CPU[pos]);
+	imgVec_CPU[pos] = aux;
+
+    //reset dimensions
+	for (int ii = 0; ii < dimsImgVec[pos].ndims; ii++)
+		dimsImgVec[pos].dims[ii] = dimsAfterPad[ii];
+};
+
 //===========================================================================================
 template<class imgType>
 int multiviewImage<imgType>::readImage(const std::string& filename, int pos)

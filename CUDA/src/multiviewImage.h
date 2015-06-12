@@ -22,6 +22,7 @@
 #include <cstdint>
 
 
+
 //forward declaration
 class klb_ROI;
 
@@ -83,6 +84,8 @@ public:
 	void copyView_GPU_to_CPU(size_t pos);
 	void copyView_CPU_to_GPU(size_t pos);
 	void setImgDims(size_t pos, const dimsImg &d);
+
+	void padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad);
 	
 protected:
 

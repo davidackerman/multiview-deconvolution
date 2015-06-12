@@ -54,6 +54,7 @@ public:
 	void setNumberOfViews(int numViews);
 	void copyDeconvoutionResultToCPU(){ J.copyView_GPU_to_CPU(0); };
 	std::int64_t numElements_img(size_t pos){ return img.numElements(pos); };
+	void padArrayWithZeros(const std::uint32_t *dimsAfterPad, int pos, const std::string& type);
 
 	//straight deconvolution from beginning to end
 	static imgType* convolution3DfftCUDA(const imgType* im, const std::int64_t* imDim, const imgType* kernel, const std::int64_t* kernelDim, int devCUDA);

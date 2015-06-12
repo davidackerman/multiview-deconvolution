@@ -68,7 +68,8 @@ int main(int argc, const char** argv)
 	master.findMaxBlockPartitionDimensionPerGPU();
 
 	cout << "==============WARNING: manually modiying findMaxBlockPartitionDimensionPerGPU value to test with two GPUs==================" << endl;
-    //TODO;
+	for (size_t ii = 0; ii < master.getNumGPU(); ii++)
+		master.debug_setGPUmaxSizeDimBlockPartition(ii, 75);
 
     //launch multi-thread as a producer consumer queue to calculate blocks as they come
 	err = master.runMultiviewDeconvoution();

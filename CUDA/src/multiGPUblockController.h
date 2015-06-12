@@ -16,7 +16,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <atomic>
+#include <mutex>
 #include "paramDeconvolution.h"
 #include "multiviewDeconvolution.h"
 
@@ -60,10 +60,15 @@ public:
 	void findMaxBlockPartitionDimensionPerGPU();
 	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks
 	int getImageDimensions();
+	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 
 
     //debug functions
 	void debug_listGPUs();
+	void debug_setGPUmaxSizeDimBlockPartition(size_t pos, std::uint32_t ss){ 
+		std::cout << "==============DEBUGGING: manually modiying findMaxBlockPartitionDimensionPerGPU value to test with two GPUs==================" << std::endl;
+        GPUinfoVec[pos].maxSizeDimBlockPartition = ss; 
+        };
 
 protected:	
     //stores all the necessary information to partition in blocks for each computational unit
@@ -76,9 +81,13 @@ protected:
 	std::uint32_t padBlockPartition;//largest size of a psf in the dimBlockPartitionDimension
 	std::uint32_t imgDims[MAX_DATA_DIMS];
 
+
+	std::mutex              g_lock_offset;//to keep block offset for each thread
+	int64_t offsetBlockPartition;
+
     //methods
 	void findMaxBlockPartitionDimensionPerGPU(size_t pos);   
-	void multiviewDeconvolutionBlockWise(size_t threadIdx, std::atomic<int64_t> *offsetBlockPartition);//main function for each GPU to process different blocks
+	void multiviewDeconvolutionBlockWise(size_t threadIdx);//main function for each GPU to process different blocks
 private:
 
 };

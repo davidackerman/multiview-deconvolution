@@ -175,6 +175,21 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 
 //=======================================================
 template<class imgType>
+void multiviewDeconvolution<imgType>::padArrayWithZeros(const std::uint32_t *dimsAfterPad, int pos, const std::string& type)
+{
+	if (type.compare("weight") == 0)
+		return weights.padArrayWithZeros(pos, dimsAfterPad);
+	else if (type.compare("psf") == 0)
+		return psf.padArrayWithZeros(pos, dimsAfterPad);
+	else if (type.compare("img") == 0)
+		return img.padArrayWithZeros(pos, dimsAfterPad);
+
+	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;	
+}
+
+
+//=======================================================
+template<class imgType>
 int multiviewDeconvolution<imgType>::readROI(const std::string& filename, int pos, const std::string& type, const klb_ROI& ROI)
 {
 	if (type.compare("weight") == 0)
@@ -349,11 +364,6 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 		//img.allocateView_GPU(ii, nImg * sizeof(imgType)); memory has already been allocate in the init phase
 		//transfer image
 		HANDLE_ERROR(cudaMemcpy(img.getPointer_GPU(ii), img.getPointer_CPU(ii), nImg * sizeof(imgType), cudaMemcpyHostToDevice));
-#ifdef _DEBUG
-		char buffer[256];
-		sprintf(buffer, "E:/temp/deconvolution/imgCPU_view%.4d.raw", ii);		
-		debug_writeCPUarray(img.getPointer_CPU(ii), img.dimsImgVec[ii], string(buffer));
-#endif
 		//deallocate memory from CPU
 		img.deallocateView_CPU(ii);
 		//subtract background
@@ -532,11 +542,11 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 
 #ifdef _DEBUG
+			char buffer[256];
 			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			/*
-            char buffer[256];
+			/*            
 			sprintf(buffer, "E:/temp/deconvolution/img_view%.4d.raw", vv);
 			if ( iter == 0 )
 				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));

@@ -22,6 +22,7 @@
 
 
 
+
 using namespace std;
 
 multiGPUblockController::multiGPUblockController()
@@ -133,15 +134,15 @@ int multiGPUblockController::runMultiviewDeconvoution()
 	J = new imgTypeDeconvolution[nImg];
 
     //define atomic offset variable to keep count
-	std::atomic<int64_t>	offsetBlockPartition;//defines the beginning for each block
-	atomic_store(&offsetBlockPartition, (uint64_t)0);
+	offsetBlockPartition  = 0;//defines the beginning for each block
+	
 
     //launch threads (each thread will write into J disjointly)
 	// start the working threads
 	std::vector<std::thread> threads;	
 	for (size_t ii = 0; ii < GPUinfoVec.size(); ++ii)
 	{
-		threads.push_back(std::thread(&multiGPUblockController::multiviewDeconvolutionBlockWise, this, ii, &offsetBlockPartition));		
+		threads.push_back(std::thread(&multiGPUblockController::multiviewDeconvolutionBlockWise, this, ii));		
 	}
 
 	//wait for the workers to finish
@@ -153,7 +154,7 @@ int multiGPUblockController::runMultiviewDeconvoution()
 
 
 //==========================================================
-void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx, std::atomic<int64_t> *offsetBlockPartition)
+void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx)
 {
 	const int64_t PSFpadding = 1+ padBlockPartition / 2;//quantity that we have to pad on each side to avoid edge effects
 	const int64_t chunkSize = std::min((int64_t)(GPUinfoVec[threadIdx].maxSizeDimBlockPartition) - 2 * PSFpadding, int64_t(imgDims[dimBlockParition]));//effective size where we are calculating LR	
@@ -220,15 +221,14 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx, 
     //main loop
 	while (1)
 	{
-		JoffsetIni = atomic_fetch_add(offsetBlockPartition, (int64_t)chunkSize);
+		std::unique_lock<std::mutex> locker(g_lock_offset);//obtain lock to calculate block
+
+		JoffsetIni = offsetBlockPartition;
 
 		//check if we have more slices
 		if (JoffsetIni >= imgDims[dimBlockParition])
 			break;
 
-#ifdef _DEBUG
-		cout << "Thread " << threadIdx << " processing block with offset ini "<<JoffsetIni << endl;
-#endif
         //generate ROI to define block        
 		klb_ROI ROI;
 		ROI.defineSlice(JoffsetIni, dimBlockParition, xyzct);//this would be a slice through dimsBlockParitiondimension equal to offset
@@ -245,7 +245,14 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx, 
 		JoffsetEnd = JoffsetIni + chunkSize + PSFpadding - BoffsetIni; 
 		JoffsetEnd = std::min((uint32_t)JoffsetEnd, xyzct[dimBlockParition]);//make sure we do not go over the end of the image
 
-		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding;
+		offsetBlockPartition = JoffsetEnd;//update offset counter
+
+#ifdef _DEBUG
+		cout << "Thread " << threadIdx << " processing block with offset ini " << JoffsetIni << " to " <<JoffsetEnd<< endl;
+#endif
+	    locker.unlock();//release lock
+
+		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
 		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
 
         //read image and weights ROI
@@ -265,13 +272,16 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx, 
 				cout << "ERROR: reading file " << filename << endl;
 				exit(err);
 			}
+
+			//the last block has to be padded at the end to match the block dimensions
+			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
+			{
+				Jobj->padArrayWithZeros(blockDims, ii, "weight");
+				Jobj->padArrayWithZeros(blockDims, ii, "img");
+			}
 		}
 
-        //the last block has to be padded at the end to match the block dimensions
-		if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
-		{
-			cout << "=======TODO: last block needs to be padded with zeros: this message should only appear once=========" << endl;
-		}
+        
 
         //update workspace with ROI image and weights	
 #ifdef _DEBUG
