@@ -30,15 +30,18 @@ int main(int argc, const char** argv)
 	imgTypeDeconvolution imgBackground = 100;
 	cout << "===============TODO: activate total variations==============" << endl;
 	float lambdaTV = -1.0;//0.008;
-	string filePatternPSF( filepath + "psfReg_?.klb");
-	string filePatternWeights(filepath + "weightsReg_?.klb");
-	string filePatternImg(filepath + "imReg_?.klb");
-
+	
 
 	if (argc > 1)
 		filepath = string(argv[1]);
 	if (argc > 2)
 		numIters = atoi(argv[2]);
+
+
+	string filePatternPSF(filepath + "psfReg_?.klb");
+	string filePatternWeights(filepath + "weightsReg_?.klb");
+	string filePatternImg(filepath + "imReg_?.klb");
+
 
     //main object to control the process
 	multiGPUblockController master;
@@ -68,9 +71,9 @@ int main(int argc, const char** argv)
     //precalculate number of planes per GPU we can do (including padding to avoid border effect)
 	master.findMaxBlockPartitionDimensionPerGPU();
 
-	cout << "==============WARNING: manually modiying findMaxBlockPartitionDimensionPerGPU value to test with two GPUs==================" << endl;
-	for (size_t ii = 0; ii < master.getNumGPU(); ii++)
-		master.debug_setGPUmaxSizeDimBlockPartition(ii, 75);
+	//cout << "==============WARNING: manually modiying findMaxBlockPartitionDimensionPerGPU value to test with two GPUs==================" << endl;
+	//for (size_t ii = 0; ii < master.getNumGPU(); ii++)
+	//	master.debug_setGPUmaxSizeDimBlockPartition(ii, 75);
 
     //launch multi-thread as a producer consumer queue to calculate blocks as they come
 	err = master.runMultiviewDeconvoution();
