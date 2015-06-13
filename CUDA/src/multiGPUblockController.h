@@ -45,6 +45,7 @@ public:
 
 	//parameters for deconvolution
 	paramDeconvolution paramDec;
+	static const std::uint32_t goodFFTdims[65];
 
     //constructor/destructor
     multiGPUblockController();
@@ -64,6 +65,7 @@ public:
 	void findMaxBlockPartitionDimensionPerGPU();
 	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks	
 	void copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes);
+	static std::uint32_t multiGPUblockController::ceilToGoodFFTsize(std::uint32_t n);
 
     //debug functions
 	void debug_listGPUs();

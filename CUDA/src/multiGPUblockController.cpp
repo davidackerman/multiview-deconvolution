@@ -28,6 +28,9 @@
 
 using namespace std;
 
+//these numbers only have 2 or 3 as factors
+const std::uint32_t multiGPUblockController::goodFFTdims[65] = { 1, 2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 27, 32, 36, 48, 54, 64, 72, 81, 96, 108, 128, 144, 162, 192, 216, 243, 256, 288, 324, 384, 432, 486, 512, 576, 648, 729, 768, 864, 972, 1024, 1152, 1296, 1458, 1536, 1728, 1944, 2048, 2187, 2304, 2592, 2916, 3072, 3456, 3888, 4096, 4374, 4608, 5184, 5832, 6144, 6561, 6912, 7776, 8192};
+
 multiGPUblockController::multiGPUblockController()
 {
 	dimBlockParition = -1;
@@ -119,9 +122,22 @@ void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU(size_t pos)
 
 	GPUinfoVec[pos].maxSizeDimBlockPartition = GPUinfoVec[pos].mem / (sliceSize * memoryRequirements());
 
+    //find a good value for FFT
+	GPUinfoVec[pos].maxSizeDimBlockPartition = ceilToGoodFFTsize(GPUinfoVec[pos].maxSizeDimBlockPartition);
+
 }
 
+//===================================
+uint32_t multiGPUblockController::ceilToGoodFFTsize(uint32_t n)
+{
+	for (int ii = 1; ii < 65; ii++)
+	{
+		if (goodFFTdims[ii] > n)
+			return goodFFTdims[ii - 1];
+	}
 
+	return n;//number is too high
+}
 //================================================================
 int multiGPUblockController::runMultiviewDeconvoution()
 {

@@ -25,6 +25,7 @@ int main(int argc, const char** argv)
 	time(&start);
 	//parameters
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	//string filepath("T:/temp/deconvolution/15_04_24_fly_functionalImage/TM000007/simview3_TM7_");//very large file
 	int numIters = 2;
 	int numViews = 4;
 	imgTypeDeconvolution imgBackground = 100;
