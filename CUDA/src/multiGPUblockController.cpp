@@ -405,7 +405,7 @@ int multiGPUblockController::writeDeconvoutionResult(const std::string& filename
 		cout << "ERROR: format not supported yet" << endl;
 		return 10;
 	}
-
+	
 	//write image
 	int error = imgIO.writeImage((char*)(J), -1);//all the threads available
 

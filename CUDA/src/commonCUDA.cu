@@ -69,6 +69,27 @@ struct mul_func
 };
 
 template <class T>
+struct isnan_func
+{
+	isnan_func(){};
+	__device__ T operator () (const T& a, const T& b) { return a; }
+};
+
+template <>
+struct isnan_func <float>
+{
+	isnan_func(){};
+	__device__ float operator () (const float& a, const float& b) { return(isnan(a) ? b : a); }
+};
+
+template <>
+struct isnan_func <double>
+{
+	isnan_func(){};
+	__device__ double operator () (const double& a, const double& b) { return(isnan(a) ? b : a); }
+};
+
+template <class T>
 struct equal_func
 {
 	equal_func(){};
@@ -198,6 +219,9 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 
 	case op_elementwise_type::minus_positive:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::isnanop:
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, isnan_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;

@@ -22,6 +22,7 @@ int main(int argc, const char** argv)
 	std::cout << "testing a full iteration of multi-view lucy richardson splitting it in blocks and multiple GPUs running..." << std::endl;
 	time_t start, end;
 
+	time(&start);
 	//parameters
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
 	int numIters = 2;
@@ -76,6 +77,8 @@ int main(int argc, const char** argv)
 	if (err > 0)
 		return err;
 
+	time(&end);
+	cout << "Multiview deconvolution using multi-GPU took " << difftime(end, start) << " secs for " << numIters << " iterations" << endl;
     //write result
 	err = master.writeDeconvoutionResult(string(filepath + "test_mv_deconv_LR_multiGPU.klb"));
 	if (err > 0)

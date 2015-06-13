@@ -300,12 +300,12 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 	
 	
 	if (useWeights)
-	{
-		cout << "======TODO: during normalization check elements with all zero weights====" << endl;
+	{		
 		//normalize weights	
 		for (size_t ii = 0; ii < nViews; ii++)
 		{
 			elementwiseOperationInPlace(weights.getPointer_GPU(ii), weightAvg_GPU, nImg, op_elementwise_type::divide);
+			elementwiseOperationInPlace(weights.getPointer_GPU(ii), 0.0f, nImg, op_elementwise_type::isnanop);//set nan elements to zero
 		}
 
 		//deallocate temporary memory to nromalize weights
@@ -387,12 +387,12 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 
 
 	if (useWeights)
-	{
-		cout << "======TODO: during normalization check elements with all zero weights====" << endl;
+	{		
 		//normalize weights	
 		for (size_t ii = 0; ii < nViews; ii++)
 		{
 			elementwiseOperationInPlace(weights.getPointer_GPU(ii), weightAvg_GPU, nImg, op_elementwise_type::divide);
+			elementwiseOperationInPlace(weights.getPointer_GPU(ii), 0.0f, nImg, op_elementwise_type::isnanop);//set nan elements to zero
 		}
 
 		//deallocate temporary memory to nromalize weights
@@ -564,6 +564,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
 			elementwiseOperationInPlace(aux_FFT, img.getPointer_GPU(vv), nImg, op_elementwise_type::divide_inv);
+			elementwiseOperationInPlace(aux_FFT, 0.0f, nImg, op_elementwise_type::isnanop);//set nan elements to zero
 
 			//calculate FFT of ratio (for convolution)
 			cufftExecR2C(fftPlanFwd, aux_FFT, (cufftComplex *)aux_FFT); HANDLE_ERROR_KERNEL;
