@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
-
+#include <cstring>
 
 
 //forward declaration
@@ -31,15 +31,15 @@ struct dimsImg
 	std::int64_t dims[MAX_DATA_DIMS];
 	int ndims;//in case we have fewer dimensions than expected (for example, 2D)
 
-	dimsImg::dimsImg()
+	dimsImg()
 	{
 		ndims = 0;
 	}
-	dimsImg::dimsImg(const dimsImg& p) : ndims(p.ndims)
+	dimsImg(const dimsImg& p) : ndims(p.ndims)
 	{
 		memcpy(dims, p.dims, sizeof(std::int64_t) * MAX_DATA_DIMS);
 	}
-	dimsImg& dimsImg::operator=(const dimsImg& p)
+	dimsImg& operator=(const dimsImg& p)
 	{
 		if (this != &p)
 		{

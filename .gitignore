@@ -1,2 +1,5 @@
 temp
 *.asv
+CUDA/build_release/
+CUDA/build_debug/
+CUDA/build/
