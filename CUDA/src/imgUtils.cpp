@@ -12,6 +12,7 @@
 */
 
 #include <iostream>
+#include <cstring>
 #include "imgUtils.h"
 
 

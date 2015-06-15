@@ -60,9 +60,7 @@ int main(int argc, const char** argv)
     //check number of GPUs and the memory available for each of them
 	master.queryGPUs();
 
-#ifdef _DEBUG
 	master.debug_listGPUs();
-#endif
 
     //find out best dimension to perform blocks for minimal padding
 	int err = master.findBestBlockPartitionDimension();

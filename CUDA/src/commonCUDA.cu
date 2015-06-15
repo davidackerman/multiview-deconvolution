@@ -79,14 +79,14 @@ template <>
 struct isnan_func <float>
 {
 	isnan_func(){};
-	__device__ float operator () (const float& a, const float& b) { return(isnan(a) ? b : a); }
+	__device__ float operator () (const float& a, const float& b) { return(::isnan(a) ? b : a); }
 };
 
 template <>
 struct isnan_func <double>
 {
 	isnan_func(){};
-	__device__ double operator () (const double& a, const double& b) { return(isnan(a) ? b : a); }
+	__device__ double operator () (const double& a, const double& b) { return(::isnan(a) ? b : a); }
 };
 
 template <class T>
