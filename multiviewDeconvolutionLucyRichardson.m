@@ -5,8 +5,20 @@ sigmaDer = 2.0;%smoothing to calculate the Gaussian derivatives
 numIm = length(imCell);
 stepWriteOutput = 5;
 
-%normalize elements
-J = zeros(size(imCell{1}));
+
+if( length(numIters) == 1)%we start from zero
+    numIters = [1 numIters];
+    J = zeros(size(imCell{1}));%start from zero
+    warmStart = false;
+else%it has two lements    
+    disp 'Reading KLB format'
+    J = readKLBstack([saveIterBasename num2str(numIters(1),'%.5d') '.klb']);
+    %J = readRawStack([saveIterBasename num2str(numIters(1),'%.5d') '.raw']);
+    numIters(1) = numIters(1) + 1;    
+    warmStart = true;
+end
+
+
 
 if( ~isempty(weightsCell) )
     ww = single(weightsCell{1});
@@ -25,15 +37,17 @@ for ii = 1:numIm
    imCell{ii} = single(imCell{ii}) - backgroundOffset;%subtract background to run LR without offet term
    imCell{ii} (imCell{ii} < 0 ) = 0;%make sure image is still positive
    
-   if( isempty(weightsCell) )
-       J = J + imCell{ii} / numIm;%initialize with average
-   else
-       J = J + weightsCell{ii} .* imCell{ii};%initialize with weighted average
-   end  
+   if( warmStart == false )
+       if( isempty(weightsCell) )
+           J = J + imCell{ii} / numIm;%initialize with average
+       else
+           J = J + weightsCell{ii} .* imCell{ii};%initialize with weighted average
+       end
+   end
 end
 
 %start iterations
-for iter = 1:numIters
+for iter = numIters(1):numIters(2)
     tic;
     aux = zeros(size(J));
     
@@ -79,5 +93,6 @@ for iter = 1:numIters
        %fclose(fid);
        
        writeKLBstack(single(J), [saveIterBasename num2str(iter,'%.5d') '.klb']); 
+       writeRawStack(single(J), [saveIterBasename num2str(iter,'%.5d') '.raw']); 
     end
 end

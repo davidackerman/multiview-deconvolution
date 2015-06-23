@@ -2,7 +2,7 @@
 
 pathImPattern = 'S:\SiMView3\15-05-20\Dme_L1_57C10_GCaMP6s_Simul_Confocal_1Hz_20150520_201919.corrected\SPM00\TM??????\SPM00_TM??????_'
 
-TM = 24
+TM = 4548
 
 TMstr = num2str(TM,'%.6d');
 baseRegistrationFolder = ['T:\temp\deconvolution\15_05_20_fly_functionalImage_TM' TMstr] %where .mat files are located to read affine transformations
