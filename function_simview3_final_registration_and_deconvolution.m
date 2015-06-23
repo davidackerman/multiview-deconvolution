@@ -77,8 +77,13 @@ for ii = 1:Nviews
     
     %apply transformation
     disp 'Applying transformation to image, PSF and weights'
-    imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic', 'FillValues', backgroundOffset);%to avoid "edge" effect
-    weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
+    addpath './imWarpFast'    
+    imCell{ii} = imwarpfast(imCell{ii},A, 2, imSizeRef);
+    weightsCell{ii} = imwarpfast(weightsCell{ii},A, 0, imSizeRef);
+% %     PSFcell{ii} = imwarpfast(PSFcell{ii},A, 3, []); %code is not working right now without imSizeRef
+    rmpath './imWarpFast'
+% %     imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic', 'FillValues', backgroundOffset);%to avoid "edge" effect
+% %     weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
     PSFcell{ii} = imwarp(PSFcell{ii}, affine3d(A), 'interp', 'cubic');
     
     %save results if requested        
@@ -87,6 +92,10 @@ for ii = 1:Nviews
         writeKLBstack(imCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_imReg_' num2str(ii) '.klb']);
         writeKLBstack(PSFcell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_psfReg_' num2str(ii) '.klb']);
         writeKLBstack(weightsCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_weightsReg_' num2str(ii) '.klb']);
+        
+        writeRawStack(imCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_imReg_' num2str(ii) '.raw']);
+        writeRawStack(PSFcell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_psfReg_' num2str(ii) '.raw']);
+        writeRawStack(weightsCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_weightsReg_' num2str(ii) '.raw']);
     end
     
 end

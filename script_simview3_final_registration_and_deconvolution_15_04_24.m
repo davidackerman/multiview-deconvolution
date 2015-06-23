@@ -1,9 +1,9 @@
 %parameters
 
 pathImPattern = 'S:/SiMView3/15-04-24/Dme_L1_57C10-GCaMP6s_20150424_142342.corrected/SPM00/TM??????/SPM00_TM??????_'
-TM = 7
+TM = 1727
 
-baseRegistrationFolder = 'T:\temp\deconvolution\15_04_24_fly_functionalImage\TM000007'
+baseRegistrationFolder = 'T:\temp\deconvolution\15_04_24_fly_functionalImage_TM001727'
 
 numItersLR = 40;
 backgroundOffset = 102;
