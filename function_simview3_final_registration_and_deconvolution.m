@@ -77,15 +77,14 @@ for ii = 1:Nviews
     
     %apply transformation
     disp 'Applying transformation to image, PSF and weights'
-    addpath './imWarpFast'
-    
+    addpath './imWarpFast'    
     imCell{ii} = imwarpfast(imCell{ii},A, 2, imSizeRef);
     weightsCell{ii} = imwarpfast(weightsCell{ii},A, 0, imSizeRef);
-    PSFcell{ii} = imwarpfast(PSFcell{ii},A, 3, []);
+% %     PSFcell{ii} = imwarpfast(PSFcell{ii},A, 3, []); %code is not working right now without imSizeRef
     rmpath './imWarpFast'
 % %     imCell{ii} = imwarp(imCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'cubic', 'FillValues', backgroundOffset);%to avoid "edge" effect
 % %     weightsCell{ii} = imwarp(weightsCell{ii}, affine3d(A), 'Outputview', imref3d(imSizeRef), 'interp', 'linear');
-% %     PSFcell{ii} = imwarp(PSFcell{ii}, affine3d(A), 'interp', 'cubic');
+    PSFcell{ii} = imwarp(PSFcell{ii}, affine3d(A), 'interp', 'cubic');
     
     %save results if requested        
     if( ~isempty(debugBasename) )

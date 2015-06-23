@@ -1,5 +1,5 @@
 imPath = './testData/'
-sigma_z = 5.0
+sigma_z = 1.0
 
 
 %%
@@ -13,17 +13,22 @@ end
 
 %%
 %define transformation
-A = [1      0.3          0.4          0;... 
-    -0.3     1           0.         0; ...
-    -0.     -0.       sigma_z     0; ...
-    15       -7           4           1];
+A = [1      0.          0.          0;... 
+    -0.     1           0.3         0; ...
+    -0.     -0.3       sigma_z     0; ...
+    0       0           0           1];
 %find imSize limits
-imBounds = max(round(A(1:3,1:3) * size(im)'), size(im)');
-
+%imBounds = max(round(A(1:3,1:3) * size(im)'), size(im)');
+imBounds = [];
 %%
 %apply imWarp
 tic;
-imW = imwarp(im, affine3d(A), 'interp', 'cubic', 'Outputview', imref3d(imBounds'));
+
+if( isempty(imBounds))
+    imW = imwarp(im, affine3d(A), 'interp', 'cubic');
+else
+    imW = imwarp(im, affine3d(A), 'interp', 'cubic', 'Outputview', imref3d(imBounds'));
+end
 toc
 
 
@@ -35,9 +40,15 @@ imF = imwarpfast(im, A, method,imBounds');
 toc
 
 %%
+
+figure;imagesc(imW(:,:,30))
+figure;imagesc(imF(:,:,30))
+
 figure;
 plot([squeeze(imF(24,24,:))';squeeze(imW(24,24,:))']');
 legend('Ours','Warp');
+
+
 
 err = max(abs(single(imW(:))-imF(:)))
 if( err > 1e-3 )
@@ -46,5 +57,3 @@ else
     disp 'OK. PASSED'
 end
 
-figure;imagesc(imW(:,:,30))
-figure;imagesc(imF(:,:,30))

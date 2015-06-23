@@ -10,9 +10,20 @@ mpath = fileparts(mpath);
 addpath([mpath '/nonrigid_version23/functions_affine']);
 
 %%
+%matrix flip xy coordinates
+F = eye(4);
+F(1:2,1:2) = [0 1;1 0];
+
+%%
 %generate bounds if not requested
-if( isempty( imOutSize ) )
-    imOutSize = ceil(max(A(1:3,1:3) * size(im)', size(im)'))';
+D = eye(4);%displacement in case output box lower bound is not [0 0 0]
+if( isempty( imOutSize ) )    
+    error 'imwarpfast: code not ready to emulate imwarp when no bnounding box is giveb'
+    ROI = round(findBoundingBox(F*A', size(im))); %works with PSF example
+    %ROI = round(findBoundingBox(A', size(im)))%works for test_A
+    imOutSize = diff(ROI);
+    D(1:3,4) = ROI(1,[2 1 3]) / 2 + 1; %works for roation on XY with C * Af * B * D;
+    %D(1:3,4) = ROI(1,[2 1 3]); %works for pure translation with C * Af * B * D; (D can go anywhere here)
 end
 
 %%
@@ -31,10 +42,6 @@ im = padarray(im, imOutSize-imSize, 0, 'post');
 % Disable warning
 warning('off', 'MATLAB:maxNumCompThreads:Deprecated')
 
-%transform matrix to adapt to code convention
-F = eye(4);
-F(1:2,1:2) = [0 1;1 0];%flip xy coordinates
-
 Af = (A'*F)\F;
 
 
@@ -45,7 +52,7 @@ B(1:3,4) =  size(im) / 2 + 1;
 C = eye(4);
 C(1:3,4) = -B(1:3,4);
 
-Af = C * Af * B;
+Af = C * Af * B * D;
 
 %call function
 imOut = affine_transform(im,Af,mode);
