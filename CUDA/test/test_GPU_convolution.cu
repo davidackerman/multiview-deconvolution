@@ -33,13 +33,12 @@ int main(int argc, const char** argv)
 	
 	//parameters
 	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
-	string filePatternPSF(filepath + "psfReg_?.klb");
-	string filePatternImg(filepath + "imReg_?.klb");
-	int numViews = 4;
-
-
 	if (argc > 1)
 		filepath = string(argv[1]);
+	string filePatternPSF(filepath + "psfReg_?.klb");
+	string filePatternImg(filepath + "imReg_?.klb");
+	int numViews = 1;
+		
 
 	//=====================================================================
 

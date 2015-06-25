@@ -233,10 +233,15 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 
 	//preparing FFT plans
-	cufftPlan3d(&fftPlanFwd, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_R2C); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
-	cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_C2R); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
+	cufftResult_t result;
+	result = cufftPlan3d(&fftPlanFwd, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_R2C);
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_C2R);
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//allocate memory and precompute things for each view things for each vieww
 	cout << "===================TODO: load img and weights on the fly to CPU to avoid consuming too much memory====================" << endl;
@@ -291,7 +296,8 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 #endif
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
-		cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); HANDLE_ERROR_KERNEL;
+		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); 
+		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 		//release memory for PSF
 		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
@@ -434,10 +440,15 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
     
 
 	//preparing FFT plans
-	cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
-	cufftPlan3d(&fftPlanInv, blockDims[2], blockDims[1], blockDims[0], CUFFT_C2R); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
+	cufftResult_t result;
+	result = cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); //for highest performance since we do not need FFTW compatibility
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftPlan3d(&fftPlanInv, blockDims[2], blockDims[1], blockDims[0], CUFFT_C2R);
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
 	//allocate memory and precompute things for each view things for each vieww	
@@ -474,7 +485,8 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
-		cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); HANDLE_ERROR_KERNEL;
+		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); 
+		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 		//release memory for PSF
 		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
@@ -514,13 +526,15 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_FFT), imSizeFFT * sizeof(outputType)));//to hold products between FFT
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_LR), nImg * sizeof(outputType)));//to hold LR update 
 
+	cufftResult_t result;
 	//loop for each iteration
 	for (int iter = 0; iter < numIters; iter++)
 	{
 		//copy current solution
 		elementwiseOperationInPlace(J_GPU_FFT, J.getPointer_GPU(0), nImg, op_elementwise_type::copy);
 		//precompute FFT for current solution
-		cufftExecR2C(fftPlanFwd, J_GPU_FFT, (cufftComplex *)J_GPU_FFT); HANDLE_ERROR_KERNEL;
+		result = cufftExecR2C(fftPlanFwd, J_GPU_FFT, (cufftComplex *)J_GPU_FFT); 
+		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 		//precalculate TV on J
 		if (lambdaTV > 0)
@@ -538,7 +552,8 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			modulateAndNormalize_outOfPlace_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(J_GPU_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));//last parameter is the size of the FFT
 
 			//inverse FFT 
-			cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); HANDLE_ERROR_KERNEL;
+			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); 
+			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
 #ifdef _DEBUG
@@ -546,7 +561,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			/*            
+			          
 			sprintf(buffer, "E:/temp/deconvolution/img_view%.4d.raw", vv);
 			if ( iter == 0 )
 				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));
@@ -559,7 +574,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "E:/temp/deconvolution/PSFpaddedFfft_iter%.4d_view%d.raw", iter, vv);
 			debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
-            */
+            
 #endif
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
@@ -567,13 +582,15 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			elementwiseOperationInPlace(aux_FFT, 0.0f, nImg, op_elementwise_type::isnanop);//set nan elements to zero
 
 			//calculate FFT of ratio (for convolution)
-			cufftExecR2C(fftPlanFwd, aux_FFT, (cufftComplex *)aux_FFT); HANDLE_ERROR_KERNEL;
+			result = cufftExecR2C(fftPlanFwd, aux_FFT, (cufftComplex *)aux_FFT);
+			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 			//multiply auxFFT and FFT(PSF)*
 			modulateAndNormalize_conj_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));
 
 			//inverse FFT
-			cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); HANDLE_ERROR_KERNEL;
+			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); 
+			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 			//add the value
 			if (useWeights)
@@ -746,18 +763,26 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	debug_writeGPUarray(kernelPaddedCUDA, auxDimsImg, string(filepath + "cudafft3d_kernelPaddedCuda.raw"));
 #endif
 
+	cufftResult_t result;
+
 	//printf("Creating R2C & C2R FFT plans for size %i x %i x %i\n",imDim[0],imDim[1],imDim[2]);
-	cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL; //for highest performance since we do not need FFTW compatibility
-	cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R); HANDLE_ERROR_KERNEL;
-	cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); HANDLE_ERROR_KERNEL;
+	result = cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//transforming convolution kernel; TODO: if I do multiple convolutions with the same kernel I could reuse the results at teh expense of using out-of place memory (and then teh layout of the data is different!!!! so imCUDAfft should also be out of place)
 	//NOTE: from CUFFT manual: If idata and odata are the same, this method does an in-place transform.
 	//NOTE: from CUFFT manual: inplace output data xy(z/2 + 1) with fcomplex. Therefore, in order to perform an in-place FFT, the user has to pad the input array in the last dimension to Nn2 + 1 complex elements interleaved. Note that the real-to-complex transform is implicitly forward.
-	cufftExecR2C(fftPlanFwd, imCUDA, (cufftComplex *)imCUDA); HANDLE_ERROR_KERNEL;
+	result = cufftExecR2C(fftPlanFwd, imCUDA, (cufftComplex *)imCUDA); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	//transforming image
-	cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA); HANDLE_ERROR_KERNEL;
+	result = cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 #ifdef DEBUG_FFT_INTERMEDIATE_STEPS
 	debug_writeGPUarray(kernelPaddedCUDA, auxDimsImg, string(filepath + "cudafft3d_kernelPaddedCuda_fft.raw"));
@@ -769,21 +794,25 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	//NOTE: from CUFFT manual: CUFFT performs un-normalized FFTs; that is, performing a forward FFT on an input data set followed by an inverse FFT on the resulting set yields data that is equal to the input scaled by the number of elements.
 	numThreads = std::min((long long int)MAX_THREADS_CUDA, imSizeFFT / 2);//we are using complex numbers
 	numBlocks = std::min((long long int)MAX_BLOCKS_CUDA, (long long int)(imSizeFFT / 2 + (long long int)(numThreads - 1)) / ((long long int)numThreads));
-	modulateAndNormalize_kernel << <numBlocks, numThreads >> >((cufftComplex *)imCUDA, (cufftComplex *)kernelPaddedCUDA, imSizeFFT / 2, 1.0f / (float)(imSize));//last parameter is the size of the FFT
+	modulateAndNormalize_kernel << <numBlocks, numThreads >> >((cufftComplex *)imCUDA, (cufftComplex *)kernelPaddedCUDA, imSizeFFT / 2, 1.0f / (float)(imSize)); HANDLE_ERROR_KERNEL;//last parameter is the size of the FFT
 
 #ifdef DEBUG_FFT_INTERMEDIATE_STEPS	
 	debug_writeGPUarray(imCUDA, auxDimsImg, string(filepath + "cudafft3d_imTimesPSF_fft.raw"));
 #endif
 
 	//inverse FFT 
-	cufftExecC2R(fftPlanInv, (cufftComplex *)imCUDA, imCUDA); HANDLE_ERROR_KERNEL;
+	result = cufftExecC2R(fftPlanInv, (cufftComplex *)imCUDA, imCUDA); HANDLE_ERROR_KERNEL;
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//copy result to host
 	HANDLE_ERROR(cudaMemcpy(convResult, imCUDA, sizeof(imgType)*imSize, cudaMemcpyDeviceToHost));
 
 	//release memory
-	(cufftDestroy(fftPlanInv)); HANDLE_ERROR_KERNEL;
-	(cufftDestroy(fftPlanFwd)); HANDLE_ERROR_KERNEL;
+	result = cufftDestroy(fftPlanInv);
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	result = cufftDestroy(fftPlanFwd); 
+	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+
 	HANDLE_ERROR(cudaFree(imCUDA));
 	HANDLE_ERROR(cudaFree(kernelCUDA));
 	HANDLE_ERROR(cudaFree(kernelPaddedCUDA));
