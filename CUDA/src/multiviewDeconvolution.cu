@@ -557,22 +557,23 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 
 #ifdef _DEBUG
+			std::string debugPath("/groups/keller/kellerlab/deconvolutionDatasets/debug/");
 			char buffer[256];
-			sprintf(buffer, "E:/temp/deconvolution/J_iter%.4d.raw", iter);
+			sprintf(buffer, "%sJ_iter%.4d.raw",debugPath.c_str(), iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			          
-			sprintf(buffer, "E:/temp/deconvolution/img_view%.4d.raw", vv);
+			            
+			sprintf(buffer, "%simg_view%.4d.raw",debugPath.c_str(), vv);
 			if ( iter == 0 )
 				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));
-			sprintf(buffer, "E:/temp/deconvolution/weights_view%.4d.raw", vv);
+			sprintf(buffer, "%sweights_view%.4d.raw",debugPath.c_str(), vv);
 			if (iter == 0)
 				debug_writeGPUarray(weights.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));			
-			sprintf(buffer, "E:/temp/deconvolution/JconvPSF_iter%.4d_view%d.raw", iter, vv);
+			sprintf(buffer, "%sJconvPSF_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
-			sprintf(buffer, "E:/temp/deconvolution/JFFT_iter%.4d.raw", iter);
+			sprintf(buffer, "%sJFFT_iter%.4d.raw", debugPath.c_str(),iter);
 			debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
-			sprintf(buffer, "E:/temp/deconvolution/PSFpaddedFfft_iter%.4d_view%d.raw", iter, vv);
+			sprintf(buffer, "%sPSFpaddedFfft_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
             
 #endif
@@ -711,7 +712,7 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	cufftHandle fftPlanFwd, fftPlanInv;
 
 #ifdef DEBUG_FFT_INTERMEDIATE_STEPS
-	string filepath("E:/temp/deconvolution/");
+	string filepath("/groups/keller/kellerlab/deconvolutionDatasets/debug/");
 #endif
 
 	HANDLE_ERROR(cudaSetDevice(devCUDA));
