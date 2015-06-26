@@ -355,7 +355,7 @@ int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
 	default:
 		cout << "ERROR: format not supported yet" << endl;
 		return 10;
-	}	
+	}
 
 	//write image
 	int error = imgIO.writeImage((char*)(imgVec_CPU[pos]), -1);//all the threads available
