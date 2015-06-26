@@ -447,3 +447,54 @@ int multiGPUblockController::writeDeconvoutionResult(const std::string& filename
 
 	return error;
 }
+//=============================================
+//===========================================================================================
+int multiGPUblockController::writeDeconvoutionResultRaw(const std::string& filename)
+{
+	
+	FILE* fid = fopen(filename.c_str(), "wb");
+
+	if (fid == NULL)
+	{
+		printf("Error opening file %s to save raw image data\n", filename.c_str());
+		return 2;
+	}
+
+	fwrite((void*)(J), sizeof(imgTypeDeconvolution), numElements(), fid);
+	fclose(fid);
+
+	//write header information
+	string filenameH(filename + ".txt");
+	fid = fopen(filenameH.c_str(), "w");
+	if (fid == NULL)
+	{
+		printf("Error opening file %s to save header\n", filenameH.c_str());
+		return 2;
+	}
+
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+	{
+		fprintf(fid, "%d ", (int)(imgDims[ii]));
+	}
+	fprintf(fid, "\n");
+
+	switch (sizeof(imgTypeDeconvolution))
+	{
+	case 1:
+		fprintf(fid, "uint8\n");
+		break;
+	case 2:
+		fprintf(fid, "uint16\n");
+		break;
+	case 4:
+		fprintf(fid, "single\n");
+		break;
+	default:
+		fprintf(fid, "unkown\n");
+		break;
+	}
+
+
+	fclose(fid);
+	return 0;
+}

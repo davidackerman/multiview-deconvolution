@@ -41,6 +41,7 @@ public:
 	int readImage(const std::string& filename, int pos, const std::string& type);
 	int readROI(const std::string& filename, int pos, const std::string& type, const klb_ROI& ROI);
 	int writeDeconvoutionResult(const std::string& filename){ return J.writeImage(filename, 0); };
+	int writeDeconvoutionResultRaw(const std::string& filename){ return J.writeImageRaw(filename, 0); };
 
 	//perfoms all the preallocation and precalculation for the deconvolution
 	int allocate_workspace(imgType imgBackground);

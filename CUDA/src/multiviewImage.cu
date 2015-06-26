@@ -11,6 +11,7 @@
 * \brief 
 */
 
+#include <stdio.h>
 #include "multiviewImage.h"
 #include "klb_imageIO.h"
 #include "klb_Cwrapper.h"
@@ -376,6 +377,61 @@ int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
 	}
 
 	return error;
+}
+
+
+//===========================================================================================
+template<class imgType>
+int multiviewImage<imgType>::writeImageRaw(const std::string& filename, int pos)
+{
+	if (pos >= imgVec_CPU.size() || imgVec_CPU[pos] == NULL)
+		return 0;
+
+	FILE* fid = fopen(filename.c_str(), "wb");
+
+	if (fid == NULL)
+	{
+		printf("Error opening file %s to save raw image data\n", filename.c_str());
+		return 2;
+	}
+
+	fwrite(imgVec_CPU[pos],sizeof(imgType), numElements(pos), fid);
+	fclose(fid);
+
+	//write header information
+	string filenameH(filename + ".txt");
+	fid = fopen(filenameH.c_str(), "w");
+	if (fid == NULL)
+	{
+		printf("Error opening file %s to save header\n", filenameH.c_str());
+		return 2;
+	}
+
+	for (int ii = 0; ii < dimsImgVec[pos].ndims; ii++)
+	{
+		fprintf(fid,"%d ",(int)(dimsImgVec[pos].dims[ii]));
+	}
+	fprintf(fid, "\n");
+
+	switch (sizeof(imgType))
+	{
+	case 1:
+		fprintf(fid, "uint8\n");
+		break;
+	case 2:
+		fprintf(fid, "uint16\n");
+		break;
+	case 4:
+		fprintf(fid, "single\n");
+		break;
+	default:
+		fprintf(fid, "unkown\n");
+		break;
+	}
+	
+
+	fclose(fid);
+	return 0;
 }
 
 

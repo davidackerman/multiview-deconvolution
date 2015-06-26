@@ -57,7 +57,7 @@ public:
 	int getImageDimensions();
 	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 	int writeDeconvoutionResult(const std::string& filename);
-
+	int writeDeconvoutionResultRaw(const std::string& filename);
 
     //methods
 	void queryGPUs(); 
