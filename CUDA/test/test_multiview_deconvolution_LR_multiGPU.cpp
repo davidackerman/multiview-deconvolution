@@ -24,9 +24,9 @@ int main(int argc, const char** argv)
 
 	time(&start);
 	//parameters
-	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
-	//string filepath("T:/temp/deconvolution/15_04_24_fly_functionalImage/TM000007/simview3_TM7_");//very large file
-	int numIters = 2;
+	//string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	string filepath("E:/temp/20150505_185415_GCaMP6_TM000089/simview3_TM89_");//very large file
+	int numIters = 5;
 	int numViews = 4;
 	imgTypeDeconvolution imgBackground = 100;
 	cout << "===============TODO: activate total variations==============" << endl;
