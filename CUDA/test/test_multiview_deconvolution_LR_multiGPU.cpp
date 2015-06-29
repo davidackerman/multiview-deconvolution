@@ -82,8 +82,10 @@ int main(int argc, const char** argv)
 	time(&end);
 	cout << "Multiview deconvolution using multi-GPU took " << difftime(end, start) << " secs for " << numIters << " iterations" << endl;
     //write result
-	//err = master.writeDeconvoutionResult(string(filepath + "test_mv_deconv_LR_multiGPU.klb"));
-	err = master.writeDeconvoutionResultRaw(string(filepath + "test_mv_deconv_LR_multiGPU.raw"));
+	char fileoutName[256];
+	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.raw", filepath.c_str(), numIters);
+	//err = master.writeDeconvoutionResult(string(fileoutName)));
+	err = master.writeDeconvoutionResultRaw(string(fileoutName));
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;
