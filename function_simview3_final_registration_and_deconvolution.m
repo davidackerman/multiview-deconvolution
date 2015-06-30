@@ -93,9 +93,9 @@ for ii = 1:Nviews
         writeKLBstack(PSFcell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_psfReg_' num2str(ii) '.klb']);
         writeKLBstack(weightsCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_weightsReg_' num2str(ii) '.klb']);
         
-        writeRawStack(imCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_imReg_' num2str(ii) '.raw']);
-        writeRawStack(PSFcell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_psfReg_' num2str(ii) '.raw']);
-        writeRawStack(weightsCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_weightsReg_' num2str(ii) '.raw']);
+% %         writeRawStack(imCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_imReg_' num2str(ii) '.raw']);
+% %         writeRawStack(PSFcell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_psfReg_' num2str(ii) '.raw']);
+% %         writeRawStack(weightsCell{ii},[debugBasename 'TM' num2str(TM,'%6d') '_weightsReg_' num2str(ii) '.raw']);
     end
     
 end

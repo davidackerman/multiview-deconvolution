@@ -4,7 +4,7 @@ psfFilename = {'transfomed PSF of viewsetup 0', 'transfomed PSF of viewsetup 1',
 
 
 numIterFinal = 200;    
-numIterIni = 40;
+numIterIni = 120;
 
 lambdaTV = 0.008; %0.002 is value recommended by paper
 backgroundOffset = 100;
