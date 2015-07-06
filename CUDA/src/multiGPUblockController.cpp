@@ -14,6 +14,7 @@
 #include <thread>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 #include "multiGPUblockController.h"
 #include "standardCUDAfunctions.h"
 #include "klb_ROI.h"
@@ -22,10 +23,12 @@
 
 
 
-
-
-
-
+//uncomment this to time elements
+//#define PROFILE_CODE_LR_GPU
+	
+#ifdef PROFILE_CODE_LR_GPU
+typedef std::chrono::high_resolution_clock Clock;
+#endif
 using namespace std;
 
 //these numbers only have 2 or 3 as factors
@@ -317,7 +320,17 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx)
 #ifdef _DEBUG
 		cout << "Thread " << threadIdx << " running deconvolution" << endl;
 #endif
+
+#ifdef PROFILE_CODE_LR_GPU
+		auto t1 = Clock::now();
+#endif
 		Jobj->deconvolution_LR_TV(paramDec.numIters, paramDec.lambdaTV);
+
+#ifdef PROFILE_CODE_LR_GPU
+		//deconvolution_LR_TV calls cudaFree at the end which is synchronous so timing is accurate
+		auto t2 = Clock::now();
+		cout << "Thread " << threadIdx << " took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << " for one block with " << paramDec.numIters << " iters" << endl;
+#endif
 
         //copy block result to J
 		Jobj->copyDeconvoutionResultToCPU();
