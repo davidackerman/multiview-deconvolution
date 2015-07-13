@@ -60,3 +60,9 @@ IF(NOT TARGET test_GPU_convolution_pr )
 	TARGET_LINK_LIBRARIES(test_GPU_convolution_pr ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 ENDIF()
 
+IF(NOT TARGET test_GPU_TV )	
+	add_executable(test_GPU_TV test_total_variation.cxx )
+	target_link_libraries(test_GPU_TV multiview_deconvolution_GPU klblib)
+	TARGET_LINK_LIBRARIES(test_GPU_TV ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+ENDIF()
+

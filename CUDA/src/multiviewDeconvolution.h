@@ -51,6 +51,9 @@ public:
 	//different deconvolution methods
 	void deconvolution_LR_TV(int numIters, float lambdaTV);//lucy-richardson with totalvariation regularization
 
+	//regularization methods
+	void regularization_TV(outputType* Jreg, outputType** temp_CUDA, int tempN );//temp_CUDA are arrays that are already preallocated and we can re-use. They are the same size as the output image
+
 	//set/get IO functions
 	void setNumberOfViews(int numViews);
 	void copyDeconvoutionResultToCPU(){ J.copyView_GPU_to_CPU(0); };
@@ -67,6 +70,7 @@ public:
 	static void debug_writeGPUarray(float* ptr_GPU, dimsImg& dims, const std::string& filename);
 	static void debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename);
     void debug_writeCPUarray_img(size_t pos, const std::string& filename){ debug_writeCPUarray(img.getPointer_CPU(pos), img.dimsImgVec[pos], filename); };
+	static outputType* debug_regularization_TV_CPU(const outputType* f, const std::int64_t* imDim);
 
 protected:	
 

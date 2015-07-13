@@ -32,7 +32,7 @@ __global__ void __launch_bounds__(MAX_THREADS_CUDA) fftShiftKernel(imageType* ke
 
 	int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if (tid<kernelSize)
+	if (tid < kernelSize)
 	{
 		//find coordinates
 		int64_t x, y, z, aux;
@@ -47,9 +47,9 @@ __global__ void __launch_bounds__(MAX_THREADS_CUDA) fftShiftKernel(imageType* ke
 		z -= kernelDim_2 / 2;
 
 		//circular shift if necessary
-		if (x<0) x += imDim_0;
-		if (y<0) y += imDim_1;
-		if (z<0) z += imDim_2;
+		if (x < 0) x += imDim_0;
+		if (y < 0) y += imDim_1;
+		if (z < 0) z += imDim_2;
 
 		//calculate position in padded kernel
 		aux = z + imDim_2 * (y + imDim_1 * x);
@@ -79,7 +79,7 @@ __device__ void mulAndScale_conj(cufftComplex& a, const cufftComplex& b, const f
 
 __device__ cufftComplex mulAndScale_outOfPlace(const cufftComplex& a, const cufftComplex& b, const float& c)
 {
-	return  { c * (a.x * b.x - a.y * b.y), c * (a.y * b.x + a.x * b.y) };	
+	return{ c * (a.x * b.x - a.y * b.y), c * (a.y * b.x + a.x * b.y) };
 };
 
 __global__ void modulateAndNormalize_kernel(cufftComplex *d_Dst, const cufftComplex *d_Src, long long int dataSize, float c)
@@ -168,7 +168,7 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 		return psf.readImage(filename, pos);
 	else if (type.compare("img") == 0)
 		return img.readImage(filename, pos);
-	
+
 	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;
 	return 3;
 }
@@ -184,7 +184,7 @@ void multiviewDeconvolution<imgType>::padArrayWithZeros(const std::uint32_t *dim
 	else if (type.compare("img") == 0)
 		return img.padArrayWithZeros(pos, dimsAfterPad);
 
-	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;	
+	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;
 }
 
 
@@ -240,7 +240,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_C2R);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); 
+	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//allocate memory and precompute things for each view things for each vieww
@@ -255,8 +255,8 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 		HANDLE_ERROR(cudaMemcpy(img.getPointer_GPU(ii), img.getPointer_CPU(ii), nImg * sizeof(imgType), cudaMemcpyHostToDevice));
 		//deallocate memory from CPU
 		img.deallocateView_CPU(ii);
-        //subtract background
-		if ( imgBackground > 0)
+		//subtract background
+		if (imgBackground > 0)
 			elementwiseOperationInPlace<imgType>(img.getPointer_GPU(ii), imgBackground, nImg, op_elementwise_type::minus_positive);
 
 		if (useWeights)
@@ -276,16 +276,16 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 		//allocate memory for PSF FFT
 		const int64_t psfSize = psf.numElements(ii);
-		HANDLE_ERROR(cudaMalloc((void**)&(psf_notPadded_GPU), (psfSize) * sizeof(psfType)));		
+		HANDLE_ERROR(cudaMalloc((void**)&(psf_notPadded_GPU), (psfSize)* sizeof(psfType)));
 		psf.allocateView_GPU(ii, imSizeFFT * sizeof(psfType));
 
 		//transfer psf
 		HANDLE_ERROR(cudaMemcpy(psf_notPadded_GPU, psf.getPointer_CPU(ii), psfSize * sizeof(psfType), cudaMemcpyHostToDevice));
 
 		//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
-		int numThreads = std::min((int64_t)MAX_THREADS_CUDA/4, psfSize);
+		int numThreads = std::min((int64_t)MAX_THREADS_CUDA / 4, psfSize);
 		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
-		HANDLE_ERROR(cudaMemset(psf.getPointer_GPU(ii), 0, imSizeFFT * sizeof(psfType)));		
+		HANDLE_ERROR(cudaMemset(psf.getPointer_GPU(ii), 0, imSizeFFT * sizeof(psfType)));
 		fftShiftKernel << <numBlocks, numThreads >> >(psf_notPadded_GPU, psf.getPointer_GPU(ii), psf.dimsImgVec[ii].dims[2], psf.dimsImgVec[ii].dims[1], psf.dimsImgVec[ii].dims[0], img.dimsImgVec[ii].dims[2], img.dimsImgVec[ii].dims[1], img.dimsImgVec[ii].dims[0]); HANDLE_ERROR_KERNEL;
 
 
@@ -296,17 +296,17 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 #endif
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
-		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); 
+		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii)));
 		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 		//release memory for PSF
 		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
 		psf.deallocateView_CPU(ii);
-	}	
-	
-	
+	}
+
+
 	if (useWeights)
-	{		
+	{
 		//normalize weights	
 		for (size_t ii = 0; ii < nViews; ii++)
 		{
@@ -316,7 +316,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 		//deallocate temporary memory to nromalize weights
 		HANDLE_ERROR(cudaFree(weightAvg_GPU));
-		weightAvg_GPU = NULL; 
+		weightAvg_GPU = NULL;
 	}
 
 
@@ -324,7 +324,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 	J.resize(1);
 	J.setImgDims(0, img.dimsImgVec[0]);
 	J.allocateView_GPU(0, nImg * sizeof(outputType));
-	J.allocateView_CPU(0, nImg );
+	J.allocateView_CPU(0, nImg);
 
 	//initialize final results as weighted average of all views
 	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
@@ -345,7 +345,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 	const size_t nViews = img.getNumberOfViews();
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
-	
+
 	if (nViews == 0)
 	{
 		cout << "ERROR:multiviewDeconvolution<imgType>::allocate_workspace(): no views loaded to start process" << endl;
@@ -360,7 +360,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 		HANDLE_ERROR(cudaMemset(weightAvg_GPU, 0, nImg * sizeof(weightType)));
 	}
 
-	
+
 	//allocate memory and precompute things for each view things for each vieww	
 	for (size_t ii = 0; ii < nViews; ii++)
 	{
@@ -388,12 +388,12 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 			//call kernel to update weightAvg_GPU
 			elementwiseOperationInPlace<weightType>(weightAvg_GPU, weights.getPointer_GPU(ii), nImg, op_elementwise_type::plus);
 		}
-		
+
 	}
 
 
 	if (useWeights)
-	{		
+	{
 		//normalize weights	
 		for (size_t ii = 0; ii < nViews; ii++)
 		{
@@ -405,7 +405,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 		HANDLE_ERROR(cudaFree(weightAvg_GPU));
 		weightAvg_GPU = NULL;
 	}
-	
+
 	//initialize final results as weighted average of all views
 	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
 	for (size_t ii = 0; ii < nViews; ii++)
@@ -422,7 +422,7 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 {
 
 	//const values throughout the function			
-	const size_t nViews = psf.getNumberOfViews();	
+	const size_t nViews = psf.getNumberOfViews();
 	int64_t nImg = 1;
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 		nImg *= blockDims[ii];
@@ -437,11 +437,11 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 		cout << "ERROR:multiviewDeconvolution<imgType>::allocate_workspace(): no views loaded to start process" << endl;
 		return 2;
 	}
-    
+
 
 	//preparing FFT plans
 	cufftResult_t result;
-	result = cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C); 
+	result = cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); //for highest performance since we do not need FFTW compatibility
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
@@ -458,15 +458,15 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 		//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
 		//allocate memory for image in the GPU		
 		img.allocateView_GPU(ii, nImg * sizeof(imgType));
-        //we do not have anything to upload yet		
-		
+		//we do not have anything to upload yet		
+
 		if (useWeights)
 		{
 			//load weights for ii-th to CPU 
 			//cout << "===================TODO: load weights on the fly to CPU to avoid consuming too much memory====================" << endl;
 			//allocate memory for weights in the GPU			
 			weights.allocateView_GPU(ii, nImg * sizeof(weightType));
-			
+
 		}
 
 		//allocate memory for PSF FFT
@@ -485,23 +485,23 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 
 
 		//execute FFT.  If idata and odata are the same, this method does an in-place transform
-		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii))); 
+		result = cufftExecR2C(fftPlanFwd, psf.getPointer_GPU(ii), (cufftComplex *)(psf.getPointer_GPU(ii)));
 		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 		//release memory for PSF
 		HANDLE_ERROR(cudaFree(psf_notPadded_GPU));
 		psf.deallocateView_CPU(ii);
-	}	
+	}
 
 	//allocate memory for final result
 	J.resize(1);
-	dimsImg aux; 
-    aux.ndims = MAX_DATA_DIMS;
+	dimsImg aux;
+	aux.ndims = MAX_DATA_DIMS;
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 		aux.dims[ii] = blockDims[ii];
 	J.setImgDims(0, aux);
 	J.allocateView_GPU(0, nImg * sizeof(outputType));
-	J.allocateView_CPU(0, nImg);	
+	J.allocateView_CPU(0, nImg);
 
 
 	return 0;
@@ -516,12 +516,11 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	const size_t nViews = img.getNumberOfViews();
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
 
-	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA/4, imSizeFFT / 2);//we are using complex numbers
-	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));    
+	int numThreads = std::min((std::int64_t)MAX_THREADS_CUDA / 4, imSizeFFT / 2);//we are using complex numbers
+	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
 
 	//allocate extra memory required for intermediate calculations
 	outputType *J_GPU_FFT, *aux_FFT, *aux_LR;
-	outputType *TV_GPU = NULL;
 	HANDLE_ERROR(cudaMalloc((void**)&(J_GPU_FFT), imSizeFFT * sizeof(outputType)));//for J FFT
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_FFT), imSizeFFT * sizeof(outputType)));//to hold products between FFT
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_LR), nImg * sizeof(outputType)));//to hold LR update 
@@ -533,14 +532,8 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 		//copy current solution
 		elementwiseOperationInPlace(J_GPU_FFT, J.getPointer_GPU(0), nImg, op_elementwise_type::copy);
 		//precompute FFT for current solution
-		result = cufftExecR2C(fftPlanFwd, J_GPU_FFT, (cufftComplex *)J_GPU_FFT); 
+		result = cufftExecR2C(fftPlanFwd, J_GPU_FFT, (cufftComplex *)J_GPU_FFT);
 		if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-
-		//precalculate TV on J
-		if (lambdaTV > 0)
-		{
-			cout << "==============TODO: calculate total variation==================" << endl;
-		}
 
 		//reset update
 		HANDLE_ERROR(cudaMemset(aux_LR, 0, nImg * sizeof(outputType)));
@@ -552,7 +545,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			modulateAndNormalize_outOfPlace_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(J_GPU_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));//last parameter is the size of the FFT
 
 			//inverse FFT 
-			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); 
+			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT);
 			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
@@ -562,7 +555,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			sprintf(buffer, "%sJ_iter%.4d.raw",debugPath.c_str(), iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
-			            
+
 			sprintf(buffer, "%simg_view%.4d.raw",debugPath.c_str(), vv);
 			if ( iter == 0 )
 				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));
@@ -575,7 +568,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sPSFpaddedFfft_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
-            
+
 #endif
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
@@ -590,7 +583,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			modulateAndNormalize_conj_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));
 
 			//inverse FFT
-			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT); 
+			result = cufftExecC2R(fftPlanInv, (cufftComplex *)aux_FFT, aux_FFT);
 			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 			//add the value
@@ -601,31 +594,34 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			else{
 				elementwiseOperationInPlace(aux_LR, aux_FFT, nImg, op_elementwise_type::plus);
 			}
-			
+
 		}
 
 		//normalize weights if we are just using averaging
 		if (!useWeights)
-			elementwiseOperationInPlace(aux_LR, 1.0f / (float)nViews, nImg, op_elementwise_type::multiply);		
+			elementwiseOperationInPlace(aux_LR, 1.0f / (float)nViews, nImg, op_elementwise_type::multiply);
 
 		//apply TV
 		if (lambdaTV > 0)
 		{
-			elementwiseOperationInPlace(aux_LR, TV_GPU, nImg, op_elementwise_type::divide);
+			//I probably don't need to store TV. Try to use the three auxiliary pointers that you alredy have J_GPU_FFT, aux_FFT, aux_LR (they are all size 
+			cout << "==============TODO: calculate total variation==================" << endl;
+			regularization_TV(J_GPU_FFT, &(aux_FFT), 1);
+			cout << "TODO: one kernel for 1-lambda *TV)" << endl;
+			elementwiseOperationInPlace(aux_LR, J_GPU_FFT, nImg, op_elementwise_type::divide);
 		}
 
 		//update LR 
 		elementwiseOperationInPlace(J.getPointer_GPU(0), aux_LR, nImg, op_elementwise_type::multiply);
-		
+
 	}
 
 	//release memory
 	HANDLE_ERROR(cudaFree(aux_LR));
 	HANDLE_ERROR(cudaFree(aux_FFT));
 	HANDLE_ERROR(cudaFree(J_GPU_FFT));
-	if ( TV_GPU != NULL)
-		HANDLE_ERROR(cudaFree(TV_GPU));
-	
+
+
 }
 
 //===========================================================
@@ -637,7 +633,7 @@ void multiviewDeconvolution<imgType>::debug_writDeconvolutionResultRaw(const std
 
 	ofstream fid(filename.c_str(), ios::binary);
 
-	fid.write((char*)(J.getPointer_CPU(0)), J.numElements(0) * sizeof(imgType)); 
+	fid.write((char*)(J.getPointer_CPU(0)), J.numElements(0) * sizeof(imgType));
 	fid.close();
 }
 
@@ -683,12 +679,12 @@ void multiviewDeconvolution<imgType>::debug_writeCPUarray(float* ptr_CPU, dimsIm
 	cout << " in float format to " << filename << endl;
 
 
-	
+
 	ofstream fid(filename.c_str(), ios::binary);
 	fid.write((char*)(ptr_CPU), numElements * sizeof(float));
 	fid.close();
 
-	
+
 }
 
 
@@ -719,7 +715,7 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 
 	long long int imSize = 1;
 	long long int kernelSize = 1;
-	for (int ii = 0; ii<dimsImage; ii++)
+	for (int ii = 0; ii < dimsImage; ii++)
 	{
 		imSize *= (long long int) (imDim[ii]);
 		kernelSize *= (long long int) (kernelDim[ii]);
@@ -759,7 +755,7 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	dimsImg auxDimsImg;
 	auxDimsImg.ndims = dimsImage;
 	for (int ii = 0; ii < dimsImage; ii++)
-		auxDimsImg.dims[ii] = imDim[dimsImage-1-ii];//flip coordinates
+		auxDimsImg.dims[ii] = imDim[dimsImage - 1 - ii];//flip coordinates
 
 	debug_writeGPUarray(kernelPaddedCUDA, auxDimsImg, string(filepath + "cudafft3d_kernelPaddedCuda.raw"));
 #endif
@@ -767,22 +763,22 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	cufftResult_t result;
 
 	//printf("Creating R2C & C2R FFT plans for size %i x %i x %i\n",imDim[0],imDim[1],imDim[2]);
-	result = cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C); 
+	result = cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R); 
+	result = cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE); 
+	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//transforming convolution kernel; TODO: if I do multiple convolutions with the same kernel I could reuse the results at teh expense of using out-of place memory (and then teh layout of the data is different!!!! so imCUDAfft should also be out of place)
 	//NOTE: from CUFFT manual: If idata and odata are the same, this method does an in-place transform.
 	//NOTE: from CUFFT manual: inplace output data xy(z/2 + 1) with fcomplex. Therefore, in order to perform an in-place FFT, the user has to pad the input array in the last dimension to Nn2 + 1 complex elements interleaved. Note that the real-to-complex transform is implicitly forward.
-	result = cufftExecR2C(fftPlanFwd, imCUDA, (cufftComplex *)imCUDA); 
+	result = cufftExecR2C(fftPlanFwd, imCUDA, (cufftComplex *)imCUDA);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	//transforming image
-	result = cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA); 
+	result = cufftExecR2C(fftPlanFwd, kernelPaddedCUDA, (cufftComplex *)kernelPaddedCUDA);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 #ifdef DEBUG_FFT_INTERMEDIATE_STEPS
@@ -811,7 +807,7 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 	//release memory
 	result = cufftDestroy(fftPlanInv);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftDestroy(fftPlanFwd); 
+	result = cufftDestroy(fftPlanFwd);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	HANDLE_ERROR(cudaFree(imCUDA));
@@ -824,7 +820,7 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 //=================================================================
 template<class imgType>
 imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA_img_psf(size_t pos, int devCUDA)
-{ 
+{
 	//we need to flip dimensions because cuFFT the fastest running dimension is the last one
 	int64_t dimsI[3], dimsP[3];
 
@@ -841,6 +837,175 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA_img_psf(size_t po
 
 	return aux;
 };
+
+
+//=================================================================
+template<class imgType>
+void multiviewDeconvolution<imgType>::regularization_TV(outputType* Jreg, outputType** temp_CUDA, int tempN)
+{
+	if (tempN < 1)
+	{
+		cout << "ERROR: multiviewDeconvolution<imgType>::regularization_TV: we need more preallocated memory" << endl;
+		exit(2);
+	}
+
+	const outputType* Jin = J.getPointer_GPU(0);
+	cout << "TODO!!!!!!!!!!!!!!!!!" << endl;
+
+
+	LOOK at Matlab code:
+	1. - Calculate norm(dI / dx_i) : store the norm at tempCUDA;
+	2. - Calculate divergence;
+	Since I calculate separability on the fly, I should be able to do it with this kind of auxiliary memory;
+
+
+}
+
+//=================================================================
+//adapted from ops_ext.c div_unit_grad() from https://code.google.com/p/iocbio/
+
+//this code assumes idx = z + Nz * (y + Ny * x ); //z is the fastest running dimension
+static
+__inline double _GETPTR3(const outputType* f, int64_t x, int64_t y, int64_t z, int64_t Nx, int64_t Ny, int64_t Nz)
+{
+	return f[z + Nz * (y + Ny * x)];//so many multiplications are definitely inefficient
+}
+
+static
+double m(double a, double b)
+{
+	if (a<0 && b<0)
+	{
+		if (a >= b) return a;
+		return b;
+	}
+	if (a>0 && b>0)
+	{
+		if (a < b) return a;
+		return b;
+	}
+	return 0.0;
+}
+
+static
+__inline double hypot3(double a, double b, double c)
+{
+	return sqrt(a*a + b*b + c*c);
+}
+
+
+
+template<class imgType>
+outputType* multiviewDeconvolution<imgType>::debug_regularization_TV_CPU(const outputType* f, const std::int64_t* imDim)
+{
+	int64_t Nx = imDim[2], Ny = imDim[1], Nz = imDim[0];//here Nz is the fastest running dimension
+	int64_t i, j, k, im1, ip1, jm1, jp1, km1, kp1;
+
+	double hx = 1.0, hy = 1.0, hz = 1.0;
+	
+
+	double fip, fim, fjp, fjm, fkp, fkm, fijk;
+	double fimkm, fipkm, fjmkm, fjpkm, fimjm, fipjm, fimkp, fjmkp, fimjp;
+	double aim, bjm, ckm, aijk, bijk, cijk;
+	double Dxpf, Dxmf, Dypf, Dymf, Dzpf, Dzmf;
+	double Dxma, Dymb, Dzmc;
+
+	outputType* r = new outputType[Nx*Ny*Nz];
+
+
+	for (i = 0; i < Nx; ++i)
+	{
+		im1 = (i ? i - 1 : 0);	
+		//im2 = (im1 ? im1 - 1 : 0);
+		ip1 = (i + 1 == Nx ? i : i + 1);
+		for (j = 0; j < Ny; ++j)
+		{
+			jm1 = (j ? j - 1 : 0);
+			//jm2 = (jm1 ? jm1 - 1 : 0);
+			jp1 = (j + 1 == Ny ? j : j + 1);
+			for (k = 0; k < Nz; ++k)
+			{
+				km1 = (k ? k - 1 : 0);
+				//km2 = (km1 ? km1 - 1 : 0);
+				kp1 = (k + 1 == Nz ? k : k + 1);
+
+				fimjm = _GETPTR3(f, im1, jm1, k, Nx, Ny, Nz);
+				fim = _GETPTR3(f, im1, j, k, Nx, Ny, Nz);
+				fimkm = _GETPTR3(f, im1, j, km1, Nx, Ny, Nz);
+				fimkp = _GETPTR3(f, im1, j, kp1, Nx, Ny, Nz);
+				fimjp = _GETPTR3(f, im1, jp1, k, Nx, Ny, Nz);
+
+				fjmkm = _GETPTR3(f, i, jm1, km1, Nx, Ny, Nz);
+				fjm = _GETPTR3(f, i, jm1, k, Nx, Ny, Nz);
+				fjmkp = _GETPTR3(f, i, jm1, kp1, Nx, Ny, Nz);
+
+				fkm = _GETPTR3(f, i, j, km1, Nx, Ny, Nz);
+				fijk = _GETPTR3(f, i, j, k, Nx, Ny, Nz);
+				fkp = _GETPTR3(f, i, j, kp1, Nx, Ny, Nz);
+
+				fjpkm = _GETPTR3(f, i, jp1, km1, Nx, Ny, Nz);
+				fjp = _GETPTR3(f, i, jp1, k, Nx, Ny, Nz);
+
+				fipjm = _GETPTR3(f, ip1, jm1, k, Nx, Ny, Nz);
+				fipkm = _GETPTR3(f, ip1, j, km1, Nx, Ny, Nz);
+				fip = _GETPTR3(f, ip1, j, k, Nx, Ny, Nz);
+
+				Dxpf = (fip - fijk) / hx;
+				Dxmf = (fijk - fim) / hx;
+				Dypf = (fjp - fijk) / hy;
+				Dymf = (fijk - fjm) / hy;
+				Dzpf = (fkp - fijk) / hz;
+				Dzmf = (fijk - fkm) / hz;
+				aijk = hypot3(Dxpf, m(Dypf, Dymf), m(Dzpf, Dzmf));
+				bijk = hypot3(Dypf, m(Dxpf, Dxmf), m(Dzpf, Dzmf));
+				cijk = hypot3(Dzpf, m(Dypf, Dymf), m(Dxpf, Dxmf));
+
+				aijk = (aijk > 1e-8 ? Dxpf / aijk : 0.0);
+				bijk = (bijk > 1e-8 ? Dypf / bijk : 0.0);
+				cijk = (cijk > 1e-8 ? Dzpf / cijk : 0.0);
+
+
+				Dxpf = (fijk - fim) / hx;
+				Dypf = (fimjp - fim) / hy;
+				Dymf = (fim - fimjm) / hy;
+				Dzpf = (fimkp - fim) / hz;
+				Dzmf = (fim - fimkm) / hz;
+				aim = hypot3(Dxpf, m(Dypf, Dymf), m(Dzpf, Dzmf));
+
+				aim = (aim > 1e-8 ? Dxpf / aim : 0.0);
+
+
+				Dxpf = (fipjm - fjm) / hx;
+				Dxmf = (fjm - fimjm) / hx;
+				Dypf = (fijk - fjm) / hy;
+				Dzpf = (fjmkp - fjm) / hz;
+				Dzmf = (fjm - fjmkm) / hz;
+				bjm = hypot3(Dypf, m(Dxpf, Dxmf), m(Dzpf, Dzmf));
+
+				bjm = (bjm > 1e-8 ? Dypf / bjm : 0.0);
+
+
+				Dxpf = (fipkm - fkm) / hx;
+				Dxmf = (fjm - fimkm) / hx;
+				Dypf = (fjpkm - fkm) / hy;
+				Dymf = (fkm - fjmkm) / hy;
+				Dzpf = (fijk - fkm) / hz;
+				ckm = hypot3(Dzpf, m(Dypf, Dymf), m(Dxpf, Dxmf));
+
+				ckm = (ckm > 1e-8 ? Dzpf / ckm : 0.0);
+
+				Dxma = (aijk - aim) / hx;
+				Dymb = (bijk - bjm) / hy;
+				Dzmc = (cijk - ckm) / hz;
+
+				//*((npy_float32*)PyArray_GETPTR3(r, i, j, k)) = Dxma/hx + Dymb/hy + Dzmc/hz;
+				r[k + Nz * (j + Ny * i)] = Dxma + Dymb + Dzmc;
+			}
+		}
+	}
+
+	return r;
+}
 
 //=================================================================
 //declare all possible instantitation for the template
