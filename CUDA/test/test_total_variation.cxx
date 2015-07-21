@@ -12,12 +12,17 @@
 
 #include <iostream>
 #include <cstdint>
+#include <chrono>
 #include "multiviewImage.h"
 #include "multiviewDeconvolution.h"
 
 typedef float imgType;
 
+
+
 using namespace std;
+typedef std::chrono::high_resolution_clock Clock;
+
 int main(int argc, const char** argv)
 {
 	std::cout << "test Total variation running running..." << std::endl;
@@ -47,15 +52,33 @@ int main(int argc, const char** argv)
 		}
 	}
 
+
 	//call totalvariation in CPU
+	auto t1 = Clock::now();
 	outputType* TV_CPU = multiviewDeconvolution<imgType>::debug_regularization_TV_CPU(img.getPointer_CPU(0), img.dimsImgVec[0].dims);
+	auto t2 = Clock::now();
+
+	std::cout << "TV regularization with finite differences in CPU took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms"<< std::endl;
 
 	//write out solution
-	string filenameOut(filepath + "test_TV_output.raw"); 
+	string filenameOut(filepath + "test_TV_output_CPU_finiteDiff.raw"); 
 	multiviewDeconvolution<imgType>::debug_writeCPUarray(TV_CPU, img.dimsImgVec[0], filenameOut);
 
 	//release memory
 	delete[] TV_CPU;
+
+
+	//test GPU code
+	t1 = Clock::now();
+	multiviewDeconvolution<float> TV_GPU;
+	TV_GPU.debug_regularization_TV_GPU(img.getPointer_CPU(0), img.dimsImgVec[0].dims);
+	t2 = Clock::now();
+	std::cout << "TV regularization with Gaussian derivatives in GPU took (including I/O) " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
+
+	//write out solution
+	filenameOut = string(filepath + "test_TV_output_GPU.raw");
+	TV_GPU.debug_writDeconvolutionResultRaw(filenameOut);	
+
 
 	std::cout << "...OK" << endl;
 	return 0;

@@ -71,6 +71,7 @@ public:
 	static void debug_writeCPUarray(float* ptr_CPU, dimsImg& dims, const std::string& filename);
     void debug_writeCPUarray_img(size_t pos, const std::string& filename){ debug_writeCPUarray(img.getPointer_CPU(pos), img.dimsImgVec[pos], filename); };
 	static outputType* debug_regularization_TV_CPU(const outputType* f, const std::int64_t* imDim);
+	outputType* debug_regularization_TV_GPU(const outputType* f, const std::int64_t* imDim);
 
 protected:	
 

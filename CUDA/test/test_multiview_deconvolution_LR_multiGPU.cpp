@@ -24,13 +24,12 @@ int main(int argc, const char** argv)
 
 	time(&start);
 	//parameters
-	//string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
-	string filepath("E:/temp/20150505_185415_GCaMP6_TM000089/simview3_TM89_");//very large file
+	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	//string filepath("E:/temp/20150505_185415_GCaMP6_TM000089/simview3_TM89_");//very large file
 	int numIters = 5;
 	int numViews = 4;
-	imgTypeDeconvolution imgBackground = 100;
-	cout << "===============TODO: activate total variations==============" << endl;
-	float lambdaTV = -1.0;//0.008;
+	imgTypeDeconvolution imgBackground = 100;	
+	float lambdaTV = 0.004;//0.004;//set to <= 0 to decative TV regularization
 	
 
 	if (argc > 1)

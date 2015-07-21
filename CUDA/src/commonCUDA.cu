@@ -111,6 +111,17 @@ __global__ void elementwiseOperationInPlace_kernel(T *A, const T *B, std::uint64
 }
 
 //==============================================================================================
+template<class T>
+__global__ void elementwiseOperationInPlace__TVreg_kernel(T *A, const T *B, std::uint64_t arrayLength, T lambda)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{		
+		A[tid] /= max(1.0 - lambda * B[tid], 1e-8);
+		tid += blockDim.x * gridDim.x;
+	}
+}
+//==============================================================================================
 template<class T, class operation>
 __global__ void elementwiseOperationInPlace_kernel(T *A, const T B, std::uint64_t arrayLength, operation op)
 {
@@ -144,6 +155,15 @@ __global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, 
 		C[tid] += op(A[tid], B[tid]);
 		tid += blockDim.x * gridDim.x;
 	}
+}
+
+//==============================================================================================
+void elementwiseOperationInPlace_TVreg(float* A, const float* B, std::uint64_t arrayLength, float lambdaTV)
+{
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
+	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
+
+	elementwiseOperationInPlace__TVreg_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, lambdaTV); HANDLE_ERROR_KERNEL;
 }
 
 //==============================================================================================

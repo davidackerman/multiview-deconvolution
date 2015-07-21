@@ -20,6 +20,7 @@
 #include "cuda.h"
 #include "cufft.h"
 #include "commonCUDA.h"
+#include "convolutionTexture_common.h"
 
 
 using namespace std;
@@ -511,6 +512,12 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 template<class imgType>
 void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float lambdaTV)
 {
+
+#ifdef _DEBUG
+	std::string debugPath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	char buffer[256];
+#endif
+
 	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();
@@ -520,10 +527,14 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	int numBlocks = std::min((std::int64_t)MAX_BLOCKS_CUDA, (std::int64_t)(imSizeFFT / 2 + (std::int64_t)(numThreads - 1)) / ((std::int64_t)numThreads));
 
 	//allocate extra memory required for intermediate calculations
-	outputType *J_GPU_FFT, *aux_FFT, *aux_LR;
+	outputType *J_GPU_FFT, *aux_FFT, *aux_LR, *temp_TV = NULL;
 	HANDLE_ERROR(cudaMalloc((void**)&(J_GPU_FFT), imSizeFFT * sizeof(outputType)));//for J FFT
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_FFT), imSizeFFT * sizeof(outputType)));//to hold products between FFT
 	HANDLE_ERROR(cudaMalloc((void**)&(aux_LR), nImg * sizeof(outputType)));//to hold LR update 
+
+	if (lambdaTV > 0)//extra temporary array		
+		HANDLE_ERROR(cudaMalloc((void**)&(temp_TV), nImg * sizeof(outputType)));//to hold LR update 
+	
 
 	cufftResult_t result;
 	//loop for each iteration
@@ -549,9 +560,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
-#ifdef _DEBUG
-			std::string debugPath("/groups/keller/kellerlab/deconvolutionDatasets/debug/");
-			char buffer[256];
+#ifdef _DEBUG			
 			sprintf(buffer, "%sJ_iter%.4d.raw",debugPath.c_str(), iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
@@ -604,11 +613,22 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 		//apply TV
 		if (lambdaTV > 0)
 		{
-			//I probably don't need to store TV. Try to use the three auxiliary pointers that you alredy have J_GPU_FFT, aux_FFT, aux_LR (they are all size 
-			cout << "==============TODO: calculate total variation==================" << endl;
-			regularization_TV(J_GPU_FFT, &(aux_FFT), 1);
-			cout << "TODO: one kernel for 1-lambda *TV)" << endl;
-			elementwiseOperationInPlace(aux_LR, J_GPU_FFT, nImg, op_elementwise_type::divide);
+			//I probably don't need to store TV. Try to use the three auxiliary pointers that you alredy have J_GPU_FFT, aux_FFT, aux_LR (they are all size 			
+			float *temp_CUDA[2] = { aux_FFT, J_GPU_FFT };
+			regularization_TV(temp_TV, temp_CUDA, 2);			
+#ifdef _DEBUG			
+			sprintf(buffer, "%sTV_reg_iter%.4d.raw", debugPath.c_str(), iter);
+			debug_writeGPUarray(temp_TV, img.dimsImgVec[0], string(buffer));
+			sprintf(buffer, "%sTV_reg_weights_before_TV_iter%.4d.raw", debugPath.c_str(), iter);
+			debug_writeGPUarray(aux_LR, img.dimsImgVec[0], string(buffer));
+#endif
+			elementwiseOperationInPlace_TVreg(aux_LR, temp_TV, nImg, lambdaTV);
+
+#ifdef _DEBUG			
+			sprintf(buffer, "%sTV_reg_weights_iter%.4d.raw", debugPath.c_str(), iter);
+			debug_writeGPUarray(aux_LR, img.dimsImgVec[0], string(buffer));
+#endif
+
 		}
 
 		//update LR 
@@ -620,6 +640,8 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	HANDLE_ERROR(cudaFree(aux_LR));
 	HANDLE_ERROR(cudaFree(aux_FFT));
 	HANDLE_ERROR(cudaFree(J_GPU_FFT));
+	if ( temp_TV != NULL)
+		HANDLE_ERROR(cudaFree(temp_TV));
 
 
 }
@@ -843,21 +865,20 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA_img_psf(size_t po
 template<class imgType>
 void multiviewDeconvolution<imgType>::regularization_TV(outputType* Jreg, outputType** temp_CUDA, int tempN)
 {
-	if (tempN < 1)
+	if (tempN < 2)
 	{
 		cout << "ERROR: multiviewDeconvolution<imgType>::regularization_TV: we need more preallocated memory" << endl;
 		exit(2);
 	}
 
+	const float sigmaDer = 2.0;//to calculate derivatives
+	const int kernel_radius = ceil(3.0f * sigmaDer);
 	const outputType* Jin = J.getPointer_GPU(0);
-	cout << "TODO!!!!!!!!!!!!!!!!!" << endl;
-
-
-	LOOK at Matlab code:
-	1. - Calculate norm(dI / dx_i) : store the norm at tempCUDA;
-	2. - Calculate divergence;
-	Since I calculate separability on the fly, I should be able to do it with this kind of auxiliary memory;
-
+	
+	//Calculate norm(dI / dx_i)
+	TV_gradient_norm(J.getPointer_GPU(0), temp_CUDA[0], J.dimsImgVec[0].dims, sigmaDer, kernel_radius);
+	//calculate div( df/d_xi) with f = I / norm(dI)
+	TV_divergence(J.getPointer_GPU(0), temp_CUDA[0], temp_CUDA[1], Jreg, J.dimsImgVec[0].dims, sigmaDer, kernel_radius);		
 
 }
 
@@ -1006,6 +1027,52 @@ outputType* multiviewDeconvolution<imgType>::debug_regularization_TV_CPU(const o
 
 	return r;
 }
+
+//=======================================================================
+template<class imgType>
+outputType* multiviewDeconvolution<imgType>::debug_regularization_TV_GPU(const outputType* f, const std::int64_t* imDim)
+{
+	int64_t imSize = imDim[2] * imDim[1] * imDim[0];
+	J.resize(1);
+	J.allocateView_CPU(0, imSize);
+	J.dimsImgVec.resize(1);
+	dimsImg aux;
+	aux.ndims = 3;
+	aux.dims[0] = imDim[0]; aux.dims[1] = imDim[1]; aux.dims[2] = imDim[2];
+	J.setImgDims(0, aux);	
+	
+	//allocate memory in GPU
+	J.allocateView_GPU(0, sizeof(outputType)* imSize);//output result
+	const int tempN = 2;
+	float* temp_CUDA[tempN];
+	for (int ii = 0; ii < tempN; ii++)
+	{
+		HANDLE_ERROR(cudaMalloc((void**)&(temp_CUDA[ii]), imSize * sizeof(outputType)));
+	}
+	
+	outputType* Jreg;
+	HANDLE_ERROR(cudaMalloc((void**)&(Jreg), imSize * sizeof(outputType)));
+
+	//copy image to GPU
+	HANDLE_ERROR(cudaMemcpy(Jreg, f, imSize * sizeof(outputType), cudaMemcpyHostToDevice));
+
+	//call main function
+	regularization_TV(Jreg, temp_CUDA, tempN);
+
+	//copy back to CPU
+	J.copyView_GPU_to_CPU(0);
+
+
+	//release memory
+	for (int ii = 0; ii < tempN; ii++)
+	{
+		HANDLE_ERROR(cudaFree(temp_CUDA[ii]));
+	}
+	HANDLE_ERROR(cudaFree(Jreg));
+
+	return J.getPointer_CPU(0);
+}
+
 
 //=================================================================
 //declare all possible instantitation for the template

@@ -200,7 +200,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise(size_t threadIdx)
     //make sure we have useful are of computation
 	if (chunkSize <= 0)
 	{
-		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName<<" cannot provess enough effective planes after padding" << endl;
+		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName<<" cannot process enough effective planes after padding" << endl;
 		return;
 	}
 

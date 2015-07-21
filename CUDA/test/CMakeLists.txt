@@ -31,38 +31,40 @@ INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 #test units 
 IF(NOT TARGET test_load_multiview_img )
 	add_executable(test_load_multiview_img test_load_multiview_images.cpp)
-	target_link_libraries(test_load_multiview_img multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_load_multiview_img multiview_deconvolution_GPU)
 ENDIF()
 
 
 IF(NOT TARGET test_multiview_deconvolution_LR )
 	add_executable(test_multiview_deconvolution_LR test_multiview_deconvolution_LR.cpp)
-	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU)
 ENDIF()
 
 IF(NOT TARGET test_multiview_deconvolution_LR_multiGPU )
 	add_executable(test_multiview_deconvolution_LR_multiGPU test_multiview_deconvolution_LR_multiGPU.cpp)
-	target_link_libraries(test_multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)
 ENDIF()
 
 IF(NOT TARGET test_GPU_elementwise_op )
 	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_gpu_elementwiseOp.cu  OPTIONS ${CUOPTS})
 	add_executable(test_GPU_elementwise_op test_gpu_elementwiseOp.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_elementwise_op multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_GPU_elementwise_op multiview_deconvolution_GPU)
 	TARGET_LINK_LIBRARIES(test_GPU_elementwise_op ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+	SET_TARGET_PROPERTIES(test_GPU_elementwise_op PROPERTIES LINKER_LANGUAGE CXX)
 ENDIF()
 
 
 IF(NOT TARGET test_GPU_convolution_pr )
 	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_convolution.cu  OPTIONS ${CUOPTS})
 	add_executable(test_GPU_convolution_pr test_GPU_convolution.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_convolution_pr multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_GPU_convolution_pr multiview_deconvolution_GPU)
 	TARGET_LINK_LIBRARIES(test_GPU_convolution_pr ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+	SET_TARGET_PROPERTIES(test_GPU_convolution_pr PROPERTIES LINKER_LANGUAGE CXX)
 ENDIF()
 
 IF(NOT TARGET test_GPU_TV )	
 	add_executable(test_GPU_TV test_total_variation.cxx )
-	target_link_libraries(test_GPU_TV multiview_deconvolution_GPU klblib)
+	target_link_libraries(test_GPU_TV multiview_deconvolution_GPU)
 	TARGET_LINK_LIBRARIES(test_GPU_TV ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 ENDIF()
 
