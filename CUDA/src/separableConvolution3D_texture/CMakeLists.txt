@@ -1,7 +1,5 @@
 #CMake file to build Tracking_GMM project
 
-#define important variables for the rest of the project
-set(SETBYUSER_CUDA_ARCH sm_20 CACHE STRING "CUDA architecture") #for Quadro FX4800 sm13;fir Tesla sm_20
 
 
 #The FindCUDA script is distributed since version 2.8
@@ -34,13 +32,16 @@ set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Find necessary libraries
 #
 #Cuda
-SET(CUDA_NVCC_FLAGS_DEBUG -g; -G;-O0;-arch=${SETBYUSER_CUDA_ARCH} CACHE STRING "Semi-colon delimit multiple arguments") #set before FIND_PACKAGE(CUDA) in order to avoid FORCE to show them in GUI. So user can modify them
-SET(CUDA_NVCC_FLAGS_RELEASE -O3;-arch=${SETBYUSER_CUDA_ARCH} CACHE STRING "Semi-colon delimit multiple arguments")
+#Cuda
+SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20;-gencode arch=compute_20,code=sm_21;-gencode arch=compute_30,code=sm_30;-gencode arch=compute_32,code=sm_32;-gencode arch=compute_35,code=sm_35;-gencode arch=compute_50,code=sm_50" CACHE STRING "Semi-colon delimit multiple arguments")
+SET(CUDA_NVCC_FLAGS_DEBUG -g; -G;-O0 CACHE STRING "Semi-colon delimit multiple arguments") #set before FIND_PACKAGE(CUDA) in order to avoid FORCE to show them in GUI. So user can modify them
+SET(CUDA_NVCC_FLAGS_RELEASE -O3 CACHE STRING "Semi-colon delimit multiple arguments")
+SET(CUDA_NVCC_FLAGS_RELWITHDEBINFO -O3 CACHE STRING "Semi-colon delimit multiple arguments")
+
 FIND_PACKAGE(CUDA REQUIRED)
 SET(CUDA_VERBOSE_BUILD ON FORCE)
 INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS}) 
-#lcudart and lcuda  are already added as variables with find package
-#SET(LIBS_CUDA_CUSPARSE "cusparse" CACHE STRING "")#add CUDA libraries ignored in CUDA.cmake
+
 
 
 INCLUDE_DIRECTORIES (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
