@@ -21,6 +21,7 @@
 #include "cufft.h"
 #include "commonCUDA.h"
 #include "convolutionTexture_common.h"
+#include "weigthsBlurryMeasure.h"
 
 
 using namespace std;
@@ -1071,6 +1072,31 @@ outputType* multiviewDeconvolution<imgType>::debug_regularization_TV_GPU(const o
 	HANDLE_ERROR(cudaFree(Jreg));
 
 	return J.getPointer_CPU(0);
+}
+
+
+//=========================================================
+template<class imgType>
+void multiviewDeconvolution<imgType>::calculateWeights(size_t pos, float anisotropyZ)
+{
+	if (pos >= img.getNumberOfViews())
+		return;
+
+	if (pos >= weights.getNumberOfViews())
+		weights.resize(pos); 
+
+	//allocate memory in GPOU if necessary
+	if (weights.getPointer_GPU(pos) == NULL)
+		weights.allocateView_GPU(pos, img.numElements(pos) * sizeof(imgType));
+
+	if (img.getPointer_GPU(pos) == NULL)
+	{
+		img.allocateView_GPU(pos, img.numElements(pos) * sizeof(imgType));
+		img.copyView_CPU_to_GPU(pos);
+	}
+
+	//calculate weights
+	calculateWeightsDeconvolution(weights.getPointer_GPU(pos), img.getPointer_GPU(pos), img.dimsImgVec[pos].dims, img.dimsImgVec[pos].ndims, anisotropyZ);
 }
 
 

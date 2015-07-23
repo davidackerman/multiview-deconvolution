@@ -54,6 +54,14 @@ include_directories("${PROJECT_SOURCE_DIR}/separableConvolution3D_texture")
 add_subdirectory("${PROJECT_SOURCE_DIR}/separableConvolution3D_texture" "${CMAKE_CURRENT_BINARY_DIR}/separableConv")
 LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/separableConvolution3D_texture")
 
+#
+# dct8x8 to calculate weigths
+#
+include_directories("${PROJECT_SOURCE_DIR}/dct8x8")
+add_subdirectory("${PROJECT_SOURCE_DIR}/dct8x8" "${CMAKE_CURRENT_BINARY_DIR}/dct8x8")
+LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/dct8x8")
+
+
 
 #
 # submodules: add source and header files from subfolders
@@ -71,6 +79,6 @@ add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ
 
 #link libraries
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib)
+TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib DCT8x8_CUDA_lib)
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU klblib)
 SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX)

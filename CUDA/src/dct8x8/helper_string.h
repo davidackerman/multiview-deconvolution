@@ -301,7 +301,6 @@ inline char *sdkFindFilePath(const char *filename, const char *executable_path)
     // The origin for the relative search may be the .exe file, a .bat file launching an .exe, a browser .exe launching the .exe or .bat, etc
     const char *searchPath[] =
     {
-		"C:/Users/Fernando/matlabProjects/deconvolution/CUDA/src/dct8x8/data/",//my own path
         "./",                                       // same dir
         "./common/",                                // "/common/" subdir
         "./common/data/",                           // "/common/data/" subdir

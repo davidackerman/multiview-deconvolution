@@ -68,3 +68,12 @@ IF(NOT TARGET test_GPU_TV )
 	TARGET_LINK_LIBRARIES(test_GPU_TV ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 ENDIF()
 
+
+IF(NOT TARGET test_GPU_LRweightsDCT )
+	include_directories(../src/external/klb/src)
+	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_LRweightsDCT.cu  OPTIONS ${CUOPTS})
+	add_executable(test_GPU_LRweightsDCT test_GPU_LRweightsDCT.cu ${CUDA_CUDA_OBJ})
+	target_link_libraries(test_GPU_LRweightsDCT multiview_deconvolution_GPU)
+	TARGET_LINK_LIBRARIES(test_GPU_LRweightsDCT ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+	SET_TARGET_PROPERTIES(test_GPU_LRweightsDCT PROPERTIES LINKER_LANGUAGE CXX)
+ENDIF()

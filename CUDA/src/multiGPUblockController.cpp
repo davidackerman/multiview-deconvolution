@@ -461,6 +461,84 @@ int multiGPUblockController::writeDeconvoutionResult(const std::string& filename
 	return error;
 }
 //=============================================
+
+//===========================================================================================
+int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& filename)
+{
+	int error;
+
+	//initialize I/O object	
+	klb_imageIO imgIO(filename);
+
+	uint32_t xyzct[KLB_DATA_DIMS];
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = imgDims[ii];
+	}
+	for (int ii = MAX_DATA_DIMS; ii <KLB_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = 1;
+	}
+
+	//set header
+	switch (sizeof(imgTypeDeconvolution))//TODO: this is not accurate since int8 will be written as uint8
+	{
+	case 1:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);		
+		error = imgIO.writeImage((char*)(J), -1);//all the threads available
+		break;
+	case 2:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+		error = imgIO.writeImage((char*)(J), -1);//all the threads available
+		break;
+	case 4:
+	{	//parse data to uint16
+			  imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+
+			  uint64_t N = numElements();
+			  uint16_t *Jaux = new uint16_t[N];
+			  float Imin = 1e32, Imax = -1e32;
+			  for (uint64_t ii = 0; ii < N; ii++)
+			  {
+				  Imin = min(J[ii], Imin);
+				  Imax = max(J[ii], Imax);
+			  }
+			  Imax = Imax - Imin;
+			  for (uint64_t ii = 0; ii < N; ii++)
+			  {
+				  Jaux[ii] = (uint16_t)(4096.0f * (J[ii] - Imin) / Imax);//we do not need the whole uint16 dynamic range and it helps compression
+			  }
+
+			  error = imgIO.writeImage((char*)(Jaux), -1);//all the threads available
+
+			  delete[] Jaux;
+			  break;
+	}
+	default:
+		cout << "ERROR: format not supported yet" << endl;
+		return 10;
+	}
+
+	
+
+	if (error > 0)
+	{
+		switch (error)
+		{
+		case 2:
+			printf("Error during BZIP compression of one of the blocks");
+			break;
+		case 5:
+			printf("Error generating the output file in the specified location");
+			break;
+		default:
+			printf("Error writing the image");
+		}
+	}
+
+	return error;
+}
+//=============================================
 //===========================================================================================
 int multiGPUblockController::writeDeconvoutionResultRaw(const std::string& filename)
 {

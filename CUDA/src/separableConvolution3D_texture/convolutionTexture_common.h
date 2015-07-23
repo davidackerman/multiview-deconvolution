@@ -211,6 +211,16 @@ extern "C" void HessianWithGaussianDerivativesGPU_AnisotropyZ(
 									  int kernel_radius
                                       );
 
+////////////////////////////////////////////////////////////////////////////////
+// GPU imgaussianAnisotropy
+////////////////////////////////////////////////////////////////////////////////
+extern "C" void imgaussianAnisotropy(
+	float *src_CUDA,
+	float *dst_CUDA,
+	int64_t imgDims[3],
+	float sigma[3],	
+	int kernel_radius[3]
+	);
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPU Total variation calculation

@@ -29,7 +29,7 @@ int main(int argc, const char** argv)
 	int numIters = 5;
 	int numViews = 4;
 	imgTypeDeconvolution imgBackground = 100;	
-	float lambdaTV = 0.004;//0.004;//set to <= 0 to decative TV regularization
+	float lambdaTV = -1.0;//0.004;//set to <= 0 to decative TV regularization
 	
 
 	if (argc > 1)
@@ -80,11 +80,12 @@ int main(int argc, const char** argv)
 
 	time(&end);
 	cout << "Multiview deconvolution using multi-GPU took " << difftime(end, start) << " secs for " << numIters << " iterations" << endl;
-    //write result
+    
+	//write result
 	char fileoutName[256];
-	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.raw", filepath.c_str(), numIters);
+	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.klb", filepath.c_str(), numIters);
 	//err = master.writeDeconvoutionResult(string(fileoutName)));
-	err = master.writeDeconvoutionResultRaw(string(fileoutName));
+	err = master.writeDeconvoutionResult_uint16(string(fileoutName));
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;
