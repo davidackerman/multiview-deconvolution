@@ -53,6 +53,13 @@ IF(NOT TARGET test_GPU_elementwise_op )
 	SET_TARGET_PROPERTIES(test_GPU_elementwise_op PROPERTIES LINKER_LANGUAGE CXX)
 ENDIF()
 
+IF(NOT TARGET test_GPU_reduction_op )
+	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_gpu_reductionOp.cu  OPTIONS ${CUOPTS})
+	add_executable(test_GPU_reduction_op test_gpu_reductionOp.cu ${CUDA_CUDA_OBJ})
+	target_link_libraries(test_GPU_reduction_op multiview_deconvolution_GPU)
+	TARGET_LINK_LIBRARIES(test_GPU_reduction_op ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
+	SET_TARGET_PROPERTIES(test_GPU_reduction_op PROPERTIES LINKER_LANGUAGE CXX)
+ENDIF()
 
 IF(NOT TARGET test_GPU_convolution_pr )
 	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_convolution.cu  OPTIONS ${CUOPTS})

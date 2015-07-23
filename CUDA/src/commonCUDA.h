@@ -56,4 +56,18 @@ void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t 
 
 void elementwiseOperationInPlace_TVreg(float* A, const float* B, std::uint64_t arrayLength, float lambdaTV);
 
+
+//=============================================================================
+//reduction operations
+//==============================================================================
+enum op_reduction_type {add, min_elem, max_elem};
+
+/*
+return max(A) for example or sum(A)
+*/
+template<class T>
+T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op);
+
+
+
 #endif
