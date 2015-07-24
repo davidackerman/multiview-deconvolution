@@ -29,6 +29,20 @@ using namespace std;
 *	functor for adding two numbers
 */
 template <class T>
+struct max_func
+{
+	max_func(){};
+	__device__ T operator () (const T& a, const T& b) { return (a > b ? a : b); }
+};
+
+template <class T>
+struct min_func
+{
+	min_func(){};
+	__device__ T operator () (const T& a, const T& b) { return (a > b ? b : a); }
+};
+
+template <class T>
 struct add_func
 {
 	add_func(){};
@@ -348,7 +362,12 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 	case op_reduction_type::add:
 		finalVal = 0;
 		break;
-
+	case op_reduction_type::max_elem:
+		finalVal = numeric_limits<T>::min();
+		break; 
+	case op_reduction_type::min_elem:
+		finalVal = numeric_limits<T>::max();
+		break;
 	default:
 		cout << "ERROR: reductionOperation: operation not supported" << endl;
 	}
@@ -370,7 +389,20 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 				finalVal += reduction_CPU[ii];
 
 			break;
+		case op_reduction_type::max_elem:
+			reductionOperation_kernel << <numBlocks, numThreads >> >(ptr, reduction_GPU, length, max_func<T>(), numeric_limits<T>::min()); HANDLE_ERROR_KERNEL;
+			HANDLE_ERROR(cudaMemcpy(reduction_CPU, reduction_GPU, numBlocks * sizeof(T), cudaMemcpyDeviceToHost));
+			for (int ii = 0; ii < numBlocks; ii++)
+				finalVal = max(reduction_CPU[ii], finalVal);
 
+			break;
+		case op_reduction_type::min_elem:
+			reductionOperation_kernel << <numBlocks, numThreads >> >(ptr, reduction_GPU, length, min_func<T>(), numeric_limits<T>::max()); HANDLE_ERROR_KERNEL;
+			HANDLE_ERROR(cudaMemcpy(reduction_CPU, reduction_GPU, numBlocks * sizeof(T), cudaMemcpyDeviceToHost));
+			for (int ii = 0; ii < numBlocks; ii++)
+				finalVal = min(reduction_CPU[ii], finalVal);
+
+			break;
 		default:
 			cout << "ERROR: reductionOperation: operation not supported" << endl;
 		}

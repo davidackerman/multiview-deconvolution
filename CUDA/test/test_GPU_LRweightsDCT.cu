@@ -74,8 +74,7 @@ int main(int argc, const char** argv)
 		}
 
 		//calculate weights
-		J.calculateWeights(ii, anisotropyZ); 
-		printf("=============TODO:NORMALIZE WEIGHTS!!!!!;REDUCTION: sum, max, min\n");
+		J.calculateWeights(ii, anisotropyZ); 		
 
 		//compare weights
 		char buffer[256];

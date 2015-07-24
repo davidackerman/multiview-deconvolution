@@ -9,6 +9,7 @@
 #include <math.h>
 #include "book.h"
 #include "cuda.h"
+#include "commonCUDA.h"
 #include "weigthsBlurryMeasure.h"
 #include "dct8x8_kernel2.cuh"
 #include "convolutionTexture_common.h"
@@ -152,6 +153,11 @@ void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t
 		
 	imgaussianAnisotropy(temp_CUDA, weights_CUDA, dims, sigma, kernel_radius);
 	
+	//normalize weights
+	float minW = reductionOperation(weights_CUDA, imSize, op_reduction_type::min_elem);
+	float maxW = reductionOperation(weights_CUDA, imSize, op_reduction_type::max_elem);
+	elementwiseOperationInPlace(weights_CUDA, minW, imSize, op_elementwise_type::minus);
+	elementwiseOperationInPlace(weights_CUDA, maxW-minW, imSize, op_elementwise_type::divide);
 
 	//release memory
 	HANDLE_ERROR(cudaFree(temp_CUDA));

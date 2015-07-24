@@ -28,7 +28,7 @@ int main(int argc, const char** argv)
 	std::cout << "testing reduction operations kernel in the GPU running..." << std::endl;
 
 	int devCUDA = 0;
-	std::uint64_t arrayLength = 100000;
+	std::uint64_t arrayLength = 1000000;
 
 	//=====================================================================
 
@@ -75,8 +75,45 @@ int main(int argc, const char** argv)
 		cout << "OK" << endl;
 	}
 	
+	//test 2
+	cout << "Test 1: max vector values...";
+	result_GPU = reductionOperation(A_GPU, arrayLength, op_reduction_type::max_elem);
 
+	//calculate in CPU
+	result_CPU = numeric_limits<dataType>::min();
+	for (uint64_t ii = 0; ii < arrayLength; ii++)
+	{
+		result_CPU = max(A[ii], result_CPU);
+	}
+
+	if (fabs(result_CPU - result_GPU) > 1e-3)
+	{
+		cout << "ERROR: norm = " << fabs(result_CPU - result_GPU) << endl;
+		return 2;
+	}
+	else{
+		cout << "OK" << endl;
+	}
 	
+	//test 3
+	cout << "Test 1: min vector values...";
+	result_GPU = reductionOperation(A_GPU, arrayLength, op_reduction_type::min_elem);
+
+	//calculate in CPU
+	result_CPU = numeric_limits<dataType>::max();
+	for (uint64_t ii = 0; ii < arrayLength; ii++)
+	{
+		result_CPU = min(A[ii], result_CPU);
+	}
+
+	if (fabs(result_CPU - result_GPU) > 1e-3)
+	{
+		cout << "ERROR: norm = " << fabs(result_CPU - result_GPU) << endl;
+		return 2;
+	}
+	else{
+		cout << "OK" << endl;
+	}
 
 
 
