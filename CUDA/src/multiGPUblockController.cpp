@@ -51,14 +51,18 @@ multiGPUblockController::~multiGPUblockController()
 		delete[] J;
 }
 //============================================================
-void multiGPUblockController::queryGPUs()
+void multiGPUblockController::queryGPUs(int maxNumber)
 {
 	int nGPU = getNumDevicesCUDA();
+	if (maxNumber <= 0)
+		maxNumber = nGPU;//all available ones
 
 	char buffer[1024];
-	for (int ii = 0; ii < nGPU; ii++)
+	for (int ii = 0; ii < min(nGPU, maxNumber); ii++)
 	{
 		if (getCUDAcomputeCapabilityMajorVersion(ii) < 2.0)
+			continue;
+		if (isDeviceCUDAusedByDisplay(ii))		
 			continue;
 
 		GPUinfoVec.push_back(GPUinfo());

@@ -61,7 +61,7 @@ public:
 	int writeDeconvoutionResult_uint16(const std::string& filename);
 
     //methods
-	void queryGPUs(); 
+	void queryGPUs(int maxNumber = -1);
 	int findBestBlockPartitionDimension();
 	void findMaxBlockPartitionDimensionPerGPU();
 	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks	

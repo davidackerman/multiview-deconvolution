@@ -284,6 +284,10 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 		//transfer psf
 		HANDLE_ERROR(cudaMemcpy(psf_notPadded_GPU, psf.getPointer_CPU(ii), psfSize * sizeof(psfType), cudaMemcpyHostToDevice));
 
+		//normalize psf		
+		float sumPSF = reductionOperation(psf_notPadded_GPU, psfSize, op_reduction_type::add);		
+		elementwiseOperationInPlace(psf_notPadded_GPU, sumPSF, psfSize, op_elementwise_type::divide);
+
 		//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
 		int numThreads = std::min((int64_t)MAX_THREADS_CUDA / 4, psfSize);
 		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
@@ -479,6 +483,10 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 		//transfer psf
 		HANDLE_ERROR(cudaMemcpy(psf_notPadded_GPU, psf.getPointer_CPU(ii), psfSize * sizeof(psfType), cudaMemcpyHostToDevice));
 
+		//normalize psf		
+		float sumPSF = reductionOperation(psf_notPadded_GPU, psfSize, op_reduction_type::add);
+		elementwiseOperationInPlace(psf_notPadded_GPU, sumPSF, psfSize, op_elementwise_type::divide);
+
 		//apply ffshift to kernel and pad it with zeros so we can calculate convolution with FFT
 		int numThreads = std::min((int64_t)MAX_THREADS_CUDA / 4, psfSize);
 		int numBlocks = std::min((int64_t)MAX_BLOCKS_CUDA, (int64_t)(psfSize + (int64_t)(numThreads - 1)) / ((int64_t)numThreads));
@@ -634,6 +642,10 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 
 		//update LR 
 		elementwiseOperationInPlace(J.getPointer_GPU(0), aux_LR, nImg, op_elementwise_type::multiply);
+
+		//normalize J: if we do this, then each block is normalized differently. Normalization shod be done globally
+		//float sumJ = reductionOperation(J.getPointer_GPU(0), nImg, op_reduction_type::add);		
+		//elementwiseOperationInPlace(J.getPointer_GPU(0), sumJ, nImg, op_elementwise_type::divide);
 
 	}
 
@@ -873,7 +885,7 @@ void multiviewDeconvolution<imgType>::regularization_TV(outputType* Jreg, output
 	}
 
 	const float sigmaDer = 2.0;//to calculate derivatives
-	const int kernel_radius = ceil(3.0f * sigmaDer);
+	const int kernel_radius = ceil(5.0f * sigmaDer);
 	const outputType* Jin = J.getPointer_GPU(0);
 	
 	//Calculate norm(dI / dx_i)

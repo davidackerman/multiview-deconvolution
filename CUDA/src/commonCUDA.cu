@@ -133,7 +133,7 @@ __global__ void elementwiseOperationInPlace__TVreg_kernel(T *A, const T *B, std:
 	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
 	while (tid < arrayLength)
 	{		
-		A[tid] /= max(1.0 - lambda * B[tid], 1e-8);
+		A[tid] /= max(1.0 - lambda * B[tid], 1e-3);//we avoid "crazy" updates by setting a maximum
 		tid += blockDim.x * gridDim.x;
 	}
 }

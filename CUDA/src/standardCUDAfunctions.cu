@@ -37,6 +37,15 @@ void getNameDeviceCUDA(int devCUDA, char* name)
 
 	memcpy(name,prop.name,sizeof(char)*256);
 }
+
+bool isDeviceCUDAusedByDisplay(int devCUDA)
+{
+	int has_timeout;
+	HANDLE_ERROR( cudaDeviceGetAttribute(&has_timeout, cudaDevAttrKernelExecTimeout, devCUDA) );
+	
+	return (has_timeout > 0);
+}
+
 long long int getMemDeviceCUDA(int devCUDA)
 {
 	cudaDeviceProp prop;
