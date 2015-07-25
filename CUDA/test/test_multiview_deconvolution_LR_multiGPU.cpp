@@ -30,7 +30,7 @@ int main(int argc, const char** argv)
 	int numViews = 4;
 	int maxNumberGPU = 1;//to avoid using GTX for display 
 	imgTypeDeconvolution imgBackground = 100;	
-	float lambdaTV = 0.00016;////set to <= 0 to decative TV regularization
+	float lambdaTV = 0.0001;////set to <= 0 to decative TV regularization
 	
 
 	if (argc > 1)

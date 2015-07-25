@@ -32,4 +32,12 @@ file(GLOB C_SRCS *.c)
 
 
 #generate library
-add_library(imwarpFastLib ${C_HDRS} ${C_SRCS})
+IF(NOT TARGET imwarpFastLib )
+	add_library(imwarpFastLib ${C_HDRS} ${C_SRCS})
+ENDIF()
+
+#very small tests
+IF(NOT TARGET affine_3d_ops_test )
+	add_executable(affine_3d_ops_test test_affine_3d_ops.cxx)
+	target_link_libraries(affine_3d_ops_test imwarpFastLib)
+ENDIF()

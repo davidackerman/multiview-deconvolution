@@ -1,3 +1,5 @@
+#ifndef __IMAGE_INTERPOLATION_H__
+#define __IMAGE_INTERPOLATION_H__
 /* Image and Volume interpolation 
  *
  * Function is written by D.Kroon University of Twente (June 2009)
@@ -97,3 +99,4 @@ float interpolate_3d_float_gray(float Tlocalx, float Tlocaly, float Tlocalz, int
 
 
 
+#endif
