@@ -40,6 +40,14 @@ IF(NOT TARGET test_multiview_deconvolution_LR )
 	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU)
 ENDIF()
 
+
+IF(NOT TARGET test_imWarpFast )
+	include_directories(../src/external/klb/src)
+	include_directories(../src/external/imWarpFast)
+	add_executable(test_imWarpFast test_imWarpFast.cxx)
+	target_link_libraries(test_imWarpFast multiview_deconvolution_GPU)
+ENDIF()
+
 IF(NOT TARGET test_multiview_deconvolution_LR_multiGPU )
 	add_executable(test_multiview_deconvolution_LR_multiGPU test_multiview_deconvolution_LR_multiGPU.cpp)
 	target_link_libraries(test_multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)

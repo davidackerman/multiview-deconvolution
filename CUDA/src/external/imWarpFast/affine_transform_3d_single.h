@@ -30,11 +30,16 @@ extern "C"
  * Function is written by D.Kroon University of Twente (June 2009)
  */
 
-void affineTransform_3d_float(const float* imIn, float* imOut, int64_t dims[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
-int getNumberOfCores();
 
 //this function allows to call it using the same exact elements as the equivalent Matlab call
 void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn[3], int64_t dimsOut[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
+void affineTransform_3d_float(const float* imIn, float* imOut, int64_t dims[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
+
+//auxiliary functions
+int getNumberOfCores();
+float* fa_padArrayWithZeros(const float* im, const int64_t *dimsNow, const int64_t *dimsAfterPad, int ndims);
+
+
 
 
 //the same as Matlab: row major order A[AFFINE_3D_MATRIX_SIZE] = [a00,a10, a20, a30,a01,a11,a21,a31,...] with a30 = tx; 

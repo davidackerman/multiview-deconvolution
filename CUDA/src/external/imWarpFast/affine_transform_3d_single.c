@@ -175,15 +175,14 @@ void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_
 	if (affine_3d_isAffine(A) == false)
 	{
 		printf("ERROR: affine_3d_inverse: trying to calculate inverse of a non-affine matrix\n");
+		affine3d_printMatrix(A);
 		exit(2);
 	}
 
 	//A = [ [R , zeros(3,1)]; [Tx Ty Tz 1] ]
 	//Ainv = [ [Rinv , zeros(3,1)]; [-[Tx Ty Tz]*Rinv 1] ]
 
-	//set easy row
-	Ainv[12] = Ainv[13] = Ainv[14] = 0.0f;
-	Ainv[15] = 1.0f;
+	
 
 
 	// computes the inverse of a matrix m
@@ -191,9 +190,10 @@ void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_
 		_m(0, 1) * (_m(1, 0) * _m(2, 2) - _m(1, 2) * _m(2, 0)) +
 		_m(0, 2) * (_m(1, 0) * _m(2, 1) - _m(1, 1) * _m(2, 0));
 
-	if ( det < 1e-8 )
+	if ( fabs(det) < 1e-8 )
 	{
 		printf("ERROR: affine_3d_inverse: matrix is close to singular\n");
+		affine3d_printMatrix(A);
 		exit(2);
 	}
 
@@ -209,23 +209,31 @@ void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_
 	_minv(2, 1) = (_m(2, 0) * _m(0, 1) - _m(0, 0) * _m(2, 1)) * invdet;
 	_minv(2, 2) = (_m(0, 0) * _m(1, 1) - _m(1, 0) * _m(0, 1)) * invdet;
 
-	//translation
+	
+	//translation for bottom row
 	Ainv[3] = -(A[3] * _minv(0, 0) + A[7] * _minv(1, 0) + A[11] * _minv(2, 0));
 	Ainv[7] = -(A[3] * _minv(0, 1) + A[7] * _minv(1, 1) + A[11] * _minv(2, 1));
 	Ainv[11] = -(A[3] * _minv(0, 2) + A[7] * _minv(1, 2) + A[11] * _minv(2, 2));
+	
+	//translation for last column
+	Ainv[12] = -(A[12] * _minv(0, 0) + A[13] * _minv(0, 1) + A[14] * _minv(0, 2));
+	Ainv[13] = -(A[12] * _minv(1, 0) + A[13] * _minv(1, 1) + A[14] * _minv(1, 2));
+	Ainv[14] = -(A[12] * _minv(2, 0) + A[13] * _minv(2, 1) + A[14] * _minv(2, 2));
+
+	//set last element	
+	Ainv[15] = 1.0f;
 }
 
 bool affine_3d_isAffine(const float A[AFFINE_3D_MATRIX_SIZE])
 {	
 	//check the last columns. It should be [0, 0, 0, 1]'
-	if (A[12] != 0.0f)
-		return false;
-	if (A[13] != 0.0f)
-		return false;
-	if (A[14] != 0.0f)
-		return false;
-	if (A[15] != 1.0f)
-		return false;
+	if (A[12] != 0.0f || A[13] != 0.0f || A[14] != 0.0f || A[15] != 1.0f)
+	{
+		if (A[3] != 0.0f || A[7] != 0.0f || A[11] != 0.0f || A[15] != 1.0f)
+		{
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -240,18 +248,70 @@ void affine3d_printMatrix(const float A[AFFINE_3D_MATRIX_SIZE])
 //============================================================
 void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn[3], int64_t dimsOut[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
 {
-	printf("===============TODO=================\n");
-	printf("DONE!! 1.-Write test for affine operations (do not use diagonal matrices)\n");
-	printf("2.-Write this function looking at the Matlab equivalent\n");
-	printf("3.-Test it with a real image using a real transformation for camera 1,2 or 3");
+	//matrix to flip xy coodinates
+	const float F[AFFINE_3D_MATRIX_SIZE] = { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	//recenter origina to apply transformation
+	float B[AFFINE_3D_MATRIX_SIZE] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	float C[AFFINE_3D_MATRIX_SIZE] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	float Af[AFFINE_3D_MATRIX_SIZE];
+	float Aaux[AFFINE_3D_MATRIX_SIZE];
+	float* imInPadded;
+	int ii;
+	
+
+	for (ii = 0; ii < 3; ii++)
+	{		
+		B[ii + 12] = 0.5f * dimsOut[ii] + 1.0f;
+		C[ii + 12] = -B[ii + 12];
+	}
+
+
+	//resize input image if necessary
+	bool imResize = false;
+	for (ii = 0; ii < 3; ii++)
+	{
+		if (dimsOut[ii] < dimsIn[ii])
+		{
+			printf("ERROR: code is not ready for output image size smaller than input image size\n");
+		}
+		else if (dimsOut[ii] > dimsIn[ii])
+			imResize = true;
+	}
+
+	if (imResize)
+	{
+		imInPadded = fa_padArrayWithZeros(imIn, dimsIn, dimsOut, 3);
+	}
+	else{
+		imInPadded = imIn;
+	}
+
+	//apply transformations to A	
+	affine_3d_transpose(A, Af);
+	//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
+	affine_3d_compose(Af, F, Aaux);
+	affine_3d_inverse(Aaux, Af);
+	affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
+
+	//recenter transformation
+	affine_3d_compose(C, Aaux, Af);
+	affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+
+	
+	//apply transformation	
+	affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
+	affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
+	
+
+	//release memory
+	if (imResize)
+		free(imInPadded);
 }
 
 //================================================================================================================
 //Function that replaces the original mex function
 void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
 {
-
-	printf("=======DEBUGGING:affineTransform_3d_float: I might need to transpose A at the very beginning===============");
 
 	float *moded, *Nthreadsf;		
 	int Nthreads;
@@ -285,11 +345,12 @@ void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], fl
 	
 
 	// Assign pointers to each input. 	
+	moded = (float*)malloc(sizeof(float));
 	*moded = ((float)(interpMode));
 
 	
 
-	
+	Nthreadsf = (float*)malloc(sizeof(float));
 	Nthreads = getNumberOfCores();
 	*Nthreadsf = ((float)(Nthreads));
 
@@ -342,6 +403,8 @@ void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], fl
 	free(ThreadArgs);
 	free(ThreadID);
 	free(ThreadList);
+	free(Nthreadsf);
+	free(moded);
 }
 
 /*
@@ -464,3 +527,51 @@ void mexFunction( int nlhs, mxArray *plhs[],
 */
 
 
+float* fa_padArrayWithZeros(const float* im, const int64_t *dimsNow, const int64_t *dimsAfterPad, int ndims)
+{
+
+	if (ndims != 3)
+	{
+		printf("TODO:ERROR: padArrayWithZeros: function not ready for other values of ndims except for 3\n");
+		exit(3);
+	}
+
+	int64_t nImg = 1;
+	for (int ii = 0; ii < ndims; ii++)
+	{
+		if (dimsNow[ii] > dimsAfterPad[ii])
+		{
+			printf("ERROR: padArrayWithZeros: new dimensions are smaller than current dimensions\n");
+			return NULL;
+		}
+		nImg *= (int64_t)(dimsAfterPad[ii]);
+	}
+
+	
+	float* p = (float*) calloc(nImg, sizeof(float));//calloc already initializes to zero
+
+	//copy "lines" of x	
+	size_t lineSize = dimsNow[0] * sizeof(float);
+	int64_t idx = 0;
+	int64_t count = 0;
+	for (int64_t zz = 0; zz < dimsNow[2]; zz++)
+	{
+		idx = dimsAfterPad[0] * dimsAfterPad[1] * zz;
+		for (int64_t yy = 0; yy < dimsNow[1]; yy++)
+		{
+			//update for new array
+			//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);
+			//update for new array
+			//count = dimsNow[0] * (yy + dimsNow[1] * zz);
+
+			//copy elements
+			memcpy(&(p[idx]), &(im[count]), lineSize);
+
+			//update counters
+			idx += dimsAfterPad[0];
+			count += dimsNow[0];
+		}
+	}
+
+	return p;
+}

@@ -61,6 +61,13 @@ include_directories("${PROJECT_SOURCE_DIR}/dct8x8")
 add_subdirectory("${PROJECT_SOURCE_DIR}/dct8x8" "${CMAKE_CURRENT_BINARY_DIR}/dct8x8")
 LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/dct8x8")
 
+#
+# code to calculate affine transformatiosn of 3D images fast
+#
+include_directories("${PROJECT_SOURCE_DIR}/external/imWarpFast")
+add_subdirectory("${PROJECT_SOURCE_DIR}/external/imWarpFast" "${CMAKE_CURRENT_BINARY_DIR}/imWarpFast")
+LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/imWarpFast")
+
 
 
 #
@@ -79,6 +86,6 @@ add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ
 
 #link libraries
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib DCT8x8_CUDA_lib)
+TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib DCT8x8_CUDA_lib imwarpFastLib)
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU klblib)
 SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX)
