@@ -68,6 +68,7 @@ public:
 	//I/O functions
 	int readImage(const std::string& filename, int pos);//if pos<0 then we add one image to the vector
 	int readROI(const std::string& filename, int pos, const klb_ROI& ROI);
+	void copyROI(const imgType *p, std::int64_t dims[MAX_DATA_DIMS], int ndims, int pos, const klb_ROI& ROI);//copy ROI form another image in memory
 	int writeImage(const std::string& filename, int pos);	
 	int writeImageRaw(const std::string& filename, int pos);
 	static std::string recoverFilenamePatternFromString(const std::string& imgPath, int frame);

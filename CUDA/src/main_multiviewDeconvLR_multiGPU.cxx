@@ -50,7 +50,7 @@ int main(int argc, const char** argv)
 		master.full_img_mem.readImage(master.paramDec.fileImg[ii], -1);
 
 		cout << "Reading PSF for view " << ii << endl;
-		master.full_img_mem.readImage(master.paramDec.filePSF[ii], -1);
+		master.full_psf_mem.readImage(master.paramDec.filePSF[ii], -1);
 
 		t2 = Clock::now();
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
@@ -114,7 +114,7 @@ int main(int argc, const char** argv)
 	t1 = Clock::now();
 	cout << "Calculating multiview deconvolution..." << endl;
 	//launch multi-thread as a producer consumer queue to calculate blocks as they come
-	int err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem);
+	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem);
 	if (err > 0)
 		return err;
 	t2 = Clock::now();

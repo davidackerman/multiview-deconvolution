@@ -260,6 +260,67 @@ std::int64_t multiviewImage<imgType>::numBytes(size_t pos) const
 
 //===========================================================================================
 template<class imgType>
+void multiviewImage<imgType>::copyROI(const imgType *p, std::int64_t dims[MAX_DATA_DIMS], int ndims, int pos, const klb_ROI& ROI)
+{	
+	if (ndims != 3)
+	{
+		cout << "ERROR: TODO:multiviewImage<imgType>::copyROI: code is only ready for 3 dimensions" << endl;
+		exit(3);
+	}
+
+	imgType* imgA = new imgType[ROI.getSizePixels()];
+
+	//copy elements
+	int64_t offsetROI = 0;
+	int64_t offsetFullImg;
+	int64_t strideROI = ROI.getSizePixels(0); 	
+	for (int64_t zz = ROI.xyzctLB[2]; zz <= ROI.xyzctUB[2]; zz++)//UB is inlcuded in ROI
+	{
+		offsetFullImg = ROI.xyzctLB[0] + dims[0] * (ROI.xyzctLB[1] + dims[1] * zz);
+		for (int64_t yy = ROI.xyzctLB[1]; yy <= ROI.xyzctUB[1]; yy++)//UB is inlcuded in ROI
+		{
+			//offsetFullImg = ROI.xyzctLB[0] + dims[0] * (yy + dims[1] * zz);
+
+			memcpy(&(imgA[offsetROI]), &(imgA[offsetFullImg]), sizeof(imgType)* strideROI);
+			offsetROI += strideROI;
+			offsetFullImg += dims[0];
+		}
+	}
+
+
+	if (pos < 0)
+	{
+		imgVec_CPU.push_back(imgA);
+		imgVec_GPU.push_back(NULL);
+		dimsImgVec.push_back(dimsImg());
+		pos = imgVec_GPU.size() - 1;
+	}
+	else if (pos >= imgVec_CPU.size()){
+		cout << "ERROR: multiviewImage<imgType>::copyROI: trying to place image in a view that does not exist" << endl;
+		delete[] imgA;
+		exit(3);
+	}
+	else{
+		if (imgVec_CPU[pos] != NULL)
+			delete[](imgVec_CPU[pos]);//TODO: if it was the same size, we do not need to reallocate
+
+		imgVec_CPU[pos] = imgA;
+	}
+
+
+	//aupdate dimensions if necessary
+	int ndims_ = 0;
+	while (ndims_ < KLB_DATA_DIMS && ROI.getSizePixels(ndims_) > 1)
+	{
+		dimsImgVec[pos].dims[ndims_] = ROI.getSizePixels(ndims_);
+		ndims_++;
+	}
+	dimsImgVec[pos].ndims = ndims_;
+
+
+}
+//===========================================================================================
+template<class imgType>
 int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const klb_ROI& ROI)
 {
 	//cout << "=======TODO readImage: we have to read images here!!!====develop a project for image reader wrapper======" << endl;

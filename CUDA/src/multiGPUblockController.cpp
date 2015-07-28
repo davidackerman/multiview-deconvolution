@@ -271,7 +271,7 @@ void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU(size_t pos)
 void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU_inMem(size_t pos)
 {
 
-	for (int ii = 0; ii < MAX_DATA_DIMS)
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 	{
 		imgDims[ii] = full_img_mem.dimsImgVec[pos].dims[ii];
 	}
@@ -615,24 +615,13 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
 		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
 
-		//read image and weights ROI
+		//copy image and weights ROI
 		for (int ii = 0; ii < paramDec.Nviews; ii++)
-		{
-			filename = multiviewImage<float>::recoverFilenamePatternFromString(paramDec.filePatternImg, ii + 1);
-			err = Jobj->readROI(filename, ii, std::string("img"), ROI);//this function should just read image
-			if (err > 0)
-			{
-				cout << "ERROR: reading file " << filename << endl;
-				exit(err);
-			}
-			filename = multiviewImage<float>::recoverFilenamePatternFromString(paramDec.filePatternWeights, ii + 1);
-			err = Jobj->readROI(filename, ii, std::string("weight"), ROI);//this function should just read image
-			if (err > 0)
-			{
-				cout << "ERROR: reading file " << filename << endl;
-				exit(err);
-			}
-
+		{			
+			Jobj->img.copyROI(full_img_mem.getPointer_CPU(ii), full_img_mem.dimsImgVec[ii].dims, full_img_mem.dimsImgVec[ii].ndims, ii, ROI);//this function should just copy image			
+			
+			Jobj->weights.copyROI(full_weights_mem.getPointer_CPU(ii), full_weights_mem.dimsImgVec[ii].dims, full_weights_mem.dimsImgVec[ii].ndims, ii, ROI);//this function should just copy image
+			
 			//the last block has to be padded at the end to match the block dimensions
 			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
 			{

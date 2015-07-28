@@ -114,7 +114,7 @@ void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t
 	const int64_t SliceOffset = dims[0] * dims[1];
 
 	//perform block-wise DCT processing and benchmarking
-	int64_t offset = 0;	
+	int64_t offset = 0;		
 	for (int64_t i = 0; i < numPlanes; i++)
 	{	
 		CUDAkernel2DCT << <GridFullWarps, ThreadsFullWarps >> >(dst, src, DeviceStride); HANDLE_ERROR_KERNEL;		
