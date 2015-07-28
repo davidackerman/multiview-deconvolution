@@ -35,6 +35,7 @@ struct paramDeconvolution
 
 	int numIters;
 	int Nviews;
+	float anisotropyZ;
 	
     
     imgTypeDeconvolution imgBackground;	
@@ -48,6 +49,8 @@ struct paramDeconvolution
 		imgBackground = 100.0f;
 		verbose = 0;
 	}
+
+	float getAnisotropyZfromAffine();
 
 };
 

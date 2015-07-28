@@ -38,6 +38,11 @@ struct GPUinfo
 	}
 };
 
+
+class multiGPUblockController;//forward declaration for the typedef
+//so I can call different deconvolution routines using the same multi-thread entry point
+typedef  void (multiGPUblockController::*MV_deconv_fn)(size_t threadIdx);
+
 //================================================================
 class multiGPUblockController
 {
@@ -71,9 +76,17 @@ public:
 	void queryGPUs(int maxNumber = -1);
 	int findBestBlockPartitionDimension();
 	void findMaxBlockPartitionDimensionPerGPU();
-	int runMultiviewDeconvoution();//main function to start distirbuting multiview deconvolution to different blocks	
+	int findBestBlockPartitionDimension_inMem();
+	void findMaxBlockPartitionDimensionPerGPU_inMem();
+
+	int runMultiviewDeconvoution(MV_deconv_fn p);//main function to start distirbuting multiview deconvolution to different blocks		
 	void copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes);
 	static std::uint32_t ceilToGoodFFTsize(std::uint32_t n);
+	void calculateWeights();//main function to calculate weights on each image using multiple GPU
+	
+	//functions to perform different kinds of deconvolution on each block	
+	void multiviewDeconvolutionBlockWise_fromFile(size_t threadIdx);//main function for each GPU to process different blocks
+	void multiviewDeconvolutionBlockWise_fromMem(size_t threadIdx);
 
     //debug functions
 	void debug_listGPUs();
@@ -100,10 +113,13 @@ protected:
 	int64_t offsetBlockPartition;
 
     //methods
-	void findMaxBlockPartitionDimensionPerGPU(size_t pos);   
-	void multiviewDeconvolutionBlockWise(size_t threadIdx);//main function for each GPU to process different blocks
+	void findMaxBlockPartitionDimensionPerGPU(size_t pos);   	
+	void findMaxBlockPartitionDimensionPerGPU_inMem(size_t pos);
+
+	void calculateWeightsSingleView(size_t threadIdx);
 private:
 
 };
+
 
 #endif 

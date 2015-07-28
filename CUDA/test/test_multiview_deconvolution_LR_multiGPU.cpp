@@ -74,8 +74,8 @@ int main(int argc, const char** argv)
 	//for (size_t ii = 0; ii < master.getNumGPU(); ii++)
 	//	master.debug_setGPUmaxSizeDimBlockPartition(ii, 64);
 
-    //launch multi-thread as a producer consumer queue to calculate blocks as they come
-	err = master.runMultiviewDeconvoution();
+    //launch multi-thread as a producer consumer queue to calculate blocks as they come	
+	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile);
 	if (err > 0)
 		return err;
 

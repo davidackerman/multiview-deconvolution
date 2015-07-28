@@ -34,6 +34,13 @@ class multiviewDeconvolution
 
 public:
 
+
+	//main objects to hold values
+	multiviewImage<weightType> weights;
+	multiviewImage<psfType> psf;
+	multiviewImage<imgType> img;
+
+	//constructor / destructor
 	multiviewDeconvolution();	
 	~multiviewDeconvolution();
 
@@ -77,12 +84,7 @@ public:
 	
 
 protected:	
-
-
-	//main objects to hold values
-	multiviewImage<weightType> weights;
-	multiviewImage<psfType> psf;
-	multiviewImage<imgType> img;
+	
 
 	multiviewImage<outputType> J;//holds the output, so it is going to have a different number of views
 

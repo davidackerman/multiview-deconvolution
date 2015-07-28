@@ -69,6 +69,7 @@ void multiviewImage<imgType>::deallocateView_GPU(size_t pos)
 	if (pos < imgVec_GPU.size() && imgVec_GPU[pos] != NULL)
 	{
 		HANDLE_ERROR(cudaFree(imgVec_GPU[pos]));
+		imgVec_GPU[pos] = NULL;
 	}
 };
 
@@ -107,6 +108,25 @@ void multiviewImage<imgType>::copyView_GPU_to_CPU(size_t pos)
 		HANDLE_ERROR( cudaMemcpy(imgVec_CPU[pos], imgVec_GPU[pos], numElements(pos) * sizeof(imgType), cudaMemcpyDeviceToHost) );
 	}
 }
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::copyView_extPtr_to_CPU(size_t pos, const imgType* ptr, std::int64_t dims[MAX_DATA_DIMS])
+{
+	if (pos >= imgVec_CPU.size())
+		return;
+
+	int64_t imSize = 1;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		imSize *= dims[ii];
+	
+	if (imgVec_CPU[pos] != NULL)
+		delete[] imgVec_CPU[pos];
+
+	imgVec_CPU[pos] = new imgType[imSize];
+	memcpy(imgVec_CPU[pos], ptr, sizeof(imgType)* imSize);
+}
+
 
 //===========================================================================================
 template<class imgType>
@@ -231,6 +251,12 @@ std::int64_t multiviewImage<imgType>::numElements(size_t pos) const
 	return n;
 };
 
+//===========================================================================================
+template<class imgType>
+std::int64_t multiviewImage<imgType>::numBytes(size_t pos) const
+{	
+	return (numElements(pos) * sizeof(imgType));
+};
 
 //===========================================================================================
 template<class imgType>
@@ -423,6 +449,7 @@ int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
 }
 
 
+
 //===========================================================================================
 template<class imgType>
 int multiviewImage<imgType>::writeImageRaw(const std::string& filename, int pos)
@@ -477,6 +504,36 @@ int multiviewImage<imgType>::writeImageRaw(const std::string& filename, int pos)
 	return 0;
 }
 
+//=========================================================================
+template<class imgType>
+void multiviewImage<imgType>::apply_affine_transformation_img(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+{
+	cout << "ERROR: TODO: multiviewImage<imgType>::apply_affine_transformation_img: not implemented for types other than float" << endl;
+	exit(3);
+}
+//=========================================================================
+template<>
+void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+{	
+	if (imgVec_CPU.size() < pos)
+		return;
+
+	int64_t imOutSize = 1;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		imOutSize *= dimsOut[ii];
+
+	//allocate memory for transformed image
+	float* imOut = new float[imOutSize];
+
+	//perform transformation
+	imwarpFast_MatlabEquivalent(getPointer_CPU(pos), imOut, dimsImgVec[pos].dims, dimsOut, A, interpMode);
+
+	//update image dimensions and pointer
+	deallocateView_CPU(pos);
+	imgVec_CPU[pos] = imOut;
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		dimsImgVec[pos].dims[ii] = dimsOut[ii];
+}
 
 //============================================================================
 //declare all possible instantitation for the template
