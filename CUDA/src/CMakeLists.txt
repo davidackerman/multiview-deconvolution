@@ -78,14 +78,22 @@ file(GLOB CUDA_CUDA_SRCS *.cu)
 
 file(GLOB CPP_SRCS *.cpp)
 
+file(GLOB External_xmlParser_SRCS external/xmlParser/*.cpp)
+file(GLOB External_xmlParser_HDRS external/xmlParser/*.h)
+
 CUDA_COMPILE(CUDA_CUDA_OBJ STATIC ${CUDA_CUDA_SRCS} OPTIONS ${CUOPTS})
 
 
 #generate library
-add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ} ${CUDA_HDRS} ${CUDA_CUDA_SRCS})
+add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ} ${CUDA_HDRS} ${CUDA_CUDA_SRCS} ${External_xmlParser_SRCS} ${External_xmlParser_HDRS})
 
 #link libraries
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib DCT8x8_CUDA_lib imwarpFastLib)
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU klblib)
 SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX)
+
+
+#executable for multiview deconvolution
+ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU main_multiviewDeconvLR_multiGPU.cxx )
+TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)

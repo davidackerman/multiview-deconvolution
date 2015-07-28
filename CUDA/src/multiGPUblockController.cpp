@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <chrono>
 #include "multiGPUblockController.h"
+#include "external/xmlParser/xmlParser.h"
+#include "external/xmlParser/svlStrUtils.h"
 #include "standardCUDAfunctions.h"
 #include "klb_ROI.h"
 #include "klb_imageIO.h"
@@ -44,6 +46,93 @@ multiGPUblockController::multiGPUblockController()
 	dimBlockParition = -1;
 	J = NULL;
 }
+
+multiGPUblockController::multiGPUblockController(string filenameXML)
+{
+	J = NULL;
+	dimBlockParition = -1;
+
+	//set default parameters
+	paramDec.setDefaultParam();
+
+	//check if file exists
+	ifstream fin(filenameXML.c_str());
+	if (!fin.is_open())
+	{
+		cout << "ERROR: multiGPUblockController: file " << filenameXML << " cannot be opened" << endl;
+	}
+	fin.close();
+
+	//parse file
+	XMLNode xMainNode = XMLNode::openFileHelper(filenameXML.c_str(), "document");
+	
+	paramDec.Nviews = xMainNode.nChildNode("view");
+	int position;
+
+	for (int ii = 0; ii < paramDec.Nviews; ii++)
+	{
+		position = ii;
+		XMLNode node = xMainNode.getChildNode("view", &position);
+
+		XMLCSTR aux = node.getAttribute("imgFilename");		
+		assert(aux != NULL);		
+		paramDec.fileImg.push_back(string(aux));
+
+
+		aux = node.getAttribute("psfFilename");
+		assert(aux != NULL);
+		paramDec.filePSF.push_back(string(aux));
+
+
+		vector<float> vv;
+		aux = node.getAttribute("A");
+		assert(aux != NULL);
+		parseString<float>(string(aux), vv);
+		paramDec.Acell.push_back(vv);
+		vv.clear();
+		
+		aux = node.getAttribute("verbose");
+		vector<int> ll;
+		if (aux != NULL)
+		{
+			parseString<int>(string(aux), ll);
+			paramDec.verbose = ll[0]; 
+			ll.clear();
+		}
+
+	}
+
+	//read deconvolution parameters
+	position = 0;
+	XMLNode node = xMainNode.getChildNode("deconvolution", &position);
+
+	XMLCSTR aux = node.getAttribute("numIter");
+	vector<int> ll;
+	if (aux != NULL)
+	{
+		parseString<int>(string(aux), ll);
+		paramDec.numIters = ll[0];
+		ll.clear();
+	}
+
+	aux = node.getAttribute("imBackground");
+	vector<float> vv;
+	if (aux != NULL)
+	{
+		parseString<float>(string(aux), vv);
+		paramDec.imgBackground = vv[0];
+		vv.clear();
+	}
+
+	aux = node.getAttribute("lambdaTV");
+	if (aux != NULL)
+	{
+		parseString<float>(string(aux), vv);
+		paramDec.lambdaTV = vv[0];
+		vv.clear();
+	}
+}
+
 //============================================================
 multiGPUblockController::~multiGPUblockController()
 {

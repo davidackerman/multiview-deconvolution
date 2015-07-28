@@ -239,23 +239,64 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 	//cout << "=======TODO readImage: we have to read images here!!!====develop a project for image reader wrapper======" << endl;
 
 	klb_imageIO imgFull(filename);
-	int err = 0;
+	int err = 0;	
 
 	err = imgFull.readHeader();
 	if (err > 0)
-		return err;
-
-	if (sizeof(imgType) != imgFull.header.getBytesPerPixel())
+		return err;	
+	
+	bool int2float = false;
+	if (sizeof(imgType) > imgFull.header.getBytesPerPixel() && sizeof(imgType) == 4 && (is_floating_point<imgType>() == true))
+	{
+		int2float = true;
+	}else if (sizeof(imgType) > imgFull.header.getBytesPerPixel())
 	{
 		cout << "ERROR: multiviewImage<imgType>::readImage: class type does not match image type" << endl;
 		return 10;
 	}
-	
-	imgType* imgA = new imgType[ROI.getSizePixels()];
-	
-	err = imgFull.readImage((char*)imgA, &ROI, -1);
-	if (err > 0)
-		return err;
+
+	imgType* imgA = new imgType[ROI.getSizePixels()];		
+
+	if (int2float)
+	{
+		cout << "WARNING: multiviewImage<imgType>::readROI: converting int image to float32" << endl;
+		void* imgAint = malloc(ROI.getSizePixels() * imgFull.header.getBytesPerPixel());
+
+		err = imgFull.readImage((char*)imgAint, &ROI, -1);
+		if (err > 0)
+			return err;
+		
+		switch (imgFull.header.dataType)
+		{
+		case KLB_DATA_TYPE::UINT8_TYPE:
+		{
+										  uint8_t* ptr = (uint8_t*)(imgAint);
+										  for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
+											  imgA[ii] = (float)(ptr[ii]);
+										  break;
+		}
+		case KLB_DATA_TYPE::UINT16_TYPE:
+		{
+										  uint16_t* ptr = (uint16_t*)(imgAint);
+										  for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
+											  imgA[ii] = (float)(ptr[ii]);
+										  break;
+		}
+		default:
+			cout << "ERROR: multiviewImage<imgType>::readROI: code not ready for this type of conversion " << endl;
+			free(imgAint);
+			delete[] imgA;
+			return 20;
+		}
+		
+
+		free(imgAint);
+	}
+	else{//read normally
+		err = imgFull.readImage((char*)imgA, &ROI, -1);
+		if (err > 0)
+			return err;
+	}
 
 	if (pos < 0)
 	{
@@ -285,6 +326,8 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 		ndims++;
 	}
 	dimsImgVec[pos].ndims = ndims;
+
+	
 
 	return err;
 }

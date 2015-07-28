@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <vector>
 #include <mutex>
+#include <string>
 #include "paramDeconvolution.h"
 #include "multiviewDeconvolution.h"
 
@@ -47,8 +48,14 @@ public:
 	paramDeconvolution paramDec;
 	static const std::uint32_t goodFFTdims[65];
 
+	//store original files in memory (in case we want to minimize I/O). This will contain the entire image
+	multiviewImage<weightType> full_weights_mem;
+	multiviewImage<psfType> full_psf_mem;
+	multiviewImage<outputType> full_img_mem;
+
     //constructor/destructor
     multiGPUblockController();
+	multiGPUblockController(std::string filenameXML);
 	~multiGPUblockController();
 
     //short set/get methods
@@ -78,8 +85,10 @@ public:
 protected:	
     //stores all the necessary information to partition in blocks for each computational unit
 	std::vector<GPUinfo> GPUinfoVec;    
+	
 
-	imgTypeDeconvolution *J;//to store final output
+	//to store final output
+	imgTypeDeconvolution *J;
 
     //which dimension we use to generate blocks (the one where the PSF is smaller so we minimize padding)
 	int dimBlockParition;

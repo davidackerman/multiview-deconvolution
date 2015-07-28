@@ -15,6 +15,7 @@
 #define __PARAM_DECONVOLUTION_HEADER_H__
 
 #include <string>
+#include <vector>
 
 typedef float imgTypeDeconvolution;//type of input image (I could use a template later if needed)
 
@@ -25,6 +26,12 @@ struct paramDeconvolution
 	std::string filePatternWeights;
 	std::string filePatternImg;
 
+	//in case each view has individual information (reading from XML)
+	std::vector<std::string> fileImg;
+	std::vector<std::string> filePSF;
+	std::vector< std::vector<float> > Acell;//to store affine transformations for each view
+
+	int verbose;
 
 	int numIters;
 	int Nviews;
@@ -32,6 +39,15 @@ struct paramDeconvolution
     
     imgTypeDeconvolution imgBackground;	
 	float lambdaTV;	
+
+	//default paramaters
+	void setDefaultParam()
+	{
+		numIters = 40;
+		lambdaTV = 0.0001f;
+		imgBackground = 100.0f;
+		verbose = 0;
+	}
 
 };
 
