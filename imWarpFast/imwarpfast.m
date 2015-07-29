@@ -45,7 +45,7 @@ warning('off', 'MATLAB:maxNumCompThreads:Deprecated')
 Af = (A'*F)\F;
 
 
-%we need ot center image
+%we need to center image
 B = eye(4);
 B(1:3,4) =  size(im) / 2 + 1;
 

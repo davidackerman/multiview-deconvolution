@@ -26,6 +26,7 @@ function Y = sharpness(block_struct)
     %calculate dct2 in a block
     Y = dct2(block_struct.data);  
     
+    
     %mask things outside cut-off frequency
     [XI, YI] = ndgrid(1:size(Y,1),1:size(Y,2));
     rr = sqrt(XI.^2 + YI.^2);
@@ -39,4 +40,5 @@ function Y = sharpness(block_struct)
     H = -sum( Y(pos) .* log2(Y(pos)) );
     
     Y = repmat(H,size(Y));
+    
 end

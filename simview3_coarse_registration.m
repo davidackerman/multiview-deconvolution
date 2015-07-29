@@ -40,6 +40,9 @@ for ii = 1:length(angles) %parfor here is not advisable because of memory usage
     imTemp = imwarpfast(im, tformCell{ii}, 0, imRefSize);
     rmpath './imWarpFast/'
     
+    %disp('===========DEBUGGING: no translation=============');
+    %im = imTemp;  
+    
     %downsample image
     imTemp = stackDownsample(imTemp, numLevels);
     
@@ -67,14 +70,12 @@ for ii = 1:length(angles) %parfor here is not advisable because of memory usage
         addpath './imWarpFast/'
         im = imwarpfast(im, tformCell{ii}, 0, imRefSize);
         rmpath './imWarpFast/'
-    end
-    
-        
+    end       
     
     %save image     
     imFilenameOutCell{ii} = ['imWarp_Matlab_CM' num2str(ii-1,'%.2d')];
     writeKLBstack(im, [outputFolder imFilenameOutCell{ii} '.klb']);
 end
-save([outputFolder 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'anisotropyZ', 'numLevels');
+save([outputFolder 'imRegister_Matlab_tform.mat'],'tformCell','imPath','imFilenameCell', 'anisotropyZ', 'numLevels','imFilenameOutCell');
 
 

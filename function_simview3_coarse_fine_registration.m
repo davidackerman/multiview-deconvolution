@@ -74,7 +74,14 @@ switch(RANSACparameterSet)
         param.searchRadius = 64 * 2;
         
         %it is better to find
-        param.thrPeakDOG = 9;               
+        param.thrPeakDOG = 9;   
+    case 4%functional imaging zebrafish
+        param.minIntensityValue = 150;
+        param.blockSize = 144;%96;%critical to make sure NCC discriminates enough
+        param.searchRadius = 128;%param.blockSize/2 + 128;
+        
+        %it is better to find
+        param.thrPeakDOG = 7;   
 end
-
+%%
 simview3_fine_registration(outputFolder, imFilenameOutCell, param);
