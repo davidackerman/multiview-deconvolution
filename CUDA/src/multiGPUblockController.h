@@ -53,7 +53,7 @@ public:
 
     //short set/get methods
 	std::uint64_t numElements();
-	int memoryRequirements(){ return 4 * paramDec.Nviews + 4; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula)
+	int memoryRequirements(){ return 5 * paramDec.Nviews + 4; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula)
 	int getImageDimensions();
 	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 	int writeDeconvoutionResult(const std::string& filename);

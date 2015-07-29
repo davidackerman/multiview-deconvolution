@@ -24,7 +24,7 @@
 
 
 //uncomment this to time elements
-//#define PROFILE_CODE_LR_GPU
+#define PROFILE_CODE_LR_GPU
 	
 #ifdef PROFILE_CODE_LR_GPU
 typedef std::chrono::high_resolution_clock Clock;
@@ -132,7 +132,6 @@ void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU(size_t pos)
 
     //find a good value for FFT
 	GPUinfoVec[pos].maxSizeDimBlockPartition = ceilToGoodFFTsize(GPUinfoVec[pos].maxSizeDimBlockPartition);
-
 }
 
 //===================================
