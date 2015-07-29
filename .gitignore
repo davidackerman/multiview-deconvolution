@@ -1,3 +1,6 @@
 temp
 *.asv
 HHMIcredentials.txt
+CUDA/build_release/
+CUDA/build_debug/
+CUDA/build/
