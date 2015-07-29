@@ -20,6 +20,7 @@
 
 extern "C" DLL_EXPORT int getCUDAcomputeCapabilityMinorVersion(int devCUDA);
 extern "C" DLL_EXPORT  int getCUDAcomputeCapabilityMajorVersion(int devCUDA);
+extern "C" DLL_EXPORT bool isDeviceCUDAusedByDisplay(int devCUDA);
 extern "C" DLL_EXPORT  int getNumDevicesCUDA();
 extern "C" DLL_EXPORT  void getNameDeviceCUDA(int devCUDA, char *name);
 extern "C" DLL_EXPORT  long long int getMemDeviceCUDA(int devCUDA);

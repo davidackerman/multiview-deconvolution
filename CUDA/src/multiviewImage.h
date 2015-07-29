@@ -21,6 +21,7 @@
 #include <string>
 #include <cstdint>
 #include <cstring>
+#include "affine_transform_3d_single.h"
 
 
 //forward declaration
@@ -67,10 +68,14 @@ public:
 	//I/O functions
 	int readImage(const std::string& filename, int pos);//if pos<0 then we add one image to the vector
 	int readROI(const std::string& filename, int pos, const klb_ROI& ROI);
-	int writeImage(const std::string& filename, int pos);
+	void copyROI(const imgType *p, std::int64_t dims[MAX_DATA_DIMS], int ndims, int pos, const klb_ROI& ROI);//copy ROI form another image in memory
+	int writeImage(const std::string& filename, int pos);	
+	int writeImage_uint16(const std::string& filename, int pos, float scale);
 	int writeImageRaw(const std::string& filename, int pos);
 	static std::string recoverFilenamePatternFromString(const std::string& imgPath, int frame);
 	static int getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS]);
+
+	void apply_affine_transformation_img(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
 
 	//short IO functions
 	size_t getNumberOfViews() const{ return imgVec_CPU.size(); };
@@ -80,12 +85,14 @@ public:
 	imgType* getPointer_GPU(size_t pos) { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	imgType* getPointer_GPU(size_t pos) const { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	std::int64_t numElements(size_t pos) const;
+	std::int64_t numBytes(size_t pos) const;
 	void deallocateView_CPU(size_t pos);
 	void deallocateView_GPU(size_t pos);
 	void allocateView_GPU(size_t pos, size_t numBytes);
 	void allocateView_CPU(size_t pos, size_t numElements); //this function does not setup dimsImgVec
 	void copyView_GPU_to_CPU(size_t pos);
 	void copyView_CPU_to_GPU(size_t pos);
+	void copyView_extPtr_to_CPU(size_t pos, const imgType* ptr, std::int64_t dims[MAX_DATA_DIMS]);
 	void setImgDims(size_t pos, const dimsImg &d);
 
 	void padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad);

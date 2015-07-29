@@ -24,13 +24,13 @@ int main(int argc, const char** argv)
 
 	time(&start);
 	//parameters
-	//string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
-	string filepath("E:/temp/20150505_185415_GCaMP6_TM000089/simview3_TM89_");//very large file
+	string filepath("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/");
+	//string filepath("E:/temp/20150505_185415_GCaMP6_TM000089/simview3_TM89_");//very large file
 	int numIters = 5;
 	int numViews = 4;
-	imgTypeDeconvolution imgBackground = 100;
-	cout << "===============TODO: activate total variations==============" << endl;
-	float lambdaTV = -1.0;//0.008;
+	int maxNumberGPU = 1;//to avoid using GTX for display 
+	imgTypeDeconvolution imgBackground = 100;	
+	float lambdaTV = 0.0001;////set to <= 0 to decative TV regularization
 	
 
 	if (argc > 1)
@@ -58,7 +58,7 @@ int main(int argc, const char** argv)
 	master.paramDec.Nviews = numViews;
 
     //check number of GPUs and the memory available for each of them
-	master.queryGPUs();
+	master.queryGPUs(maxNumberGPU);
 
 	master.debug_listGPUs();
 
@@ -74,18 +74,19 @@ int main(int argc, const char** argv)
 	//for (size_t ii = 0; ii < master.getNumGPU(); ii++)
 	//	master.debug_setGPUmaxSizeDimBlockPartition(ii, 64);
 
-    //launch multi-thread as a producer consumer queue to calculate blocks as they come
-	err = master.runMultiviewDeconvoution();
+    //launch multi-thread as a producer consumer queue to calculate blocks as they come	
+	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile);
 	if (err > 0)
 		return err;
 
 	time(&end);
 	cout << "Multiview deconvolution using multi-GPU took " << difftime(end, start) << " secs for " << numIters << " iterations" << endl;
-    //write result
+    
+	//write result
 	char fileoutName[256];
-	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.raw", filepath.c_str(), numIters);
+	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.klb", filepath.c_str(), numIters);
 	//err = master.writeDeconvoutionResult(string(fileoutName)));
-	err = master.writeDeconvoutionResultRaw(string(fileoutName));
+	err = master.writeDeconvoutionResult_uint16(string(fileoutName));
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;
