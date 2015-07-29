@@ -26,7 +26,7 @@ int main(int argc, const char** argv)
 	auto t2 = Clock::now();
 
 	//main inputs
-	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/regDeconvParam.xml");
+	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv/regDeconvParam.xml");
 	int maxNumberGPU = -1;//default value
 
 	if (argc > 1)
@@ -63,7 +63,6 @@ int main(int argc, const char** argv)
 	t2 = Clock::now();
 	std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
-
 	
 	int64_t dimsOut[3];
 	const int refView = 0;
@@ -73,18 +72,31 @@ int main(int argc, const char** argv)
 	dimsOut[1] = master.full_img_mem.dimsImgVec[refView].dims[1];
 	dimsOut[2] = ceil(master.full_img_mem.dimsImgVec[refView].dims[2] * master.paramDec.anisotropyZ);
 
+	//find out best dimension to perform blocks for minimal padding
+	int err = master.findBestBlockPartitionDimension_inMem();
+	if (err > 0)
+		return err;
+
+	//adjust dimensions so they are good for FFT (factors of 2 and 3)
+	for (int ii = 0; ii < 3; ii++)
+	{
+		if (master.getDimBlockPartition() != ii)
+			dimsOut[ii] = master.padToGoodFFTsize(dimsOut[ii]);
+	}
+
+	//apply transformation
 	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 	{
 				
 		t1 = Clock::now();
 		cout << "Applying affine transformation to view " << ii << endl;
-		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 2);
+		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
 		t2 = Clock::now();
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
 		t1 = Clock::now();
 		cout << "Applying affine transformation to weight array " << endl;
-		master.full_weights_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 1);
+		master.full_weights_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 1);//linear interpolation with border pixels assigned to 0
 		t2 = Clock::now();
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
@@ -97,16 +109,11 @@ int main(int argc, const char** argv)
 		{
 			char buffer[256];
 			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
-			master.full_img_mem.writeImage(string(buffer), ii);
+			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);
 			sprintf(buffer, "%s_debug_weigths_%d.klb", filenameXML.c_str(), ii);
-			master.full_weights_mem.writeImage(string(buffer), ii);
+			master.full_weights_mem.writeImage_uint16(string(buffer), ii, 100);
 		}
 	}
-
-	//find out best dimension to perform blocks for minimal padding
-	int err = master.findBestBlockPartitionDimension_inMem();
-	if (err > 0)
-		return err;
 
 	//precalculate number of planes per GPU we can do (including padding to avoid border effect)
 	master.findMaxBlockPartitionDimensionPerGPU_inMem();

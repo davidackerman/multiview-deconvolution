@@ -116,9 +116,16 @@ void multiviewImage<imgType>::copyView_extPtr_to_CPU(size_t pos, const imgType* 
 	if (pos >= imgVec_CPU.size())
 		return;
 
+	if (pos >= dimsImgVec.size())
+		dimsImgVec.resize(pos + 1);
+
 	int64_t imSize = 1;
+	dimsImgVec[pos].ndims = MAX_DATA_DIMS;
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+	{
 		imSize *= dims[ii];
+		dimsImgVec[pos].dims[ii] = dims[ii];
+	}
 	
 	if (imgVec_CPU[pos] != NULL)
 		delete[] imgVec_CPU[pos];
@@ -276,12 +283,12 @@ void multiviewImage<imgType>::copyROI(const imgType *p, std::int64_t dims[MAX_DA
 	int64_t strideROI = ROI.getSizePixels(0); 	
 	for (int64_t zz = ROI.xyzctLB[2]; zz <= ROI.xyzctUB[2]; zz++)//UB is inlcuded in ROI
 	{
-		offsetFullImg = ROI.xyzctLB[0] + dims[0] * (ROI.xyzctLB[1] + dims[1] * zz);
+		offsetFullImg = ((int64_t)(ROI.xyzctLB[0])) + dims[0] * (((int64_t)(ROI.xyzctLB[1])) + dims[1] * zz);
 		for (int64_t yy = ROI.xyzctLB[1]; yy <= ROI.xyzctUB[1]; yy++)//UB is inlcuded in ROI
 		{
 			//offsetFullImg = ROI.xyzctLB[0] + dims[0] * (yy + dims[1] * zz);
 
-			memcpy(&(imgA[offsetROI]), &(imgA[offsetFullImg]), sizeof(imgType)* strideROI);
+			memcpy(&(imgA[offsetROI]), &(p[offsetFullImg]), sizeof(imgType)* strideROI);
 			offsetROI += strideROI;
 			offsetFullImg += dims[0];
 		}
@@ -346,7 +353,9 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 
 	if (int2float)
 	{
+#ifdef _DEBUG
 		cout << "WARNING: multiviewImage<imgType>::readROI: converting int image to float32" << endl;
+#endif
 		void* imgAint = malloc(ROI.getSizePixels() * imgFull.header.getBytesPerPixel());
 
 		err = imgFull.readImage((char*)imgAint, &ROI, -1);
@@ -490,6 +499,88 @@ int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
 
 	//write image
 	int error = imgIO.writeImage((char*)(imgVec_CPU[pos]), -1);//all the threads available
+
+	if (error > 0)
+	{
+		switch (error)
+		{
+		case 2:
+			printf("Error during BZIP compression of one of the blocks");
+			break;
+		case 5:
+			printf("Error generating the output file in the specified location");
+			break;
+		default:
+			printf("Error writing the image");
+		}
+	}
+
+	return error;
+}
+
+//===========================================================================================
+template<class imgType>
+int multiviewImage<imgType>::writeImage_uint16(const std::string& filename, int pos, float scale)
+{
+	if (pos >= imgVec_CPU.size() || imgVec_CPU[pos] == NULL)
+		return 0;
+
+	//initialize I/O object	
+	klb_imageIO imgIO(filename);
+
+	uint32_t xyzct[KLB_DATA_DIMS];
+	uint64_t imSize = 1;
+	for (int ii = 0; ii < dimsImgVec[pos].ndims; ii++)
+	{
+		xyzct[ii] = dimsImgVec[pos].dims[ii];
+		imSize *= dimsImgVec[pos].dims[ii];
+	}
+	for (int ii = dimsImgVec[pos].ndims; ii <KLB_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = 1;
+	}
+
+	//set header
+	int error;
+	switch (sizeof(imgType))//TODO: this is not accurate since int8 will be written as uint8
+	{
+	case 1:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);
+		//write image
+		error = imgIO.writeImage((char*)(imgVec_CPU[pos]), -1);//all the threads available
+		break;
+	case 2:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+		//write image
+		error = imgIO.writeImage((char*)(imgVec_CPU[pos]), -1);//all the threads available
+		break;
+	case 4:
+	{
+			  imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+			  //normalize image
+			  float Imax = -numeric_limits<float>::max();
+			  float Imin = -Imax;
+			  for (uint64_t ii = 0; ii < imSize; ii++)
+			  {
+				  Imax = max(Imax, (float)(imgVec_CPU[pos][ii]));
+				  Imin = min(Imin, (float)(imgVec_CPU[pos][ii]));
+			  }
+			  
+			  uint16_t* imUint16 = new uint16_t[imSize];
+			  for (uint64_t ii = 0; ii < imSize; ii++)
+			  {
+				  imUint16[ii] = (uint16_t)(scale * (imgVec_CPU[pos][ii] - Imin) / (Imax - Imin));
+			  }
+			  //write image
+			  error = imgIO.writeImage((char*)(imUint16), -1);//all the threads available
+			  delete[] imUint16;
+			  break;
+	}
+	default:
+		cout << "ERROR: format not supported yet" << endl;
+		return 10;
+	}
+
 
 	if (error > 0)
 	{

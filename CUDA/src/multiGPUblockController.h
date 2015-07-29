@@ -65,12 +65,13 @@ public:
 
     //short set/get methods
 	std::uint64_t numElements();
-	int memoryRequirements(){ return 4 * paramDec.Nviews + 5; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula)
+	int memoryRequirements(){ return 4 * paramDec.Nviews + 5 + 3; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula). The problem is that cuFFT needs more workspace depending on the factors of the image size (so we need to be on the save side)
 	int getImageDimensions();
 	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 	int writeDeconvoutionResult(const std::string& filename);
 	int writeDeconvoutionResultRaw(const std::string& filename);
 	int writeDeconvoutionResult_uint16(const std::string& filename);
+	int getDimBlockPartition(){ return dimBlockParition; };
 
     //methods
 	void queryGPUs(int maxNumber = -1);
@@ -82,6 +83,7 @@ public:
 	int runMultiviewDeconvoution(MV_deconv_fn p);//main function to start distirbuting multiview deconvolution to different blocks		
 	void copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes);
 	static std::uint32_t ceilToGoodFFTsize(std::uint32_t n);
+	static std::uint32_t padToGoodFFTsize(std::uint32_t n);
 	void calculateWeights();//main function to calculate weights on each image using multiple GPU
 	
 	//functions to perform different kinds of deconvolution on each block	

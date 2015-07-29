@@ -70,6 +70,7 @@ public:
 	int readROI(const std::string& filename, int pos, const klb_ROI& ROI);
 	void copyROI(const imgType *p, std::int64_t dims[MAX_DATA_DIMS], int ndims, int pos, const klb_ROI& ROI);//copy ROI form another image in memory
 	int writeImage(const std::string& filename, int pos);	
+	int writeImage_uint16(const std::string& filename, int pos, float scale);
 	int writeImageRaw(const std::string& filename, int pos);
 	static std::string recoverFilenamePatternFromString(const std::string& imgPath, int frame);
 	static int getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS]);

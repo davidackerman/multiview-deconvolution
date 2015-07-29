@@ -206,7 +206,7 @@ int multiGPUblockController::findBestBlockPartitionDimension()
 int multiGPUblockController::findBestBlockPartitionDimension_inMem()
 {
 	string filename;
-	uint32_t maxDims[MAX_DATA_DIMS], auxDims[MAX_DATA_DIMS];
+	uint32_t maxDims[MAX_DATA_DIMS];
 	memset(maxDims, 0, sizeof(uint32_t)* MAX_DATA_DIMS);
 	for (int ii = 0; ii < paramDec.Nviews; ii++)
 	{		
@@ -214,7 +214,7 @@ int multiGPUblockController::findBestBlockPartitionDimension_inMem()
 		{
 			if (maxDims[jj] < full_psf_mem.dimsImgVec[ii].dims[jj])
 			{
-				maxDims[jj] = auxDims[jj];
+				maxDims[jj] = full_psf_mem.dimsImgVec[ii].dims[jj];
 			}
 		}
 	}
@@ -302,14 +302,37 @@ uint32_t multiGPUblockController::ceilToGoodFFTsize(uint32_t n)
 
 	return n;//number is too high
 }
+
+//===================================
+uint32_t multiGPUblockController::padToGoodFFTsize(uint32_t n)
+{
+	//find the first set of dimensions that fit
+	for (int ii = 1; ii < NUM_POSSIBLE_SIZES; ii++)
+	{
+		if (goodFFTdims[ii] >= n)
+			return goodFFTdims[ii];
+	}
+
+	return n;//number is too high
+}
 //================================================================
 int multiGPUblockController::runMultiviewDeconvoution(MV_deconv_fn p)
 {
-    //calculate image size	
-	int err = getImageDimensions();
-	if (err > 0)
-		return err;
+    //calculate image size
+	if (full_img_mem.getNumberOfViews() > 0)
+	{
 
+		for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		{
+			imgDims[ii] = full_img_mem.dimsImgVec[0].dims[ii];
+		}
+	}
+	else{
+
+		int err = getImageDimensions();
+		if (err > 0)
+			return err;
+	}
 	uint64_t nImg = numElements();
 	
 
@@ -685,6 +708,9 @@ void multiGPUblockController::calculateWeightsSingleView(size_t threadIdx)
 		if (view >= paramDec.Nviews)
 			break;
 
+		//set dimensions for weights
+		full_weights_mem.setImgDims(view, full_img_mem.dimsImgVec[view]);
+
 		//allocate memory
 		full_img_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
 		full_img_mem.copyView_CPU_to_GPU(view);
@@ -701,10 +727,7 @@ void multiGPUblockController::calculateWeightsSingleView(size_t threadIdx)
 
 		//deallocate memory
 		full_img_mem.deallocateView_GPU(view);
-		full_weights_mem.deallocateView_GPU(view);
-
-		//set dimensions for weights
-		full_weights_mem.setImgDims(view, full_img_mem.dimsImgVec[view]);
+		full_weights_mem.deallocateView_GPU(view);		
 	}
 
 }
