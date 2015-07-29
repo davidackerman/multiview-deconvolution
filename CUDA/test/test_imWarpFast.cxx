@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <chrono>
 #include <string>
+#include <math.h>
 #include "klb_Cwrapper.h"
 #include "affine_transform_3d_single.h"
 

@@ -41,12 +41,12 @@ __global__ void CUDAkernelDCTShannonEntropyFloat(float *SrcDst, int Stride, floa
 	int cacheIndex = tx + blockDim.x * ty;
 
 	//copy current coefficient to the local variable and calculate entropy for each entry		
-	if (sqrt(float((tx+1)*(tx+1) + (ty+1)*(ty+1))) > cutoff)//+1 to match Matlab code
+	if (sqrtf(float((tx+1)*(tx+1) + (ty+1)*(ty+1))) > cutoff)//+1 to match Matlab code
 		DCTcoeff[cacheIndex] = 0;//to avoid having to check for 0
 	else	
 		DCTcoeff[cacheIndex] = fabs(SrcDst[(by * BLOCK_SIZE + ty) * Stride + (bx * BLOCK_SIZE + tx)]);
 	//copy absolute value
-	DCTcoeffAbs[cacheIndex] = pow(DCTcoeff[cacheIndex], 2);
+	DCTcoeffAbs[cacheIndex] = powf(DCTcoeff[cacheIndex], 2);
 	__syncthreads();
 
 	
@@ -63,7 +63,7 @@ __global__ void CUDAkernelDCTShannonEntropyFloat(float *SrcDst, int Stride, floa
 	//__syncthreads();
 
 	//calculate entropy term for each elements
-	DCTcoeff[cacheIndex] /= sqrt(DCTcoeffAbs[0]);
+	DCTcoeff[cacheIndex] /= sqrtf(DCTcoeffAbs[0]);
 	DCTcoeff[cacheIndex] = DCTcoeff[cacheIndex] * log2(DCTcoeff[cacheIndex] + 1e-7);//add epsilon to avoid 0 * inf = NaN
 	__syncthreads();
 

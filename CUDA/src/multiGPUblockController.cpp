@@ -15,6 +15,7 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+#include <assert.h>
 #include "multiGPUblockController.h"
 #include "external/xmlParser/xmlParser.h"
 #include "external/xmlParser/svlStrUtils.h"
@@ -27,11 +28,10 @@
 
 
 //uncomment this to time elements
-#define PROFILE_CODE_LR_GPU
+//#define PROFILE_CODE_LR_GPU
 	
-#ifdef PROFILE_CODE_LR_GPU
+
 typedef std::chrono::high_resolution_clock Clock;
-#endif
 using namespace std;
 
 //these numbers only have 2 or 3 as factors

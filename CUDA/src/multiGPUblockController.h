@@ -65,7 +65,7 @@ public:
 
     //short set/get methods
 	std::uint64_t numElements();
-	int memoryRequirements(){ return 4 * paramDec.Nviews + 5 + 3; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula). The problem is that cuFFT needs more workspace depending on the factors of the image size (so we need to be on the save side)
+	int memoryRequirements(){ return 4 * paramDec.Nviews + 5 + 4; }//memoryRequirements * imgSize * sizeof(float32) is the amount of memory required in a GPU (empirical formula). The problem is that cuFFT needs more workspace depending on the factors of the image size (so we need to be on the save side)
 	int getImageDimensions();
 	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 	int writeDeconvoutionResult(const std::string& filename);

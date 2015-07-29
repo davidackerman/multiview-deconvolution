@@ -12,7 +12,7 @@
 */
 
 #include "paramDeconvolution.h"
-
+#include <math.h>
 
 float paramDeconvolution::getAnisotropyZfromAffine()
 {

@@ -9,6 +9,7 @@
 #include "math.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "affine_transform_3d_single.h"
 #include "image_interpolation.h"
 #include "multiple_os_thread.h"
@@ -241,7 +242,8 @@ bool affine_3d_isAffine(const float A[AFFINE_3D_MATRIX_SIZE])
 
 void affine3d_printMatrix(const float A[AFFINE_3D_MATRIX_SIZE])
 {
-	for (int ii = 0; ii < 4; ii++)
+	int ii;
+	for (ii = 0; ii < 4; ii++)
 		printf("%.6f\t%.6f\t%.6f\t%.6f\n", A[ii + 4 * 0], A[ii + 4 * 1], A[ii + 4 * 2], A[ii + 4 * 3] );
 }
 
@@ -529,15 +531,15 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 float* fa_padArrayWithZeros(const float* im, const int64_t *dimsNow, const int64_t *dimsAfterPad, int ndims)
 {
-
+	int ii;
+	int64_t nImg = 1, zz, yy;
 	if (ndims != 3)
 	{
 		printf("TODO:ERROR: padArrayWithZeros: function not ready for other values of ndims except for 3\n");
 		exit(3);
 	}
-
-	int64_t nImg = 1;
-	for (int ii = 0; ii < ndims; ii++)
+	
+	for (ii = 0; ii < ndims; ii++)
 	{
 		if (dimsNow[ii] > dimsAfterPad[ii])
 		{
@@ -554,10 +556,10 @@ float* fa_padArrayWithZeros(const float* im, const int64_t *dimsNow, const int64
 	size_t lineSize = dimsNow[0] * sizeof(float);
 	int64_t idx = 0;
 	int64_t count = 0;
-	for (int64_t zz = 0; zz < dimsNow[2]; zz++)
+	for (zz = 0; zz < dimsNow[2]; zz++)
 	{
 		idx = dimsAfterPad[0] * dimsAfterPad[1] * zz;
-		for (int64_t yy = 0; yy < dimsNow[1]; yy++)
+		for (yy = 0; yy < dimsNow[1]; yy++)
 		{
 			//update for new array
 			//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);

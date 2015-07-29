@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <math.h>  
 #include "multiGPUblockController.h"
 
 
