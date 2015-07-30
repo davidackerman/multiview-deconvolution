@@ -1,4 +1,4 @@
-function xyzs = detectInterestPoints_DOG(im, sigma, maxNumPeaks, thrPeak, mask, verbose)
+function xyzs = detectInterestPoints_DOG(im, sigma, maxNumPeaks, thrPeak, mask, verbose, debugFolder, view)
 
 %TODO: better wayt to delete around local maxima. 
 %TODO: multi-scale search
@@ -9,6 +9,12 @@ end
 
 im = single(im);
 im = imgaussian(im, sigma) - imgaussian(im, sigma * 1.6);
+
+
+if( isempty(debugFolder) == false )
+    writeKLBstack(single(im), [debugFolder filesep 'multiview_fine_reg_DoG_view' num2str(view-1,'%.2d') '.klb']);
+    writeKLBstack(uint8(mask), [debugFolder filesep 'multiview_fine_reg_DoGmask_view' num2str(view-1,'%.2d') '.klb']);
+end
 
 im( im < thrPeak ) = 0;
 
