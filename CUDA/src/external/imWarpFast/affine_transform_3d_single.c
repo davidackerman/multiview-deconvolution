@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "affine_transform_3d_single.h"
 #include "image_interpolation.h"
 #include "multiple_os_thread.h"
@@ -66,9 +67,9 @@ int getNumberOfCores()
 
 voidthread transformvolume(float **Args) {
     float *Isize_d, *mean, *A, *Iin, *Iout, *ThreadID, *moded;
-    int Isize[3]={0, 0, 0};
+    int64_t Isize[3]={0, 0, 0};
     int mode=0;
-    int x, y, z;
+    int64_t x, y, z;
     float *Nthreadsd;
     int Nthreads;
     bool black, cubic;   
@@ -80,7 +81,7 @@ voidthread transformvolume(float **Args) {
     float xd, yd, zd;
     
     // Variables to store 1D index */
-    int indexI;
+    int64_t indexI;
     
     // Multiple threads, one does the odd the other even indexes */
     int ThreadOffset;
@@ -104,9 +105,9 @@ voidthread transformvolume(float **Args) {
     if(mode==0||mode==2){ black = false; } else { black = true; }
     if(mode==0||mode==1){ cubic = false; } else { cubic = true; }
 	
-    Isize[0] = (int)Isize_d[0];
-    Isize[1] = (int)Isize_d[1];
-    Isize[2] = (int)Isize_d[2];
+    Isize[0] = (int64_t)Isize_d[0];
+    Isize[1] = (int64_t)Isize_d[1];
+    Isize[2] = (int64_t)Isize_d[2];
     
     ThreadOffset=(int) ThreadID[0];
     
