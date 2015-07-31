@@ -40,6 +40,7 @@ psfFilenameCell = Acell;
 for ii = 1:Nviews
     Acell{ii} = tformCoarseCell{ii} * tformFineCell{ii};
     PSFcell{ii} = single(imwarp(PSF, affine3d(Acell{ii}), 'interp', 'cubic'));
+    PSFcell{ii} = PSFcell{ii} / sum(PSFcell{ii}(:));
     filenameCell{ii} = [imPath imFilenameCell{ii}];
     
     [~, name] = fileparts(filenameCell{ii});

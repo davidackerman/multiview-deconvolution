@@ -43,33 +43,34 @@ for ii = 1:Nviews %parfor here is not advisable because of memory usage
     imTemp = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);
     rmpath './imWarpFast/'
     %transform PSF    
-    PSFcell{ii} = imwarp(PSF, affine3d(tformCell{ii}), 'interp', 'cubic');
+    PSFcell{ii} = single(imwarp(PSF, affine3d(tformCell{ii}), 'interp', 'cubic'));
+    PSFcell{ii} = PSFcell{ii} / sum(PSFcell{ii}(:));
     disp(['Took ' num2str(toc(tstart)) ' secs']);
         
     disp(['Downsampling and calculating translation to align view ' num2str(ii-1) ' to reference view']);
     tstart = tic;
     %"double blur" image, so all images "look" the same
-    if( mod(ii,2) == 0 )
-        imTemp = uint16(convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options));
-    else
-        imTemp = uint16(convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options));
+    for jj = 1:Nviews
+        if( ii ~= jj)
+            imTemp = convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options);    
+        end        
     end            
     
     if( ii == 1 )
         numLevelsT = 2;
-        imRefD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster
-        imCell{ii} = imTemp;
+        imRefD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster        
     else
-        imD = stackDownsample(imTemp,2);%downsample to make it faster
+        imD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster
         [Atr,nccVal] = fitTranslation(imRefD, imD, round(min(size(imD))/6));
         Atr(4,1:3) = Atr(4,1:3) * (2^numLevelsT);%to compensate for downsample
         tformCell{ii} = tformCell{ii} * Atr;
-        
-        %imCell{ii} = imwarp(imCell{ii}, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
-        addpath './imWarpFast/'
-        imCell{ii} = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);
-        rmpath './imWarpFast/'
-    end       
+    end
+    
+    %imCell{ii} = imwarp(imCell{ii}, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
+    addpath './imWarpFast/'
+    imCell{ii} = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);
+    rmpath './imWarpFast/'
+    
     disp(['Took ' num2str(toc(tstart)) ' secs']);
     
     %save image     

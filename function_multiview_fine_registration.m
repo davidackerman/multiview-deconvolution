@@ -62,9 +62,9 @@ end
 %%
 %save debugging information if requested
 if( isempty(debugFolder) == false )
-    disp(['Saving debugging infdrmation and images to ' debugFolder]);
+    disp(['Saving debugging information and images to ' debugFolder]);
     %save parameters    
-    save([debugFolder filesep 'multiview_fine_reg.mat'],'tformCell', 'Tcell', 'statsRANSAC');        
+    save([debugFolder filesep 'multiview_fine_reg.mat'],'Acell','Tcell', 'statsRANSAC');        
     %apply transformation to each stack
     %parfor here can run out of memory for full resolution plus imwarp is already multi-thread (about 50% core usage)
     for ii = 1:numViews

@@ -1,3 +1,5 @@
+#ifndef __MULTIPLE_OS_THREAD_H__
+#define __MULTIPLE_OS_THREAD_H__
 /*   undef needed for LCC compiler  */
 #undef EXTERN_C
 #ifdef _WIN32
@@ -15,4 +17,7 @@
 #define ThreadHANDLE pthread_t
 #define WaitForThreadFinish(t) pthread_join(t, NULL)
 #define StartThread(a,b,c) pthread_create((pthread_t*)&a, NULL, (void*)b, c);
+#endif
+
+
 #endif
