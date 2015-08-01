@@ -69,7 +69,7 @@ if( isempty(debugFolder) == false )
     %parfor here can run out of memory for full resolution plus imwarp is already multi-thread (about 50% core usage)
     for ii = 1:numViews
         addpath './imWarpFast/'
-        im = imwarpfast(imCoarseCell{ii}, Acell{ii}, 0, size(im));
+        im = imwarpfast(imCoarseCell{ii}, Acell{ii}, 0, size(imCoarseCell{1}));
         rmpath './imWarpFast/'
         im = single(im);
         minI = min(im(:));

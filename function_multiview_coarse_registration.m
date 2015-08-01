@@ -5,7 +5,9 @@ function [imCell, tformCell] = function_multiview_coarse_registration(imPath, im
 %parameters
 options.GPU = false;
 options.Power2Flag = false;%memory consumption can be ridiculous
+numLevelsT = 2;
 
+%%
 Nviews = length(imFilenameCell);
 
 PSFcell = cell(Nviews,1);
@@ -29,38 +31,48 @@ for ii = 1:Nviews %parfor here is not advisable because of memory usage
     
     if( ii == 1)
        imRefSize = ceil(size(imCell{ii}) .* [1 1 anisotropyZ]);
+       
+       %transform PSF: we need before hand to blur other views
+       for jj = 1:Nviews
+           %flip and permutation and interpolation in z to set all the views in
+           %the same x,y,z coordinate system
+           tformCell{jj} = function_multiview_camera_transformation(cameraTransformCell(jj), anisotropyZ, imRefSize);
+           PSFcell{jj} = single(imwarp(PSF, affine3d(tformCell{jj}), 'interp', 'cubic'));
+           %downsample (we only need it for matching translation) and it was very slow at full resolution
+           PSFcell{jj} = stackDownsample(PSFcell{jj},numLevelsT);
+           PSFcell{jj} = PSFcell{jj} / sum(PSFcell{jj}(:));
+       end
     end
     
     disp(['Applying pre-defined flip and permutation to view ' num2str(ii-1)]);
-    tstart = tic;
-    %flip and permutation and interpolation in z to set all the views in
-    %the same x,y,z coordinate system
-    tformCell{ii} = function_multiview_camera_transformation(cameraTransformCell(ii), anisotropyZ, imRefSize);
+    tstart = tic;    
     
     %transform image
     %imTemp = imwarp(imCell{ii}, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
     addpath './imWarpFast/'
     imTemp = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);
-    rmpath './imWarpFast/'
-    %transform PSF    
-    PSFcell{ii} = single(imwarp(PSF, affine3d(tformCell{ii}), 'interp', 'cubic'));
-    PSFcell{ii} = PSFcell{ii} / sum(PSFcell{ii}(:));
+    rmpath './imWarpFast/'    
     disp(['Took ' num2str(toc(tstart)) ' secs']);
-        
-    disp(['Downsampling and calculating translation to align view ' num2str(ii-1) ' to reference view']);
-    tstart = tic;
-    %"double blur" image, so all images "look" the same
-    for jj = 1:Nviews
-        if( ii ~= jj)
-            imTemp = convnfft(single(imTemp), single(PSFcell{ii}),'same',[1:max(ndims(imTemp),ndims(PSFcell{ii}))],options);    
-        end        
-    end            
+            
     
-    if( ii == 1 )
-        numLevelsT = 2;
-        imRefD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster        
+    disp(['Downsampling, blurring and calculating translation to align view ' num2str(ii-1) ' to reference view']);
+    tstart = tic;
+    if( ii == 1 )        
+        imRefD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster                
+        %"double blur" image, so all images "look" the same
+        for jj = 1:Nviews
+            if( ii ~= jj)
+                imRefD = convnfft(single(imRefD), single(PSFcell{ii}),'same',[1:max(ndims(imRefD),ndims(PSFcell{ii}))],options);
+            end
+        end        
     else
         imD = stackDownsample(imTemp,numLevelsT);%downsample to make it faster
+        %"double blur" image, so all images "look" the same
+        for jj = 1:Nviews
+            if( ii ~= jj)
+                imD = convnfft(single(imD), single(PSFcell{ii}),'same',[1:max(ndims(imD),ndims(PSFcell{ii}))],options);
+            end
+        end
         [Atr,nccVal] = fitTranslation(imRefD, imD, round(min(size(imD))/6));
         Atr(4,1:3) = Atr(4,1:3) * (2^numLevelsT);%to compensate for downsample
         tformCell{ii} = tformCell{ii} * Atr;
@@ -68,7 +80,7 @@ for ii = 1:Nviews %parfor here is not advisable because of memory usage
     
     %imCell{ii} = imwarp(imCell{ii}, affine3d(tformCell{ii}), 'Outputview', imref3d(imRefSize), 'interp', 'linear');
     addpath './imWarpFast/'
-    imCell{ii} = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);
+    imCell{ii} = imwarpfast(imCell{ii}, tformCell{ii}, 0, imRefSize);%we transform the original image
     rmpath './imWarpFast/'
     
     disp(['Took ' num2str(toc(tstart)) ' secs']);

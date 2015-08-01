@@ -53,8 +53,8 @@ saveRegistrationDeconvolutionParameters(filenameXML,filenameCell, psfFilenameCel
 
 %save log file with RANAC stats
 fid = fopen([imPath 'MVreg_RANSACstats.txt'], 'w');
-fprintf(fid,'Avg. residual = %.6f pixels', num2str(mean(sqrt(sum(statsRANSAC.residuals.^2,2)))));
-fprintf(fid,'Number of inliers = %d', num2str(statsRANSAC.numInliers));
+fprintf(fid,'Avg. residual = %.6f pixels\n', mean(sqrt(sum(statsRANSAC.residuals.^2,2))));
+fprintf(fid,'Number of inliers = %d\n', statsRANSAC.numInliers);
 fprintf(fid,'Took %.f secs for coarse alignment\n', ttCoarse);
 fprintf(fid,'Took %.f secs for fine alignment\n', ttFine);
 

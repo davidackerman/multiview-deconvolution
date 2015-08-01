@@ -8,7 +8,7 @@ imPathPattern = ['S:\SiMView1\15-04-03\Mmu_E1_mKate2_0_20150403_151711.corrected
 imFilenameCell = {['SPM00\TM??????\SPM00_TM??????_CM00_CHN00.klb'], ['SPM01\TM??????\SPM01_TM??????_CM00_CHN00.klb'], ['SPM00\TM??????\SPM00_TM??????_CM01_CHN00.klb'], ['SPM01\TM??????\SPM01_TM??????_CM01_CHN00.klb']};%filenames of each view. CRITICAL: the same order should be preserved when giving the transformations to match images between cameras
 
 
-cameraTransformCell = [10, 20, 30, 40];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
+cameraTransformCell = [10, 22, 31, 42];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
 
 samplingXYZ = [0.40625, 0.40625, 2.031];%sampling in um
 
@@ -22,17 +22,17 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %%
 %RANSAC
 %critical parameters for RANSAC alignment
-RANSACparameterSet.minIntensityValue = 150; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
+RANSACparameterSet.minIntensityValue = 500; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
 RANSACparameterSet.blockSize = 144;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
 RANSACparameterSet.searchRadius = 128;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
-RANSACparameterSet.thrPeakDOG = 15;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
+RANSACparameterSet.thrPeakDOG = 25;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
 
 %usually "stable" parameters for RANSAC alignment
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest
 RANSACparameterSet.numWorkers = -1;         %set to -1 to use as many as possible. If code runs out of memory, reduce the number.
 RANSACparameterSet.maxNumPeaks = 100;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
 RANSACparameterSet.sigmaDOG = 6.0;          %sigma of the DoG to filter the image looking for points of interest  
-RANSACparameterSet.thrMask = 110;           %global threshold to find "embryo mask" (so we can exclude beads from registration)
+RANSACparameterSet.thrMask = 213;           %global threshold to find "embryo mask" (so we can exclude beads from registration)
 
 RANSACparameterSet.numTrialsRANSAC = 50000; %number of RANSAC trials
 RANSACparameterSet.maxRadiusResidualInPixels = 15.0;    %maximum residual (in pixels) to consider a RANSAC inlier
