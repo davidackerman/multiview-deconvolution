@@ -75,6 +75,6 @@ for TM = TMvec
     %%
     %TODO: add a flag to run this in the cluster usign job submit (like in clusterPT)
     %call registration function
-    function_multiview_coarse_fine_registration(imPath, imFilenameCellTM, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam);
+    function_multiview_coarse_fine_registration(imPath, imFilenameCellTM, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM);
     
 end

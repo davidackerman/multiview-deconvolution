@@ -1,4 +1,4 @@
-function function_multiview_coarse_fine_registration(imPath, imFilenameCell, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam)
+function function_multiview_coarse_fine_registration(imPath, imFilenameCell, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM)
 
 
 %%
@@ -29,7 +29,7 @@ disp(['Saving all the registration information to folder ' imPath]);
 clear imCoarseCell;
 
 %save workspase
-save([imPath 'MVreg_workspace.mat']);
+save([imPath 'MVreg_workspace_TM' nu2mstr(TM,'%.6d') '.mat']);
 
 %save XML filename
 Nviews = length(tformCoarseCell);
@@ -48,11 +48,11 @@ for ii = 1:Nviews
     writeKLBstack(PSFcell{ii}, psfFilenameCell{ii}, -1, [], [], 0, 'Registered PSF');
 end
 
-filenameXML = [imPath 'MVdeconv_LR_multiGPU_param.xml'];
+filenameXML = [imPath 'MVdeconv_LR_multiGPU_param_TM' nu2mstr(TM,'%.6d') '.xml'];
 saveRegistrationDeconvolutionParameters(filenameXML,filenameCell, psfFilenameCell, Acell, deconvParam.verbose, deconvParam);
 
 %save log file with RANAC stats
-fid = fopen([imPath 'MVreg_RANSACstats.txt'], 'w');
+fid = fopen([imPath 'MVreg_RANSACstats_TM' nu2mstr(TM,'%.6d') '.txt'], 'w');
 fprintf(fid,'Avg. residual = %.6f pixels\n', mean(sqrt(sum(statsRANSAC.residuals.^2,2))));
 fprintf(fid,'Number of inliers = %d\n', statsRANSAC.numInliers);
 fprintf(fid,'Took %.f secs for coarse alignment\n', ttCoarse);
