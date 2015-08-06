@@ -70,4 +70,21 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 
 
 
+//=============================================================================
+//memory allocation and deallocation
+//==============================================================================
+
+
+template<class T>
+T* allocateMem_GPU(size_t numElem);
+
+template<class T>
+void deallocateMem_GPU(T* ptr);
+
+template<class T>
+void copy_GPU_to_CPU(T* ptr_CPU, const T* ptr_CUDA, size_t numElem);
+
+template<class T>
+void copy_CPU_to_GPU(const T* ptr_CPU, T* ptr_CUDA, size_t numElem);
+
 #endif

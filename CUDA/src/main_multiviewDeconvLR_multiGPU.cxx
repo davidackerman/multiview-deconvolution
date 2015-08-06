@@ -63,7 +63,6 @@ int main(int argc, const char** argv)
 	master.calculateWeights();
 	t2 = Clock::now();
 	std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
-
 	
 	int64_t dimsOut[3];
 	const int refView = 0;

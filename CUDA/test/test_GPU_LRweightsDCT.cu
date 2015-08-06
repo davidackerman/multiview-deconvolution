@@ -40,7 +40,7 @@ int main(int argc, const char** argv)
 	string filePatternImg(filepath + "imReg_?.klb");
 	string filePatternWeights(filepath + "weightsReg_?.klb");
 	int numViews = 1;
-	float anisotropyZ = 6.0;
+	float anisotropyZ = 5.0;
 
 	//=====================================================================
 
