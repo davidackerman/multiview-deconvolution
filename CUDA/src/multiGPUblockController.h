@@ -121,6 +121,11 @@ protected:
 	void calculateWeightsSingleView(size_t threadIdx);
 private:
 
+	//calculate DCT weioghts all at once
+	void calculateWeightsSingleView_allAtOnce(int view, float anisotropyZ);
+	//calculate DCT weights into blocks
+	void calculateWeightsSingleView_lowMem(int view, float anisotropyZ, int64_t availMem);
+
 };
 
 

@@ -420,6 +420,35 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 	return finalVal;
 }
 
+//==================================================================
+template<class T>
+T* allocateMem_GPU(size_t numElem)
+{
+	T* ptr;
+	HANDLE_ERROR(cudaMalloc((void**)&(ptr), numElem * sizeof(T)));
+	return ptr;
+
+};
+
+template<class T>
+void deallocateMem_GPU(T* ptr)
+{	
+	if ( ptr != NULL)
+		HANDLE_ERROR(cudaFree(ptr));//you still need to set the pointer to NULL
+};
+
+template<class T>
+void copy_GPU_to_CPU(T* ptr_CPU, const T* ptr_CUDA, size_t numElem)
+{
+	HANDLE_ERROR(cudaMemcpy(ptr_CPU, ptr_CUDA, numElem * sizeof(T), cudaMemcpyDeviceToHost));
+}
+
+template<class T>
+void copy_CPU_to_GPU(const T* ptr_CPU, T* ptr_CUDA, size_t numElem)
+{
+	HANDLE_ERROR(cudaMemcpy(ptr_CUDA, ptr_CPU, numElem * sizeof(T), cudaMemcpyHostToDevice));
+}
+
 //======================================================================
 //instantiate templates
 template void elementwiseOperationInPlace<std::uint8_t>(std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
@@ -440,3 +469,19 @@ template float reductionOperation<float>(const float* A, std::uint64_t arrayLeng
 template std::uint8_t reductionOperation<std::uint8_t>(const std::uint8_t* A, std::uint64_t arrayLength, op_reduction_type op);
 template std::uint16_t reductionOperation<std::uint16_t>(const std::uint16_t* A, std::uint64_t arrayLength, op_reduction_type op);
 template double reductionOperation<double>(const double* A, std::uint64_t arrayLength, op_reduction_type op);
+
+template void deallocateMem_GPU<float>(float* ptr);
+template void deallocateMem_GPU<std::uint8_t>(std::uint8_t* ptr);
+template void deallocateMem_GPU<std::uint16_t>(std::uint16_t* ptr);
+
+template float* allocateMem_GPU<float>(size_t numElem);
+template std::uint8_t* allocateMem_GPU<std::uint8_t>(size_t numElem);
+template std::uint16_t* allocateMem_GPU<std::uint16_t>(size_t numElem);
+
+template void copy_GPU_to_CPU<float>(float* ptr_CPU, const float* ptr_CUDA, size_t numElem);
+template void copy_GPU_to_CPU<std::uint8_t>(std::uint8_t* ptr_CPU,const std::uint8_t* ptr_CUDA, size_t numElem);
+template void copy_GPU_to_CPU<std::uint16_t>(std::uint16_t* ptr_CPU, const std::uint16_t* ptr_CUDA, size_t numElem);
+
+template void copy_CPU_to_GPU<float>(const float* ptr_CPU, float* ptr_CUDA, size_t numElem);
+template void copy_CPU_to_GPU<std::uint8_t>(const std::uint8_t* ptr_CPU, std::uint8_t* ptr_CUDA, size_t numElem);
+template void copy_CPU_to_GPU<std::uint16_t>(const std::uint16_t* ptr_CPU, std::uint16_t* ptr_CUDA, size_t numElem);

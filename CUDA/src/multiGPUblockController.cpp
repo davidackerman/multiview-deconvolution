@@ -24,6 +24,7 @@
 #include "klb_imageIO.h"
 #include "klb_Cwrapper.h"
 #include "weigthsBlurryMeasure.h"
+#include "commonCUDA.h"
 
 
 
@@ -376,7 +377,6 @@ void multiGPUblockController::calculateWeights()
 	//wait for the workers to finish
 	for (auto& t : threads)
 		t.join();
-	
 }
 
 //==========================================================
@@ -710,25 +710,168 @@ void multiGPUblockController::calculateWeightsSingleView(size_t threadIdx)
 		//set dimensions for weights
 		full_weights_mem.setImgDims(view, full_img_mem.dimsImgVec[view]);
 
-		//allocate memory
-		full_img_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
-		full_img_mem.copyView_CPU_to_GPU(view);
-		if (full_weights_mem.getPointer_CPU(view) == NULL)
-			full_weights_mem.allocateView_CPU(view, full_img_mem.numBytes(view));
-		
-		full_weights_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
 
-		//calculate weights
-		calculateWeightsDeconvolution(full_weights_mem.getPointer_GPU(view), full_img_mem.getPointer_GPU(view), full_img_mem.dimsImgVec[view].dims, full_img_mem.dimsImgVec[view].ndims, paramDec.anisotropyZ);
-
-		//copy weights back
-		full_weights_mem.copyView_GPU_to_CPU(view);
-
-		//deallocate memory
-		full_img_mem.deallocateView_GPU(view);
-		full_weights_mem.deallocateView_GPU(view);		
+		//check if we can calculate everything at once or we need to do it in blocks due to memory limitations
+		std::int64_t required_mem = full_img_mem.numBytes(view) * 3 + 104857600;//image, weights, temp for convolution + 100MB extra
+		std::int64_t availMem = getAvailableMemDeviceCUDA(devCUDA);
+		if (availMem > required_mem)
+		{
+			//computing all at once (most cases)			
+			calculateWeightsSingleView_allAtOnce(view, paramDec.anisotropyZ);
+		}
+		else{
+			
+			calculateWeightsSingleView_lowMem(view, paramDec.anisotropyZ, availMem);
+		}			
 	}
 
+}
+
+//=========================================================
+void multiGPUblockController::calculateWeightsSingleView_allAtOnce(int view, float anisotropyZ)
+{
+	//computing all at once (most cases)
+	//allocate memory
+	full_img_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
+	full_img_mem.copyView_CPU_to_GPU(view);
+	if (full_weights_mem.getPointer_CPU(view) == NULL)
+		full_weights_mem.allocateView_CPU(view, full_img_mem.numBytes(view));
+
+	full_weights_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
+
+	//calculate weights
+	calculateWeightsDeconvolution(full_weights_mem.getPointer_GPU(view), full_img_mem.getPointer_GPU(view), full_img_mem.dimsImgVec[view].dims, full_img_mem.dimsImgVec[view].ndims, anisotropyZ);
+
+	//copy weights back
+	full_weights_mem.copyView_GPU_to_CPU(view);
+
+	//deallocate memory
+	full_img_mem.deallocateView_GPU(view);
+	full_weights_mem.deallocateView_GPU(view);
+}
+
+//=========================================================
+void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float anisotropyZ, int64_t availMem)
+{	
+	//allocate final memory for weights in CPU
+	if (full_weights_mem.getPointer_CPU(view) == NULL)
+		full_weights_mem.allocateView_CPU(view, full_img_mem.numBytes(view));
+
+	//calculate per blocks	
+	int64_t stride = 1;//number of pixels on each plane
+	for (int ii = 0; ii < full_img_mem.dimsImgVec[view].ndims - 1; ii++)
+	{
+		stride *= full_img_mem.dimsImgVec[view].dims[ii];
+	}	
+		
+	std::int64_t max_z_dim = (availMem - 104857600) / (3 * stride);
+
+	//get the padding size
+	const int64_t padSize = (ceil( 5.0f * cellDiameterPixels * 0.5 / anisotropyZ ) * 2 + 1 ) / 2;//number of z planes below and above that need ot be disregarded
+	const int64_t useful_number_planes = max_z_dim - 2 * padSize;
+	if (useful_number_planes < 1) //minimum number of planes to extract useful information
+	{
+		std::cout << "ERROR: multiGPUblockController_lowMem::calculateWeightsSingleView: not enough memory to calculate DCT even with blocks" << std::endl;
+		exit(3);
+	}
+
+
+	//variables (copying from block partition for multiview deconvolution)
+	int dimBlockParition = full_img_mem.dimsImgVec[view].ndims - 1;//partition in blocks along the las dimension
+	const int64_t PSFpadding = padSize;//quantity that we have to pad on each side to avoid edge effects
+	const int64_t chunkSize = std::min(useful_number_planes, int64_t(full_img_mem.dimsImgVec[view].dims[dimBlockParition]));//effective size where we are calculating LR	
+
+	int64_t JoffsetIni = 0, JoffsetEnd;//useful slices in J (global final outout) are from [JoffsetIni,JoffsetEnd)
+	int64_t BoffsetIni;//useful slices in ROI (local input) are from [BoffsetIni, BoffsetEnd]. Thus, at the end we copy J(:,.., JoffsetIni:JoffsetEnd-1,:,..:) = Jobj->J(:,.., BoffsetIni:BoffsetEnd-1,:,..:)
+	
+	uint32_t xyzct[KLB_DATA_DIMS];
+
+
+	//copy value to define klb ROI
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		xyzct[ii] = full_img_mem.dimsImgVec[view].dims[ii];
+	for (int ii = MAX_DATA_DIMS; ii < KLB_DATA_DIMS; ii++)
+		xyzct[ii] = 1;
+
+	
+
+
+	//allocate memory for blocks in the GPU
+	float* block_weights_mem_GPU = allocateMem_GPU<float>( stride * max_z_dim);
+	float* block_img_mem_GPU = allocateMem_GPU<float>(stride * max_z_dim);
+	int64_t blockDims[MAX_DATA_DIMS];
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		blockDims[ii] = xyzct[ii];
+
+
+	//main loop
+	while (JoffsetIni < xyzct[dimBlockParition])
+	{		
+		klb_ROI ROI;
+		ROI.defineSlice(JoffsetIni, dimBlockParition, xyzct);//this would be a slice through dimsBlockParitiondimension equal to offset
+		BoffsetIni = PSFpadding;
+		if (JoffsetIni >= PSFpadding)//we cannot gain anything
+		{
+			ROI.xyzctLB[dimBlockParition] -= PSFpadding;
+		}
+		else{//we can process more slices in the block since we are at the beggining
+			ROI.xyzctLB[dimBlockParition] = 0;
+			BoffsetIni -= (PSFpadding - JoffsetIni);
+		}
+
+		JoffsetEnd = JoffsetIni + chunkSize + PSFpadding - BoffsetIni;
+		JoffsetEnd = std::min((uint32_t)JoffsetEnd, xyzct[dimBlockParition]);//make sure we do not go over the end of the image
+
+		
+		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image	
+		
+
+		//copy image and weights ROI to CUDA
+		int64_t offset = ROI.xyzctLB[dimBlockParition];
+		offset *= stride;
+		float* auxPtr_CPU = full_img_mem.getPointer_CPU(view);
+		auxPtr_CPU = &(auxPtr_CPU[offset]);
+		copy_CPU_to_GPU(auxPtr_CPU, block_img_mem_GPU, ROI.getSizePixels());
+
+		auxPtr_CPU = full_weights_mem.getPointer_CPU(view);
+		auxPtr_CPU = &(auxPtr_CPU[offset]);
+		copy_CPU_to_GPU(auxPtr_CPU, block_weights_mem_GPU, ROI.getSizePixels());
+		
+
+		//calculate weights
+		blockDims[dimBlockParition] = ROI.getSizePixels(dimBlockParition);
+		calculateWeightsDeconvolution(block_weights_mem_GPU, block_img_mem_GPU, blockDims, full_img_mem.dimsImgVec[view].ndims, anisotropyZ, false);//we cannot normalize each block independently
+
+		//copy block result to CPU weights
+		offset = stride * BoffsetIni;
+		float* auxPtr_CUDA = &(block_weights_mem_GPU[offset]);
+		auxPtr_CPU = full_weights_mem.getPointer_CPU(view);
+		auxPtr_CPU = &(auxPtr_CPU[stride * JoffsetIni]);
+		size_t blockSize = stride * (JoffsetEnd - JoffsetIni);
+		copy_GPU_to_CPU(auxPtr_CPU, auxPtr_CUDA, blockSize);
+
+		//update offset counter
+		JoffsetIni = JoffsetEnd;
+	}
+	//deallocate GPU memory
+	deallocateMem_GPU<float>(block_weights_mem_GPU);
+	deallocateMem_GPU<float>(block_img_mem_GPU);		
+
+	//normalize weight in the CPU
+	float minW = numeric_limits<float>::max();
+	float maxW = -minW;
+	float* auxPtr = full_weights_mem.getPointer_CPU(view);
+	for (int ii = 0; ii < full_weights_mem.numElements(view); ii++)
+	{
+		minW = std::min(minW, auxPtr[ii]);
+		maxW = std::max(maxW, auxPtr[ii]);
+	}
+	maxW -= minW;
+	for (int ii = 0; ii < full_weights_mem.numElements(view); ii++)
+	{
+		auxPtr[ii] = (auxPtr[ii] - minW) / maxW;
+	}
 }
 
 //=========================================================
