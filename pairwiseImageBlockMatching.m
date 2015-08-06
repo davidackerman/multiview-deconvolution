@@ -1,9 +1,12 @@
 %blockSize is recommended to be a power of 2 for speed
-function Tcell = pairwiseImageBlockMatching(imRef,im, blockSize, searchRadius, numHypothesis, interestPts, numWorkers)
+function Tcell = pairwiseImageBlockMatching(imRef,im, blockSize, searchRadius, numHypothesis, interestPts, numWorkers, thrNCC)
 
 N = size(interestPts,1);
 Tcell = cell(N,1);
 
+if( exist('thrNCC','var') == 0 )
+    thrNCC = 0.8;
+end
 
 if( matlabpool('size') ~= numWorkers )
    
@@ -52,7 +55,7 @@ while( offsetN <= N )
     TcellAux = cell(Nlocal,1);
     parfor count = 1:Nlocal
         %calculate registration
-        Taux = imRegistrationTranslationMultipleHypothesis(imRefBlockCell{count}, imBlockCell{count}, numHypothesis);        
+        Taux = imRegistrationTranslationMultipleHypothesis(imRefBlockCell{count}, imBlockCell{count}, numHypothesis, thrNCC);        
         if( ~isempty(Taux) )
             
             Taux(:, 1:3) = Taux(:, 1:3) + repmat(offsetVec(count,:), [size(Taux,1) 1]);

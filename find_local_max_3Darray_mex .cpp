@@ -3,12 +3,12 @@
 * See license.txt for full license and copyright notice.
 *
 * Authors: Fernando Amat
-*  binning3Darray_mex.cpp
+*  find_local_max_3Darray.cpp
 *
 *  Created on : August 3rd, 2015
 * Author : Fernando Amat
 *
-* \brief small mex file to bin an image by 2 by averaging neighboring pixels. Using imfilter takes too much memory due to copies
+* \brief small mex file to find local maxima in a single pass
 */
 
 #include "mex.h"
@@ -17,25 +17,23 @@
 using namespace std;
 
 template<class T>
-void binImage(const T* img, T* imgBin, const int64_t dims[3])
+void findLocalMaxima(const T* img, const int64_t dims[3], vector<> )
 {
-	const T neighSize = 8;
-	const int64_t strideX = dims[0];
+	const int neighSize = 26;	
 	const int64_t strideXY = dims[0] * dims[1];
+	const int64_t neighOffset[neighSize] = {-strideXY, -dims[0], -1,};
 
-
-	int64_t idxBin = 0;
 	int64_t offset;
-	for (int64_t zz = 0; zz < dims[2] / 2; zz++)
+	for (int64_t zz = 1; zz < dims[2]-1; zz++)
 	{
-		for (int64_t yy = 0; yy < dims[1] / 2; yy++)
+		for (int64_t yy = 1; yy < dims[1]-1; yy++)
 		{
-			offset = 2 * dims[0] * (yy + dims[1] * zz);
-			for (int64_t xx = 0; xx < dims[0] / 2; xx++)
+			offset = 1 + dims[0] * (yy + dims[1] * zz);
+			for (int64_t xx = 1; xx < dims[0] - 1; xx++)
 			{
-				//int64_t offset = 2 * ( xx + dims[0] * (yy + dims[1] * zz) );
+				//int64_t offset = xx + dims[0] * (yy + dims[1] * zz) ;
 				imgBin[idxBin++] = (img[offset] + img[offset + 1] + img[offset + strideX] + img[offset + strideX + 1] + img[offset + strideXY] + img[offset + 1 + strideXY] + img[offset + strideX + strideXY] + img[offset + strideX + 1 + strideXY]) / neighSize;
-				offset += 2;
+				offset ++;
 			}
 		}
 	}
