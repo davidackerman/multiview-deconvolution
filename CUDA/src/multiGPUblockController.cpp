@@ -764,7 +764,7 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 		stride *= full_img_mem.dimsImgVec[view].dims[ii];
 	}	
 		
-	std::int64_t max_z_dim = (availMem - 104857600) / (3 * stride);
+	std::int64_t max_z_dim = (availMem - 104857600) / (3 * stride * sizeof(float) );
 
 	//get the padding size
 	const int64_t padSize = (ceil( 5.0f * cellDiameterPixels * 0.5 / anisotropyZ ) * 2 + 1 ) / 2;//number of z planes below and above that need ot be disregarded
