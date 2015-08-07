@@ -27,8 +27,12 @@ RANSACparameterSet.blockSize = 144;         %blocks size (in pixels) around poin
 RANSACparameterSet.searchRadius = 128;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
 RANSACparameterSet.thrPeakDOG = 15;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
 
+
+RANSACparameterSet.interestPointDetector = 'DoG';        %select the interest point detector to find points to match between images. Options: 'DoG', 'localmaxima'
+
 %usually "stable" parameters for RANSAC alignment
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest
+RANSACparameterSet.thrNCC = 0.8;            %threshold of NCC to accept a match
 RANSACparameterSet.numWorkers = -1;         %set to -1 to use as many as possible. If code runs out of memory, reduce the number.
 RANSACparameterSet.maxNumPeaks = 100;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
 RANSACparameterSet.sigmaDOG = 6.0;          %sigma of the DoG to filter the image looking for points of interest  

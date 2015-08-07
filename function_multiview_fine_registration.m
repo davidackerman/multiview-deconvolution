@@ -8,22 +8,36 @@ numIm = length(imCoarseCell);
 %%
 %find correspondences between images pairwise
 Tcell = cell(numIm, numIm);
-for ii = 1:numIm
+for ii = 1:numIm      
     
-    disp(['Generating embryo mask for view ' num2str(ii-1)]);
-    tstart = tic;
-    %generate mask (to get features only in the embryo): in case we also have beads
-    mask = maskEmbryo(imCoarseCell{ii}, param.thrMask);
-    %mask also areas with low intensity
-    mask = mask & imCoarseCell{ii} > param.minIntensityValue;
-    disp(['Took ' num2str(toc(tstart)) ' secs']);
-    
-    
-    disp(['Detecting interest points with DoG for view ' num2str(ii-1)]);
-    tstart = tic;
-    %detect points of interest in reference image
-    interestPts = detectInterestPoints_DOG(imCoarseCell{ii}, param.sigmaDOG, param.maxNumPeaks, param.thrPeakDOG, mask ,0, debugFolder, ii);
-    disp(['Took ' num2str(toc(tstart)) ' secs']);
+    switch(lower(param.interestPointDetector))
+        
+        case 'dog'
+            disp(['Generating embryo mask for view ' num2str(ii-1)]);
+            tstart = tic;
+            %generate mask (to get features only in the embryo): in case we also have beads
+            mask = maskEmbryo(imCoarseCell{ii}, param.thrMask);
+            %mask also areas with low intensity
+            mask = mask & imCoarseCell{ii} > param.minIntensityValue;
+            disp(['Took ' num2str(toc(tstart)) ' secs']);
+            disp(['Detecting interest points with DoG for view ' num2str(ii-1)]);
+            tstart = tic;
+            %detect points of interest in reference image
+            interestPts = detectInterestPoints_DOG(imCoarseCell{ii}, param.sigmaDOG, param.maxNumPeaks, param.thrPeakDOG, mask ,0, debugFolder, ii);
+            disp(['Took ' num2str(toc(tstart)) ' secs']);
+        
+        case 'localmaxima'
+            disp(['Detecting interest points with bining + local maxima intensity for view ' num2str(ii-1)]);
+            tstart = tic;
+            %bin image to speed process
+            numLevelsB = 2;
+            imB = stackBinning(imCoarseCell{ii},numLevelsB);
+            %detect points of interest in reference image
+            minDIstanceBetweenPeaks = min(40, max(size(imCoarseCell{ii})) / 50);
+            interestPts = detectInterestPoints_localMaxima(imB, param.sigmaDOG, param.maxNumPeaks, param.minIntensityValue, [] ,0, debugFolder, ii, minDIstanceBetweenPeaks);
+            interestPts(:,1:3) = interestPts(:,1:3) * (2^numLevelsB);            
+            disp(['Took ' num2str(toc(tstart)) ' secs']);
+    end
     
     %find correspondence for point of interest in the other images
     for jj = 1:numIm
