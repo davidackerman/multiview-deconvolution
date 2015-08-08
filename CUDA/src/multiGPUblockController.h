@@ -94,6 +94,7 @@ public:
 	//functions to perform different kinds of deconvolution on each block	
 	void multiviewDeconvolutionBlockWise_fromFile(size_t threadIdx);//main function for each GPU to process different blocks
 	void multiviewDeconvolutionBlockWise_fromMem(size_t threadIdx);
+	void multiviewDeconvolutionBlockWise_lowMem(size_t threadIdx);
 
     //debug functions
 	void debug_listGPUs();

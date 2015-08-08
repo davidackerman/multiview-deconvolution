@@ -140,15 +140,13 @@ int main(int argc, const char** argv)
 		}
 	}
 
-	return 2;
-
 	//precalculate number of planes per GPU we can do (including padding to avoid border effect)
 	master.findMaxBlockPartitionDimensionPerGPU_inMem();
 
 	t1 = Clock::now();
 	cout << "Calculating multiview deconvolution..." << endl;
 	//launch multi-thread as a producer consumer queue to calculate blocks as they come
-	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem);
+	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem);
 	if (err > 0)
 		return err;
 	t2 = Clock::now();
