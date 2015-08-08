@@ -98,3 +98,7 @@ SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX
 #executable for multiview deconvolution
 ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU main_multiviewDeconvLR_multiGPU.cxx )
 TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)
+
+#executable for multiview deconvolution with low memory computers (using I/O)
+ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU_low_mem main_multiviewDeconvLR_multiGPU_low_mem.cxx )
+TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU_low_mem multiview_deconvolution_GPU)

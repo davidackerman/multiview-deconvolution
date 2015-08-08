@@ -58,6 +58,11 @@ public:
 	multiviewImage<psfType> full_psf_mem;
 	multiviewImage<outputType> full_img_mem;
 
+	//in case we use disk to store files to save memory
+	std::vector<std::string> full_weights_filename;
+	std::vector<std::string> full_psf_filename;
+	std::vector<std::string> full_img_filename;
+
     //constructor/destructor
     multiGPUblockController();
 	multiGPUblockController(std::string filenameXML);
