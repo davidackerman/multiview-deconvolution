@@ -11,6 +11,13 @@
 * \brief random functions that are generically useful
 */
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#endif
+
+#include <cstdlib>
+#include <stdio.h>
 #include <iostream>
 #include <cstring>
 #include "imgUtils.h"
@@ -70,6 +77,39 @@ imgType* fa_padArrayWithZeros(const imgType* im, const std::int64_t *dimsNow, co
 	return p;
 }
 
+//====================================================
+std::string generateTempFilename(const char* prefix)
+{
+#ifdef _WIN32
+	char s[MAX_PATH];
+	if (GetTempPath(MAX_PATH, s)) {
+		//std::cout << "GetTempPath() returned <" << s << ">\n";
+	}
+	else {
+		std::cout << "ERROR: generateTempFilename: GetTempPath() failed with 0x" << std::hex << GetLastError() << "\n";
+	}
+
+	char* name = _tempnam("c:\\tmp", prefix);
+	std::string nameS(name); 
+	
+#else //unix systems
+	char *folder = getenv("TMPDIR");
+	if (folder == 0)
+		folder = "/tmp";
+
+	char *name = tempnam(folder, prefix);
+
+	std::string nameS(name);		
+	free(folder);
+#endif
+
+	std::cout << "============DEBUGGING:Temporary filename is " << name << std::endl;
+	free(name);
+	std::cout << "============DEBUGGING:Temporary filename is " << nameS << std::endl;
+	
+	return nameS;
+
+}
 
 //=============================================================
 template float* fa_padArrayWithZeros<float>(const float* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);

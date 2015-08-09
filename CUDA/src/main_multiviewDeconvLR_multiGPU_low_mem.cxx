@@ -17,6 +17,7 @@
 #include <math.h>  
 #include "multiGPUblockController.h"
 #include "klb_Cwrapper.h"
+#include "imgUtils.h"
 
 
 using namespace std;
@@ -99,7 +100,7 @@ int main(int argc, const char** argv)
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
 		t1 = Clock::now();
-		std::string tmpFile = std::tmpnam(nullptr);//temporary filename
+		std::string tmpFile = generateTempFilename("MVddec_");//temporary filename	
 		tmpFile += ".klb";
 		cout << "Saving weight array in temporary file "<<tmpFile << endl;
 		weightType* wPtr = master.full_weights_mem.getPointer_CPU(ii);
