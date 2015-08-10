@@ -1,4 +1,4 @@
-function function_multiview_coarse_fine_registration(imPath, imFilenameCell, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM)
+function function_multiview_coarse_fine_registration(imPath, imFilenameCell, cameraTransformCell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM, TrCellPre)
 
 
 %%
@@ -14,7 +14,7 @@ PSF = generatePSF(samplingXYZ, FWHMpsf, []);
 %%
 %coarse registration (basically flipdim + permute + scale)
 tic;
-[imCoarseCell, tformCoarseCell] = function_multiview_coarse_registration(imPath, imFilenameCell, cameraTransformCell, PSF, anisotropyZ, outputFolder, transposeOrigImage);
+[imCoarseCell, tformCoarseCell] = function_multiview_coarse_registration(imPath, imFilenameCell, cameraTransformCell, PSF, anisotropyZ, outputFolder, transposeOrigImage, TrCellPre);
 ttCoarse = toc;
 
 %%

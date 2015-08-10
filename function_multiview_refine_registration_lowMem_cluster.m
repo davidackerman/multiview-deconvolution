@@ -1,6 +1,21 @@
 % we save files in disk in order to avoid high memory occupancy (even if I/O increases)
-function function_multiview_refine_registration_lowMem(imPath, imFilenameCell, AcellPre, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM)
+function function_multiview_refine_registration_lowMem_cluster(parameterDatabase)
 
+%%
+%parse parameters
+pp = load(parameterDatabase);
+imPath = pp.imPath;
+imFilenameCell = pp.imFilenameCellTM;
+AcellPre = pp.Acell;
+samplingXYZ = pp.samplingXYZ;
+FWHMpsf = pp.FWHMpsf;
+outputFolder = pp.outputFolder; 
+transposeOrigImage = pp.transposeOrigImage;
+RANSACparameterSet = pp.RANSACparameterSet;
+deconvParam = pp.deconvParam;
+TM = pp.TM;
+
+clear pp;
 
 %%
 %fixed parameters

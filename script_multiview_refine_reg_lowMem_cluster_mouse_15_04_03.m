@@ -15,7 +15,7 @@ samplingXYZ = [0.40625, 0.40625, 2.031];%sampling in um
 
 FWHMpsf = [0.8, 0.8, 3.0]; %theoretical full-width to half-max of the PSF in um.
 
-outputFolderPattern = ['T:\temp\registration\mouse_15_04_03\refReg_TM??????\'];%outputfolder for debugging purposes. Leave empty for no debugging. This folder should be visible to the cluster if you want to run it on it
+outputFolderPattern = [];%outputfolder for debugging purposes. Leave empty for no debugging. This folder should be visible to the cluster if you want to run it on it
 
 transposeOrigImage = false; %true if raw data was saved in tiff, since cluster PT transposed them after saving them in KLB.
 
@@ -61,43 +61,82 @@ while( isempty(isSubmitted == false) == false )
        if( isSubmitted(ii) == true )
            continue;
        end
+       
+       TM = TMvec(ii); 
+       filenameXML = [imPathPattern 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM,'%.6d') '.xml'];
+       if( exist(filenameXML,'file') ~= 0 )
+           isSubmitted(ii) = true; %file already exists for alignment (in case we restart the process)
+           continue;
+       end
         
-    
-       TODO;
+       
+       for jj = 1:4%size of the temporal window to look forward/backward. 4 is the minimum since we have 8 machines in the cluster so far
+            filenameXML = [imPathPattern 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM -jj,'%.6d') '.xml'];
+            if( exist(filenameXML,'file') ~= 0 )                
+                %make sure it was registered appropiately
+               Acell = readXMLdeconvolutionFile(filenameXML);
+               if( checkAffineTr(Acell) )
+                break; 
+               end
+            end
+            filenameXML = [imPathPattern 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM +jj,'%.6d') '.xml'];
+            if( exist(filenameXML,'file') ~= 0 )
+                %make sure it was registered appropiately
+                Acell = readXMLdeconvolutionFile(filenameXML);
+                if( checkAffineTr(Acell) )
+                    break;
+                end
+            end
+            filenameXML = [];
+       end
+       
+       if( isempty(filenameXML) == false ) %we have found a good initial condition
+           %submit job to cluster
+           
+           outputFolder = [];
+           if( isempty(outputFolderPattern) == false )
+               outputFolder = recoverFilenameFromPattern(outputFolderPattern, TM);
+               if( exist(outputFolder, 'dir') == 0 )
+                   mkdir(outputFolder);
+               end
+           end
+           
+           imPath = recoverFilenameFromPattern(imPathPattern, TM);
+           imFilenameCellTM = cell(length(imFilenameCell),1);
+           for jj = 1:length(imFilenameCell)
+               imFilenameCellTM{jj} = recoverFilenameFromPattern(imFilenameCell{jj},TM);              
+           end
+           
+           %select number of workers
+           if( RANSACparameterSet.numWorkers < 1 )
+               qq = feature('numCores');
+               RANSACparameterSet.numWorkers = qq;
+           end
+           RANSACparameterSet.numWorkers = min(12, RANSACparameterSet.numWorkers);%12 is the maximum allowed in current version
+           
+           
+           %call registration function
+           currentTime = clock;
+           timeString = [...
+               num2str(currentTime(1)) num2str(currentTime(2), '%.2d') num2str(currentTime(3), '%.2d') ...
+               '_' num2str(currentTime(4), '%.2d') num2str(currentTime(5), '%.2d') num2str(round(currentTime(6) * 1000), '%.5d')];
+           parameterDatabase = [pwd '\cluster_jobs\MV_ref_reg_jobParam_' timeString '.mat'];
+           
+           save(parameterDatabase, ...
+                'imPath', 'imFilenameCellTM', 'Acell', 'samplingXYZ', 'FWHMpsf', 'outputFolder', 'transposeOrigImage', 'RANSACparameterSet', 'deconvParam', 'TM');
+            %function to call
+           %function_multiview_refine_registration_lowMem_cluster(parameterDatabase);
+           cmdFunction = ['function_multiview_refine_registration_lowMem_cluster(''' parameterDatabase ''' )'];
+           cmd = ['job submit /scheduler:keller-cluster.janelia.priv /user:simview /exclusive " runMatlabJob.cmd """' pwd '""" """' cmdFunction '"""'];
+           disp(['Suhmitting job for TM ' num2str(TM,'%.6d') ' with command ']);
+           disp(cmd);
+           [status, systemOutput] = system(cmd);
+            
+           %update vector
+           isSubmitted(ii) = true;
+       end
        
     end
     %pause for 60 seconds to check again submitted jobs
     pause(60);
-end
-
-%parameters
-for TM = TMvec
-        
-    %%
-    outputFolder = recoverFilenameFromPattern(outputFolderPattern, TM);
-    if( exist(outputFolder, 'dir') == 0 )
-        mkdir(outputFolder);
-    end
-    
-    imPath = recoverFilenameFromPattern(imPathPattern, TM);
-    
-    imFilenameCellTM = cell(length(imFilenameCell),1);
-    for ii = 1:length(imFilenameCell)
-        imFilenameCellTM{ii} = recoverFilenameFromPattern(imFilenameCell{ii},TM);
-        Acell{ii} = reshape(Acell{ii},[4 4]);
-    end
-    
-    
-    %select number of workers
-    if( RANSACparameterSet.numWorkers < 1 )
-        qq = feature('numCores');
-        RANSACparameterSet.numWorkers = qq;
-    end
-    RANSACparameterSet.numWorkers = min(12, RANSACparameterSet.numWorkers);%12 is the maximum allowed in current version
-    
-    %%
-    %TODO: add a flag to run this in the cluster usign job submit (like in clusterPT)
-    %call registration function
-    function_multiview_refine_registration_lowMem(imPath, imFilenameCellTM, Acell, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM);
-    
 end
