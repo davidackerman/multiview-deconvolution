@@ -94,17 +94,15 @@ std::string generateTempFilename(const char* prefix)
 	
 #else //unix systems
 	char *folder = getenv("TMPDIR");
-	if (folder == 0)
+	if (folder == NULL)
 		folder = "/tmp";
 
 	char *name = tempnam(folder, prefix);
-
-	std::string nameS(name);		
-	free(folder);
-#endif
 	
+	std::string nameS(name);		
+#endif
+		
 	free(name);
-	std::cout << "============DEBUGGING:Temporary filename is " << nameS << std::endl;
 	
 	return nameS;
 
