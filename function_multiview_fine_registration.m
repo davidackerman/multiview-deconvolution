@@ -46,7 +46,7 @@ for ii = 1:numIm
         end      
         disp(['Detecting matches from view ' num2str(ii-1) ' to view ' num2str(jj-1)]);
         tstart = tic;
-        Tcell{ii,jj} = pairwiseImageBlockMatching(imCoarseCell{ii},imCoarseCell{jj}, param.blockSize, param.searchRadius, param.numHypothesis, interestPts(:,1:3), param.numWorkers);
+        Tcell{ii,jj} = pairwiseImageBlockMatching(imCoarseCell{ii},imCoarseCell{jj}, param.blockSize, param.searchRadius, param.numHypothesis, interestPts(:,1:3), param.numWorkers, param.thrNCC);
         disp(['Took ' num2str(toc(tstart)) ' secs']);
     end
 end
