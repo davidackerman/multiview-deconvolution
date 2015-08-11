@@ -399,7 +399,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t th
     //make sure we have useful are of computation
 	if (chunkSize <= 0)
 	{
-		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName<<" cannot process enough effective planes after padding" << endl;
+		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName<<" cannot process enough effective planes after padding (chunkSize = "<<chunkSize<<")" << endl;
 		return;
 	}
 
@@ -561,7 +561,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 	//make sure we have useful are of computation
 	if (chunkSize <= 0)
 	{
-		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName << " cannot process enough effective planes after padding" << endl;
+		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName << " cannot process enough effective planes after padding  (chunkSize = " << chunkSize << ")" << endl;
 		return;
 	}
 
@@ -705,7 +705,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem(size_t thre
 	//make sure we have useful are of computation
 	if (chunkSize <= 0)
 	{
-		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName << " cannot process enough effective planes after padding" << endl;
+		cout << "WARNING: device CUDA " << GPUinfoVec[threadIdx].devCUDA << " with GPU " << GPUinfoVec[threadIdx].devName << " cannot process enough effective planes after padding (chunkSize = " << chunkSize << ")" << endl;
 		return;
 	}
 
