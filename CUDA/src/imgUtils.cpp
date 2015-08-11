@@ -102,8 +102,7 @@ std::string generateTempFilename(const char* prefix)
 	std::string nameS(name);		
 	free(folder);
 #endif
-
-	std::cout << "============DEBUGGING:Temporary filename is " << name << std::endl;
+	
 	free(name);
 	std::cout << "============DEBUGGING:Temporary filename is " << nameS << std::endl;
 	

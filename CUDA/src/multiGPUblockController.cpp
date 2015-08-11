@@ -1027,9 +1027,9 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 //=========================================================
 void multiGPUblockController::copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes)
 {
-	if (dimBlockParition != 1)
+	if (dimBlockParition > 1)
 	{
-		cout << "TODO:ERROR: copyBlockResultToJ: function hardcoded to stitch in y-direction" << endl;
+		cout << "TODO:ERROR: copyBlockResultToJ: function hardcoded to stitch in x or y-direction" << endl;
 		exit(3);
 	}
 
@@ -1039,27 +1039,64 @@ void multiGPUblockController::copyBlockResultToJ(const imgTypeDeconvolution* Jsr
 		exit(3);
 	}
 
-	size_t lineSize = blockDims[0] * sizeof(imgTypeDeconvolution);
+	
+	size_t lineSize;
 	int64_t idx = 0;
 	int64_t count = 0;
-	for (int64_t zz = 0; zz < blockDims[2]; zz++)
+
+	switch (dimBlockParition)
 	{
-		idx = imgDims[0] * (Joffset + imgDims[1] * zz);
-		count = blockDims[0] * (Boffset + blockDims[1] * zz);
-		for (int64_t yy = Boffset; yy < Boffset + numPlanes; yy++)
+	case 1://along y-axis
+
+		lineSize = blockDims[0] * sizeof(imgTypeDeconvolution);
+		for (int64_t zz = 0; zz < blockDims[2]; zz++)
 		{
-			//update for new array
-			//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);
-			//update for new array
-			//count = dimsNow[0] * (yy + dimsNow[1] * zz);
+			idx = imgDims[0] * (Joffset + imgDims[1] * zz);
+			count = (int64_t)(blockDims[0]) * (Boffset + (int64_t)(blockDims[1]) * zz);
+			for (int64_t yy = Boffset; yy < Boffset + numPlanes; yy++)
+			{
+				//update for new array
+				//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);
+				//update for new array
+				//count = dimsNow[0] * (yy + dimsNow[1] * zz);
 
-			//copy elements
-			memcpy(&(J[idx]), &(Jsrc[count]), lineSize);
+				//copy elements
+				memcpy(&(J[idx]), &(Jsrc[count]), lineSize);
 
-			//update counters
-			idx += imgDims[0];
-			count += blockDims[0];
+				//update counters
+				idx += imgDims[0];
+				count += blockDims[0];
+			}
 		}
+		break;
+
+	case 0://along x-axis
+
+		lineSize = numPlanes * sizeof(imgTypeDeconvolution);
+		for (int64_t zz = 0; zz < blockDims[2]; zz++)
+		{
+			idx = Joffset + imgDims[0] * imgDims[1] * zz;
+			count = Boffset + ((int64_t)(blockDims[0])) * ((int64_t)(blockDims[1]) * zz);
+			for (int64_t yy = 0; yy < blockDims[1]; yy++)
+			{
+				//update for new array
+				//idx = dimsAfterPad[0] * ( yy + dimsAfterPad[1] * zz);
+				//update for new array
+				//count = dimsNow[0] * (yy + dimsNow[1] * zz);
+
+				//copy elements
+				memcpy(&(J[idx]), &(Jsrc[count]), lineSize);
+
+				//update counters
+				idx += imgDims[0];
+				count += blockDims[0];
+			}
+		}
+		break;
+
+	default:
+		cout << "TODO:ERROR: copyBlockResultToJ: function ot ready to stitcj along this direction" << endl;
+		exit(3);
 	}
 }
 
