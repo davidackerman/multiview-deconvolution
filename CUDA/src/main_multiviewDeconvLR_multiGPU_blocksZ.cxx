@@ -238,7 +238,7 @@ int main(int argc, const char** argv)
 		float* auxPtr_Jblock = master.getJpointer();
 		auxPtr_Jblock = &(auxPtr_Jblock[offset]);				
 		size_t blockSize = stride * (JoffsetEnd - JoffsetIni);
-		memcpy(&(JfullImg[stride * JoffsetIni]), auxPtr_Jblock, blockSize);
+		memcpy(&(JfullImg[stride * JoffsetIni]), auxPtr_Jblock, blockSize * sizeof(imgTypeDeconvolution));
 	
 		//release temporary memory
 		master.deallocateMemJ();
