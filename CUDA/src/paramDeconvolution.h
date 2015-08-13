@@ -40,7 +40,9 @@ struct paramDeconvolution
 	int blockZsize;
     
     imgTypeDeconvolution imgBackground;	
-	float lambdaTV;	
+	float lambdaTV;
+
+	std::string outputFilePrefix;
 
 	//default paramaters
 	void setDefaultParam()
@@ -50,6 +52,7 @@ struct paramDeconvolution
 		imgBackground = 100.0f;
 		verbose = 0;
 		blockZsize = -1;//compute deconvolution all at once
+		outputFilePrefix = std::string("");
 	}
 
 	float getAnisotropyZfromAffine();

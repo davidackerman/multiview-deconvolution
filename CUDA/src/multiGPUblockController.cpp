@@ -141,6 +141,12 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		ll.clear();
 	}
 
+	aux = node.getAttribute("prefix");
+	if (aux != NULL)
+	{		
+		paramDec.outputFilePrefix = string(aux);
+	}
+
 	paramDec.anisotropyZ = paramDec.getAnisotropyZfromAffine();
 }
 

@@ -14,6 +14,7 @@
 #include <string>
 #include <chrono>
 #include <math.h>  
+#include <algorithm>
 #include "multiGPUblockController.h"
 
 
@@ -129,8 +130,8 @@ int main(int argc, const char** argv)
 	
 
 	//write result
-	char fileoutName[256];
-	sprintf(fileoutName, "%s_dec_LR_multiGPU_iter%d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.numIters);
+	char fileoutName[256];	
+	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix, master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;
 	//err = master.writeDeconvoutionResult(string(fileoutName)));
