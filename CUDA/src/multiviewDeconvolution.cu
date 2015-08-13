@@ -148,6 +148,11 @@ multiviewDeconvolution<imgType>::~multiviewDeconvolution()
 	{
 		(cufftDestroy(fftPlanFwd)); HANDLE_ERROR_KERNEL;
 	}
+
+	img.clear();
+	weights.clear();
+	psf.clear();
+	J.clear();
 }
 
 
@@ -569,24 +574,25 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
-#ifdef _DEBUG			
+#ifdef _DEBUG
+			
 			sprintf(buffer, "%sJ_iter%.4d.raw",debugPath.c_str(), iter);
 			if (vv == 0)
 				debug_writeGPUarray(J.getPointer_GPU(0), J.dimsImgVec[0], string(buffer));
 
 			sprintf(buffer, "%simg_view%.4d.raw",debugPath.c_str(), vv);
 			if ( iter == 0 )
-				debug_writeGPUarray(img.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));
+				debug_writeGPUarray(img.getPointer_GPU(vv), img.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sweights_view%.4d.raw",debugPath.c_str(), vv);
 			if (iter == 0)
-				debug_writeGPUarray(weights.getPointer_GPU(0), img.dimsImgVec[0], string(buffer));			
+				debug_writeGPUarray(weights.getPointer_GPU(vv), img.dimsImgVec[0], string(buffer));			
 			sprintf(buffer, "%sJconvPSF_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sJFFT_iter%.4d.raw", debugPath.c_str(),iter);
 			debug_writeGPUarray(J_GPU_FFT, J.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sPSFpaddedFfft_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(psf.getPointer_GPU(vv), J.dimsImgVec[0], string(buffer));			
-
+			
 #endif
 
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
@@ -626,16 +632,18 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			float *temp_CUDA[2] = { aux_FFT, J_GPU_FFT };
 			regularization_TV(temp_TV, temp_CUDA, 2);			
 #ifdef _DEBUG			
+			/*
 			sprintf(buffer, "%sTV_reg_iter%.4d.raw", debugPath.c_str(), iter);
 			debug_writeGPUarray(temp_TV, img.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sTV_reg_weights_before_TV_iter%.4d.raw", debugPath.c_str(), iter);
 			debug_writeGPUarray(aux_LR, img.dimsImgVec[0], string(buffer));
+			*/
 #endif
 			elementwiseOperationInPlace_TVreg(aux_LR, temp_TV, nImg, lambdaTV);
 
-#ifdef _DEBUG			
-			sprintf(buffer, "%sTV_reg_weights_iter%.4d.raw", debugPath.c_str(), iter);
-			debug_writeGPUarray(aux_LR, img.dimsImgVec[0], string(buffer));
+#ifdef _DEBUG						
+			//sprintf(buffer, "%sTV_reg_weights_iter%.4d.raw", debugPath.c_str(), iter);
+			//debug_writeGPUarray(aux_LR, img.dimsImgVec[0], string(buffer));
 #endif
 
 		}

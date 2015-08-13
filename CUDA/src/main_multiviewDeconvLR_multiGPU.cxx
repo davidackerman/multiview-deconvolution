@@ -27,7 +27,7 @@ int main(int argc, const char** argv)
 	auto t2 = Clock::now();
 
 	//main inputs
-	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv/regDeconvParam.xml");
+	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv_bin4/regDeconvParam.xml");
 	int maxNumberGPU = -1;//default value
 
 	if (argc > 1)

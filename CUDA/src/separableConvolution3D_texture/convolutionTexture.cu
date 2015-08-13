@@ -1453,7 +1453,8 @@ extern "C" void TV_gradient_norm(const float *img_CUDA, float *TV_grad_norm_CUDA
 
 	elementwiseOperationInPlace_kernel_sqRoot << <numBlocks, numThreads >> >(TV_grad_norm_CUDA, arrayLength); HANDLE_ERROR_KERNEL;
 
-#if _DEBUG
+#ifdef _DEBUG
+	/*
 	std::string filenameDebug("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/debug_TV_grad_norm.raw");
 	float* TV_grad_norm_CPU = new float[arrayLength];
 	HANDLE_ERROR(cudaMemcpy(TV_grad_norm_CPU, TV_grad_norm_CUDA, arrayLength * sizeof(float), cudaMemcpyDeviceToHost));
@@ -1488,6 +1489,7 @@ extern "C" void TV_gradient_norm(const float *img_CUDA, float *TV_grad_norm_CUDA
 	fclose(fid);
 
 	delete[] TV_grad_norm_CPU;
+	*/
 #endif
 
 	//release memory	

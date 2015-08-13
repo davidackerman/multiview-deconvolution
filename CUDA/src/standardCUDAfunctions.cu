@@ -65,3 +65,9 @@ void setDeviceCUDA(int devCUDA)
 {
 	HANDLE_ERROR(cudaSetDevice(devCUDA));	
 }
+
+void resetDeviceCUDA(int devCUDA)
+{
+	HANDLE_ERROR(cudaSetDevice(devCUDA));
+	HANDLE_ERROR(cudaDeviceReset());
+}

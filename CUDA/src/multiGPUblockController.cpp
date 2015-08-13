@@ -91,16 +91,7 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		assert(aux != NULL);
 		parseString<float>(string(aux), vv);
 		paramDec.Acell.push_back(vv);
-		vv.clear();
-		
-		aux = node.getAttribute("verbose");
-		vector<int> ll;
-		if (aux != NULL)
-		{
-			parseString<int>(string(aux), ll);
-			paramDec.verbose = ll[0]; 
-			ll.clear();
-		}
+		vv.clear();				
 
 	}
 
@@ -132,6 +123,22 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		parseString<float>(string(aux), vv);
 		paramDec.lambdaTV = vv[0];
 		vv.clear();
+	}
+
+	aux = node.getAttribute("verbose");	
+	if (aux != NULL)
+	{
+		parseString<int>(string(aux), ll);
+		paramDec.verbose = ll[0];
+		ll.clear();
+	}
+
+	aux = node.getAttribute("blockZsize");
+	if (aux != NULL)
+	{
+		parseString<int>(string(aux), ll);
+		paramDec.blockZsize = ll[0];
+		ll.clear();
 	}
 
 	paramDec.anisotropyZ = paramDec.getAnisotropyZfromAffine();
@@ -337,6 +344,8 @@ int multiGPUblockController::runMultiviewDeconvoution(MV_deconv_fn p)
 	
 
 	//allocate memory for output
+	if (J != NULL)
+		delete[] J;
 	J = new imgTypeDeconvolution[nImg];
 
     //define atomic offset variable to keep count
@@ -378,6 +387,53 @@ void multiGPUblockController::calculateWeights()
 	for (auto& t : threads)
 		t.join();
 }
+//================================================================
+void multiGPUblockController::calculateWeights(int view, int devCUDA)
+{
+	if (view >= paramDec.Nviews)
+		return;
+
+	setDeviceCUDA(devCUDA);
+
+	//resize vector of weights
+	full_weights_mem.resize(paramDec.Nviews);
+
+	
+	//set dimensions for weights
+	full_weights_mem.setImgDims(view, full_img_mem.dimsImgVec[view]);
+
+
+	//check if we can calculate everything at once or we need to do it in blocks due to memory limitations
+	std::int64_t required_mem = full_img_mem.numBytes(view) * 3 + 104857600;//image, weights, temp for convolution + 100MB extra
+	std::int64_t availMem = getAvailableMemDeviceCUDA(devCUDA);
+	if (availMem > required_mem)
+	{
+		//computing all at once (most cases)			
+		calculateWeightsSingleView_allAtOnce(view, paramDec.anisotropyZ);
+	}
+	else{
+
+		calculateWeightsSingleView_lowMem(view, paramDec.anisotropyZ, availMem);
+	}
+}
+
+//================================================================
+int multiGPUblockController::getDevCUDA_maxMem()
+{
+	int devCUDA = -1;
+	int64_t mem = 0;
+	
+	for (const auto &p : GPUinfoVec)
+	{
+		if (p.mem > mem)
+		{
+			devCUDA = p.devCUDA;
+			mem = p.mem;
+		}		
+	}
+	return devCUDA;
+}
+
 
 //==========================================================
 void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t threadIdx)
@@ -479,7 +535,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t th
 	    locker.unlock();//release lock
 
 		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
-		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image				
 
         //read image and weights ROI
 		for (int ii = 0; ii < paramDec.Nviews; ii++)
@@ -507,7 +563,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t th
 			}
 		}
 
-        
+		cout << "GPU " << devCUDA << " performing Lucy_Richardson in block of " << Jobj->img.dimsImgVec[0].dims[0] << "x" << Jobj->img.dimsImgVec[0].dims[1] << "x" << Jobj->img.dimsImgVec[0].dims[2] << " pixels" << endl;
 
         //update workspace with ROI image and weights	
 #ifdef _DEBUG
@@ -635,7 +691,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 		locker.unlock();//release lock
 
 		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
-		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image				
 
 		//copy image and weights ROI
 		for (int ii = 0; ii < paramDec.Nviews; ii++)
@@ -652,7 +708,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 			}
 		}
 
-
+		cout << "GPU " << devCUDA << " performing Lucy_Richardson in block of " << Jobj->img.dimsImgVec[0].dims[0] << "x" << Jobj->img.dimsImgVec[0].dims[1] << "x" << Jobj->img.dimsImgVec[0].dims[2] << " pixels" << endl;
 
 		//update workspace with ROI image and weights	
 #ifdef _DEBUG
@@ -779,7 +835,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem(size_t thre
 		locker.unlock();//release lock
 
 		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
-		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image		
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image				
 
 		//copy image and weights ROI
 		for (int ii = 0; ii < paramDec.Nviews; ii++)
@@ -802,7 +858,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem(size_t thre
 			}
 		}
 
-
+		cout << "GPU " << devCUDA << " performing Lucy_Richardson in block of " << Jobj->img.dimsImgVec[0].dims[0] << "x" << Jobj->img.dimsImgVec[0].dims[1] << "x" << Jobj->img.dimsImgVec[0].dims[2] << " pixels" << endl;
 
 		//update workspace with ROI image and weights	
 #ifdef _DEBUG
@@ -1107,6 +1163,8 @@ int multiGPUblockController::getImageDimensions()
 	return multiviewImage<imgTypeDeconvolution>::getImageDimensionsFromHeader(filename, imgDims);	
 }
 
+
+
 //==========================================================
 uint64_t multiGPUblockController::numElements()
 {
@@ -1183,7 +1241,7 @@ int multiGPUblockController::writeDeconvoutionResult(const std::string& filename
 //=============================================
 
 //===========================================================================================
-int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& filename)
+int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS])
 {
 	int error;
 
@@ -1193,7 +1251,7 @@ int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& f
 	uint32_t xyzct[KLB_DATA_DIMS];
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 	{
-		xyzct[ii] = imgDims[ii];
+		xyzct[ii] = imgDims_[ii];
 	}
 	for (int ii = MAX_DATA_DIMS; ii <KLB_DATA_DIMS; ii++)
 	{
@@ -1205,28 +1263,32 @@ int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& f
 	{
 	case 1:
 		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);		
-		error = imgIO.writeImage((char*)(J), -1);//all the threads available
+		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
 		break;
 	case 2:
 		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
-		error = imgIO.writeImage((char*)(J), -1);//all the threads available
+		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
 		break;
 	case 4:
 	{	//parse data to uint16
 			  imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+			  
+			  uint64_t N = 1;
+			  for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+				  N *= (uint64_t)(imgDims_[ii]);
 
-			  uint64_t N = numElements();
+			  
 			  uint16_t *Jaux = new uint16_t[N];
 			  float Imin = 1e32, Imax = -1e32;
 			  for (uint64_t ii = 0; ii < N; ii++)
 			  {
-				  Imin = min(J[ii], Imin);
-				  Imax = max(J[ii], Imax);
+				  Imin = min(imgPtr[ii], Imin);
+				  Imax = max(imgPtr[ii], Imax);
 			  }
 			  Imax = Imax - Imin;
 			  for (uint64_t ii = 0; ii < N; ii++)
 			  {
-				  Jaux[ii] = (uint16_t)(4096.0f * (J[ii] - Imin) / Imax);//we do not need the whole uint16 dynamic range and it helps compression
+				  Jaux[ii] = (uint16_t)(4096.0f * (imgPtr[ii] - Imin) / Imax);//we do not need the whole uint16 dynamic range and it helps compression
 			  }
 
 			  error = imgIO.writeImage((char*)(Jaux), -1);//all the threads available

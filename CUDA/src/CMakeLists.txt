@@ -102,3 +102,7 @@ TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU multiview_deconvolutio
 #executable for multiview deconvolution with low memory computers (using I/O)
 ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU_low_mem main_multiviewDeconvLR_multiGPU_low_mem.cxx )
 TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU_low_mem multiview_deconvolution_GPU)
+
+#executable for multiview deconvolution with very large datasets. Deconvolution is performed in blocks along z to fit in CPU and GPU memory
+ADD_EXECUTABLE(main_multiviewDeconvLR_multiGPU_blocksZ main_multiviewDeconvLR_multiGPU_blocksZ.cxx )
+TARGET_LINK_LIBRARIES(main_multiviewDeconvLR_multiGPU_blocksZ multiview_deconvolution_GPU)

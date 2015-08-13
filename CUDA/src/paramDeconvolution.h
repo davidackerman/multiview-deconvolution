@@ -37,6 +37,7 @@ struct paramDeconvolution
 	int Nviews;
 	float anisotropyZ;
 	
+	int blockZsize;
     
     imgTypeDeconvolution imgBackground;	
 	float lambdaTV;	
@@ -48,6 +49,7 @@ struct paramDeconvolution
 		lambdaTV = 0.0001f;
 		imgBackground = 100.0f;
 		verbose = 0;
+		blockZsize = -1;//compute deconvolution all at once
 	}
 
 	float getAnisotropyZfromAffine();

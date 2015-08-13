@@ -40,16 +40,31 @@ multiviewImage<imgType>::multiviewImage(size_t numViews)
 template<class imgType>
 multiviewImage<imgType>::~multiviewImage()
 {
+	clear();
+};
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::clear()
+{
 	for (size_t ii = 0; ii < imgVec_CPU.size(); ii++)
 	{
 		if (imgVec_CPU[ii] != NULL)
+		{
 			delete[]imgVec_CPU[ii];
+			imgVec_CPU[ii] = NULL;
+		}
 
 		if (imgVec_GPU[ii] != NULL)
+		{
 			HANDLE_ERROR(cudaFree(imgVec_GPU[ii]));
+			imgVec_GPU[ii] = NULL;
+		}
 	}
-};
 
+	imgVec_CPU.clear();
+	imgVec_GPU.clear();
+};
 
 //===========================================================================================
 template<class imgType>
@@ -459,6 +474,23 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 	ROI.defineFullImage(imgFull.header.xyzct);
 
 	return readROI(filename, pos, ROI);
+}
+//===========================================================================================
+template<class imgType>
+int multiviewImage<imgType>::readImageSizeFromHeader(const std::string& filename, int64_t dimsOut[MAX_DATA_DIMS])
+{
+
+	klb_imageIO imgFull(filename);
+	int err = 0;
+
+	err = imgFull.readHeader();
+	if (err > 0)
+		return err;
+
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		dimsOut[ii] = imgFull.header.xyzct[ii];
+
+	return 0;
 }
 //===========================================================================================
 template<class imgType>
