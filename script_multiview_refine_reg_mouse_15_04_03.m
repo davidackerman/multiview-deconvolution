@@ -56,7 +56,7 @@ deconvParam.verbose = 0; %set >0 to print out intermedate deconvolution steps fo
 deconvParam.lambdaTV = 0.0001; %Ttotal variation regularization lambda parameter. Set to < 0 to deactivate total variation regularization
 deconvParam.numIter = 40; %number of Lucy-Richardson iterations
 deconvParam.imBackground = 100.0; %image background level. It will be subtracted from images to make sure noise statistics are as Poissonian as possible
-
+deconvParam.blockZsize = 512; %for large datasets (i.e. mouse) to calculate deconvolution using multiple z blocks. Set to <0 to not split data. Otherwise set to a power of 2.
 
 %%
 %parameters

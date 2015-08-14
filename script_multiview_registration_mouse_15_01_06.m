@@ -26,7 +26,7 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %RANSAC
 %critical parameters for RANSAC alignment
 RANSACparameterSet.minIntensityValue = 150; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
-RANSACparameterSet.blockSize = 64;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
+RANSACparameterSet.blockSize = 96;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
 RANSACparameterSet.searchRadius = 128;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
 RANSACparameterSet.thrPeakDOG = 25;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
 
@@ -36,7 +36,7 @@ RANSACparameterSet.interestPointDetector = 'localmaxima';        %select the int
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest
 RANSACparameterSet.thrNCC = 0.5;            %threshold of NCC to accept a match
 RANSACparameterSet.numWorkers = -1;         %set to -1 to use as many as possible. If code runs out of memory, reduce the number.
-RANSACparameterSet.maxNumPeaks = 150;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
+RANSACparameterSet.maxNumPeaks = 200;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
 RANSACparameterSet.sigmaDOG = 3;          %sigma of the DoG to filter the image looking for points of interest  
 RANSACparameterSet.thrMask = 213;           %global threshold to find "embryo mask" (so we can exclude beads from registration). Only needed for DoG detector
 
@@ -51,7 +51,7 @@ deconvParam.verbose = 0; %set >0 to print out intermedate deconvolution steps fo
 deconvParam.lambdaTV = 0.0001; %Ttotal variation regularization lambda parameter. Set to < 0 to deactivate total variation regularization
 deconvParam.numIter = 40; %number of Lucy-Richardson iterations
 deconvParam.imBackground = 100.0; %image background level. It will be subtracted from images to make sure noise statistics are as Poissonian as possible
-
+deconvParam.blockZsize = 512; %for large datasets (i.e. mouse) to calculate deconvolution using multiple z blocks. Set to <0 to not split data. Otherwise set to a power of 2.
 
 %%
 %parameters

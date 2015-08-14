@@ -40,7 +40,7 @@ RANSACparameterSet.minDIstanceBetweenPeaks = 40; %minimum distance between local
 
 RANSACparameterSet.numTrialsRANSAC = 50000; %number of RANSAC trials
 RANSACparameterSet.maxRadiusResidualInPixels = 15.0;    %maximum residual (in pixels) to consider a RANSAC inlier
-
+deconvParam.blockZsize = 512; %for large datasets (i.e. mouse) to calculate deconvolution using multiple z blocks. Set to <0 to not split data. Otherwise set to a power of 2.
 
 
 %%
