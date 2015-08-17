@@ -21,16 +21,16 @@ verbose = 0;
 
 %%
 %parameters to search
-FWHMpsfZvec = [3.0 5.0 7.0];
-numItersVec = [20:20:80];
-lambdaTVvec = [0 0.0001 0.001 ];
+FWHMpsfZvec = [4.0];
+numItersVec = [20:20:40];
+lambdaTVvec = [0 ];
 
 
 Nviews = length(imgFilenameCell);
 PSFcell = cell(4,1);
 psfFilenameCell = PSFcell;
 
-count = 0;
+count = 36;
 for FWHMpsfZ = FWHMpsfZvec
     FWHMpsf = FWHMpsfOrig;
     FWHMpsf(3) = FWHMpsfZ;

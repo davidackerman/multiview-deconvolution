@@ -1,6 +1,30 @@
 function function_multiview_refine_registration(imPath, imFilenameCell, AcellPre, samplingXYZ, FWHMpsf, outputFolder, transposeOrigImage, RANSACparameterSet, deconvParam, TM)
 
 
+
+%%
+if( nargin == 1)%being called from the cluster
+
+parameterDatabase = imPath;
+
+%parse parameters
+pp = load(parameterDatabase);
+imPath = pp.imPath;
+imFilenameCell = pp.imFilenameCellTM;
+AcellPre = pp.Acell;
+samplingXYZ = pp.samplingXYZ;
+FWHMpsf = pp.FWHMpsf;
+outputFolder = pp.outputFolder; 
+transposeOrigImage = pp.transposeOrigImage;
+RANSACparameterSet = pp.RANSACparameterSet;
+deconvParam = pp.deconvParam;
+TM = pp.TM;
+
+clear pp;
+    
+end
+
+
 %%
 %fixed parameters
 anisotropyZ = samplingXYZ(3) / samplingXYZ(1);
@@ -22,6 +46,10 @@ for ii = 1:Nviews %parfor here is not advisable because of memory usage
     filename = [imPath imFilenameCell{ii}];
     imCoarseCell{ii} = single(readKLBstack(filename));
     disp(['Took ' num2str(toc(tstart)) ' secs']);
+    
+    if( transposeOrigImage == true )
+        imCoarseCell{ii} = permute(imCoarseCell{ii}, [2 1 3]);
+    end
     
     if( ii == 1)
        imRefSize = ceil(size(imCoarseCell{ii}) .* [1 1 anisotropyZ]);
