@@ -1247,7 +1247,7 @@ int multiGPUblockController::writeDeconvoutionResult(const std::string& filename
 //=============================================
 
 //===========================================================================================
-int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS])
+int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS], float scale)
 {
 	int error;
 
@@ -1294,8 +1294,12 @@ int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& f
 			  Imax = Imax - Imin;
 			  for (uint64_t ii = 0; ii < N; ii++)
 			  {
-				  Jaux[ii] = (uint16_t)(4096.0f * (imgPtr[ii] - Imin) / Imax);//we do not need the whole uint16 dynamic range and it helps compression
+				  Jaux[ii] = (uint16_t)(scale * (imgPtr[ii] - Imin) / Imax);//we do not need the whole uint16 dynamic range and it helps compression
 			  }
+
+			  //save scaling factor in header's metadata
+			  sprintf(imgIO.header.metadata, "scale=%.8f;Imin=%.8f;Imax=%.8f", scale, Imin, Imax);
+			  
 
 			  error = imgIO.writeImage((char*)(Jaux), -1);//all the threads available
 

@@ -603,6 +603,10 @@ int multiviewImage<imgType>::writeImage_uint16(const std::string& filename, int 
 			  {
 				  imUint16[ii] = (uint16_t)(scale * (imgVec_CPU[pos][ii] - Imin) / (Imax - Imin));
 			  }
+
+			  //save scaling factor in header's metadata
+			  sprintf(imgIO.header.metadata, "scale=%.8f;Imin=%.8f;Imax=%.8f", scale, Imin, Imax);
+
 			  //write image
 			  error = imgIO.writeImage((char*)(imUint16), -1);//all the threads available
 			  delete[] imUint16;

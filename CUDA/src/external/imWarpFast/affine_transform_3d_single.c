@@ -260,7 +260,28 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	float Aaux[AFFINE_3D_MATRIX_SIZE];
 	float* imInPadded;
 	int ii;
+	int64_t imSize;
 	
+
+	//check if the transformation is the identity. Then we only need to copy the file
+	bool isId = true;
+	for (ii = 0; ii < AFFINE_3D_MATRIX_SIZE; ii++)
+	{
+		if (fabs(A[ii] - B[ii]) > 1e-3)
+		{
+			isId = false;
+			break;
+		}
+	}
+	if (isId)
+	{
+		imSize = 1;
+		for (ii = 0; ii < 3; ii++)
+			imSize *= dimsOut[ii];
+		memcpy(imOut, imIn, sizeof(float)* imSize);
+		return;
+	}
+
 
 	for (ii = 0; ii < 3; ii++)
 	{		
