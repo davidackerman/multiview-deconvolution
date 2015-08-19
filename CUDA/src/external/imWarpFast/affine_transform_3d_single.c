@@ -273,15 +273,6 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 			break;
 		}
 	}
-	if (isId)
-	{
-		imSize = 1;
-		for (ii = 0; ii < 3; ii++)
-			imSize *= dimsOut[ii];
-		memcpy(imOut, imIn, sizeof(float)* imSize);
-		return;
-	}
-
 
 	for (ii = 0; ii < 3; ii++)
 	{		
@@ -310,22 +301,33 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 		imInPadded = imIn;
 	}
 
-	//apply transformations to A	
-	affine_3d_transpose(A, Af);
-	//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
-	affine_3d_compose(Af, F, Aaux);
-	affine_3d_inverse(Aaux, Af);
-	affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
 
-	//recenter transformation
-	affine_3d_compose(C, Aaux, Af);
-	affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+	if (isId)
+	{		
+		imSize = 1;
+		for (ii = 0; ii < 3; ii++)
+			imSize *= dimsOut[ii];
+		memcpy(imOut, imInPadded, sizeof(float)* imSize);		
+		return;
+	}
+	else{
 
-	
-	//apply transformation	
-	affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
-	affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
-	
+		//apply transformations to A	
+		affine_3d_transpose(A, Af);
+		//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
+		affine_3d_compose(Af, F, Aaux);
+		affine_3d_inverse(Aaux, Af);
+		affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
+
+		//recenter transformation
+		affine_3d_compose(C, Aaux, Af);
+		affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+
+
+		//apply transformation	
+		affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
+		affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
+	}
 
 	//release memory
 	if (imResize)
