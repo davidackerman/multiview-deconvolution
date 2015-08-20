@@ -215,7 +215,7 @@ template<class imgType>
 int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 {
 	//const values throughout the function
-	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
+	const bool useWeights = (weights.getPointer_GPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
@@ -337,13 +337,26 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 	J.allocateView_GPU(0, nImg * sizeof(outputType));
 	J.allocateView_CPU(0, nImg);
 
-	//initialize final results as weighted average of all views
-	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
-	for (size_t ii = 0; ii < nViews; ii++)
-	{
-		elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
-	}
+	
 
+	if ( useWeights)
+	{
+		//initialize final results as weighted average of all views
+		HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+		}
+	}
+	else{
+		//initialize final results as average of all the views
+		HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+		float ww = 1.0f / (float)nViews;
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationOutOfPlace(J.getPointer_GPU(0), ww, img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+		}
+	}
 
 	return 0;
 }
@@ -415,14 +428,25 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 		//deallocate temporary memory to nromalize weights
 		HANDLE_ERROR(cudaFree(weightAvg_GPU));
 		weightAvg_GPU = NULL;
+
+		//initialize final results as weighted average of all views
+		HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+		}
+	}
+	else{
+		//initialize final results as average of all the views
+		HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
+		float ww = 1.0f / (float)nViews;
+		for (size_t ii = 0; ii < nViews; ii++)
+		{
+			elementwiseOperationOutOfPlace(J.getPointer_GPU(0), ww, img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
+		}
 	}
 
-	//initialize final results as weighted average of all views
-	HANDLE_ERROR(cudaMemset(J.getPointer_GPU(0), 0, nImg * sizeof(outputType)));
-	for (size_t ii = 0; ii < nViews; ii++)
-	{
-		elementwiseOperationOutOfPlace(J.getPointer_GPU(0), weights.getPointer_GPU(ii), img.getPointer_GPU(ii), nImg, op_elementwise_type::compound_plus);
-	}
+	
 
 
 	return 0;
@@ -532,7 +556,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 	char buffer[256];
 #endif
 
-	const bool useWeights = (weights.getPointer_CPU(0) != NULL);
+	const bool useWeights = (weights.getPointer_GPU(0) != NULL);
 	const int64_t nImg = img.numElements(0);
 	const size_t nViews = img.getNumberOfViews();
 	const int64_t imSizeFFT = nImg + (2 * img.dimsImgVec[0].dims[2] * img.dimsImgVec[0].dims[1]); //size of the R2C transform in cuFFTComple
@@ -584,7 +608,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			if ( iter == 0 )
 				debug_writeGPUarray(img.getPointer_GPU(vv), img.dimsImgVec[0], string(buffer));
 			sprintf(buffer, "%sweights_view%.4d.raw",debugPath.c_str(), vv);
-			if (iter == 0)
+			if (iter == 0 && useWeights == true)
 				debug_writeGPUarray(weights.getPointer_GPU(vv), img.dimsImgVec[0], string(buffer));			
 			sprintf(buffer, "%sJconvPSF_iter%.4d_view%d.raw", debugPath.c_str(),iter, vv);
 			debug_writeGPUarray(aux_FFT, J.dimsImgVec[0], string(buffer));

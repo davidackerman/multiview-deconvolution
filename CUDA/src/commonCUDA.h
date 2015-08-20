@@ -52,6 +52,11 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 template<class T>
 void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
+/*
+\brief C[i] = f(A[i], B[i])  where f is defined by the enum op
+*/
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
 
 void elementwiseOperationInPlace_TVreg(float* A, const float* B, std::uint64_t arrayLength, float lambdaTV);

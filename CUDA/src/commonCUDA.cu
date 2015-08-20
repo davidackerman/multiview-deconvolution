@@ -163,6 +163,18 @@ __global__ void elementwiseOperationOutOfPlace_kernel(T* C, const T *A, const T 
 
 //==============================================================================================
 template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_kernel(T* C, const T A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] = op(A, B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
+
+//==============================================================================================
+template<class T, class operation>
 __global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, const T *B, std::uint64_t arrayLength, operation op)
 {
 	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -173,7 +185,17 @@ __global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, 
 	}
 }
 
-
+//==============================================================================================
+template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] += op(A, B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
 //==============================================================================================
 template<class T, class operation>
 __global__ void reductionOperation_kernel(const T *A, T* temp_accumulator_CUDA, std::uint64_t arrayLength, operation op, T defaultVal)
@@ -340,6 +362,47 @@ void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t 
 
 }
 
+//==========================================================================================================
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
+{
+
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
+	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
+
+
+	switch (op)
+	{
+	case op_elementwise_type::plus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::minus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::multiply:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::divide:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::compound_plus:
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::compound_multiply:
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::minus_positive:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	default:
+		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
+	}
+
+}
+
 //======================================================================
 template<class T>
 T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op)
@@ -464,6 +527,10 @@ template void elementwiseOperationOutOfPlace<float>(float* C, const float* A, co
 template void elementwiseOperationOutOfPlace<std::uint16_t>(std::uint16_t* C, const std::uint16_t* A, const std::uint16_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 template void elementwiseOperationOutOfPlace<std::uint8_t>(std::uint8_t* C, const std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 
+
+template void elementwiseOperationOutOfPlace<float>(float* C, const float A, const float* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint16_t>(std::uint16_t* C, const std::uint16_t A, const std::uint16_t* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint8_t>(std::uint8_t* C, const std::uint8_t A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 
 template float reductionOperation<float>(const float* A, std::uint64_t arrayLength, op_reduction_type op);
 template std::uint8_t reductionOperation<std::uint8_t>(const std::uint8_t* A, std::uint64_t arrayLength, op_reduction_type op);
