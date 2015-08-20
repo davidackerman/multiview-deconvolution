@@ -51,6 +51,9 @@ int main(int argc, const char** argv)
 		cout << "Reading view " << ii << endl;
 		master.full_img_mem.readImage(master.paramDec.fileImg[ii], -1);
 
+		//substract background in case image has edges from cropping
+		master.full_img_mem.subtractBackground(ii, master.paramDec.imgBackground);
+
 		cout << "Reading PSF for view " << ii << endl;
 		master.full_psf_mem.readImage(master.paramDec.filePSF[ii], -1);
 
@@ -58,6 +61,8 @@ int main(int argc, const char** argv)
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 	}
 
+	//reset background to zero
+	master.paramDec.imgBackground = 0;
 
 	t1 = Clock::now();
 	cout << "Calculating constrast weights for each view in GPU" << endl;

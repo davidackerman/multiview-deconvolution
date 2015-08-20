@@ -79,6 +79,7 @@ public:
 	static int getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS]);
 
 	void apply_affine_transformation_img(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
+	void subtractBackground(size_t pos, imgType imgBackground);
 
 	//short IO functions
 	size_t getNumberOfViews() const{ return imgVec_CPU.size(); };

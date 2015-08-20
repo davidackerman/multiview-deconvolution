@@ -723,6 +723,23 @@ void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_
 		dimsImgVec[pos].dims[ii] = dimsOut[ii];
 }
 
+//=========================================================================
+template<class imgType>
+void multiviewImage<imgType>::subtractBackground(size_t pos, imgType imgBackground)
+{	
+	imgType* ptr = getPointer_CPU(pos);
+	if (ptr == NULL)
+		return;
+
+	for (int64_t ii = 0; ii < numElements(pos); ii++)
+	{
+		if (ptr[ii] > imgBackground)
+			ptr[ii] -= imgBackground;
+		else
+			ptr[ii] = 0;
+	}
+}
+
 //============================================================================
 //declare all possible instantitation for the template
 template class multiviewImage<uint16_t>;

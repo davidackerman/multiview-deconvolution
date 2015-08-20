@@ -157,6 +157,8 @@ int main(int argc, const char** argv)
 			t2 = Clock::now();
 			std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
+			//substract background in case image has edges from cropping
+			master.full_img_mem.subtractBackground(ii, master.paramDec.imgBackground);
 
 			t1 = Clock::now();
 			cout << "Calculating constrast weights for view "<<ii<< " in GPU" << endl;
@@ -206,6 +208,9 @@ int main(int argc, const char** argv)
 			}
 
 		}
+
+		//reset background to zero
+		master.paramDec.imgBackground = 0;
 
 		if (master.paramDec.verbose > 0)
 		{
