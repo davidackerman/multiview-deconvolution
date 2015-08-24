@@ -59,7 +59,8 @@ for ii = 1:size(Tcell,1)
         %figure;plot3(X(:,1),X(:,2), X(:,3),'o');grid on; hold on;plot3(Y(:,1),Y(:,2), Y(:,3),'r+');
         
         %subsample solution: select 4 points for RANSAC
-        idx = randi(nn,[1 4]);
+        idx = randperm(nn);
+        idx = idx(1:4);
         Xransac = X(idx,:);
         Yransac = Y(idx,:);
         Wransac = W(idx);

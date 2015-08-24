@@ -22,6 +22,8 @@ else
     prefix = '';
 end
 
+
+
 fprintf(fid,'<deconvolution lambdaTV="%f" numIter="%d" imBackground="%f" verbose="%d" blockZsize="%d" prefix="%s">', deconvParam.lambdaTV, deconvParam.numIter, deconvParam.imBackground, verbose, deconvParam.blockZsize, prefix);
 fprintf(fid,'</deconvolution>\n');
 

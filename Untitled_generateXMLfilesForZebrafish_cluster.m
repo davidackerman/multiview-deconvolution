@@ -1,5 +1,5 @@
-TMvec = 475:620;
-%TMvec = 190
+TMvec = 190:620;
+
 %path to Keller network for input files
 pathInputFiles = 'S:\SiMView3\15-07-09\Dre_HuC_H2BGCaMP6s_0-1_20150709_170711.corrected\SPM00\TM??????\'
 %path to Janelia cluster to save files
@@ -26,7 +26,8 @@ for TM = TMvec
     pathOut = recoverFilenameFromPattern(pathOutputFiles,TM);
     pathCluster = recoverFilenameFromPattern(pathFilesCluster,TM);
     
-    [Acell, imgFilenameCell] = readXMLdeconvolutionFile([pathIn 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM,'%.6d') '.xml']);
+    [AcellTM, imgFilenameCell] = readXMLdeconvolutionFile([pathIn 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM,'%.6d') '.xml']);
+    Acell = readXMLdeconvolutionFile([recoverFilenameFromPattern(pathInputFiles,400) 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(400,'%.6d') '.xml']);%fixed time point to avoid jittering
     Nviews = length(Acell);
     
     imgFilenameClusterCell = cell(Nviews,1);

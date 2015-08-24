@@ -9,13 +9,14 @@ imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00
 
 
 
-cameraTransformCell = [10, 23, 31, 43];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
+cameraTransformCell = [10, 20, 30, 40];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
 
-TrCellPre = {[0 0 0], 4*[15 -11 -31], 4*[15 8 11], 4*[34 -13 59]};%Translation for each camera after the camera transform cell in order to perform coarse alignmnet. Leave empty if you want to automatically calculate it using normalized cross correlation
+%TrCellPre = {[0 0 0], 4*[15 -11 -31], 4*[15 8 11], 4*[34 -13 59]};%Translation for each camera after the camera transform cell in order to perform coarse alignmnet. Leave empty if you want to automatically calculate it using normalized cross correlation
+TrCellPre = [];
 
 samplingXYZ = [0.40625, 0.40625, 6.780];%sampling in um
 
-FWHMpsf = [0.8, 0.8, 5.0]; %theoretical full-width to half-max of the PSF in um.
+FWHMpsf = [0.8, 0.8, 4.0]; %theoretical full-width to half-max of the PSF in um.
 
 outputFolderPattern = ['T:\temp\registration\dros_GCaMP6s_20150505_165429\TM??????_localMaxImgBin\'];%outputfolder for debugging purposes. Leave empty for no debugging. This folder should be visible to the cluster if you want to run it on it
 
@@ -27,17 +28,17 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %RANSAC
 %critical parameters for RANSAC alignment
 RANSACparameterSet.minIntensityValue = 120; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
-RANSACparameterSet.blockSize = 128;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
-RANSACparameterSet.searchRadius = 144;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
+RANSACparameterSet.blockSize = 144;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
+RANSACparameterSet.searchRadius = 192;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
 RANSACparameterSet.thrPeakDOG = 25;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
 
 RANSACparameterSet.interestPointDetector = 'localmaxima';        %select the interest point detector to find points to match between images. Options: 'DoG', 'localmaxima'
 
 %usually "stable" parameters for RANSAC alignment
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest
-RANSACparameterSet.thrNCC = 0.6;            %threshold of NCC to accept a match
+RANSACparameterSet.thrNCC = 0.8;            %threshold of NCC to accept a match
 RANSACparameterSet.numWorkers = -1;         %set to -1 to use as many as possible. If code runs out of memory, reduce the number.
-RANSACparameterSet.maxNumPeaks = 150;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
+RANSACparameterSet.maxNumPeaks = 200;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
 RANSACparameterSet.sigmaDOG = 3;          %sigma of the DoG to filter the image looking for points of interest  
 RANSACparameterSet.thrMask = 120;           %global threshold to find "embryo mask" (so we can exclude beads from registration). Only needed for DoG detector
 

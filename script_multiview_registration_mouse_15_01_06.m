@@ -14,7 +14,7 @@ TrCellPre = {[0 0 0], [920          52        1216], [152   -32     0],[932     
 
 samplingXYZ = [0.40625, 0.40625, 2.031];%sampling in um
 
-FWHMpsf = [0.8, 0.8, 3.0]; %theoretical full-width to half-max of the PSF in um.
+FWHMpsf = [0.8, 0.8, 5.0]; %theoretical full-width to half-max of the PSF in um.
 
 outputFolderPattern = ['T:\temp\registration\mouse_15_01_06\TM??????_localMaxImgBin\'];%outputfolder for debugging purposes. Leave empty for no debugging. This folder should be visible to the cluster if you want to run it on it
 
@@ -26,19 +26,19 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %RANSAC
 %critical parameters for RANSAC alignment
 RANSACparameterSet.minIntensityValue = 150; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
-RANSACparameterSet.blockSize = 96;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
-RANSACparameterSet.searchRadius = 128;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
+RANSACparameterSet.blockSize = 144;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
+RANSACparameterSet.searchRadius = 144;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
 RANSACparameterSet.thrPeakDOG = 25;         %CRITICAL: threshold to apply to Difference of Gaussians filtered image in order to find points of interest. 
 
 RANSACparameterSet.interestPointDetector = 'localmaxima';        %select the interest point detector to find points to match between images. Options: 'DoG', 'localmaxima'
 
 %usually "stable" parameters for RANSAC alignment
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest
-RANSACparameterSet.thrNCC = 0.5;            %threshold of NCC to accept a match
+RANSACparameterSet.thrNCC = 0.8;            %threshold of NCC to accept a match
 RANSACparameterSet.numWorkers = -1;         %set to -1 to use as many as possible. If code runs out of memory, reduce the number.
 RANSACparameterSet.maxNumPeaks = 200;       %maximum number of points of interest per view to match. The higher the number the longer the code takes
 RANSACparameterSet.sigmaDOG = 3;          %sigma of the DoG to filter the image looking for points of interest  
-RANSACparameterSet.thrMask = 213;           %global threshold to find "embryo mask" (so we can exclude beads from registration). Only needed for DoG detector
+RANSACparameterSet.thrMask = 150;           %global threshold to find "embryo mask" (so we can exclude beads from registration). Only needed for DoG detector
 
 RANSACparameterSet.numTrialsRANSAC = 50000; %number of RANSAC trials
 RANSACparameterSet.maxRadiusResidualInPixels = 15.0;    %maximum residual (in pixels) to consider a RANSAC inlier

@@ -1,16 +1,17 @@
 %%
 %parameters
 
-TMvec = [2700]; %time points to be registered
+TMvec = [1]; %time points to be registered
 
-imPathPattern = ['S:\SiMView3\15-05-05\Dme_L1_57C10-GCaMP6s_20150505_165429.corrected\SPM00\TM??????\']; %base folder where original images are located. ??? characters will be filled with the TM value
+imPathPattern = ['S:\SiMView3\15-08-22\Dme_E1_His2AvRFP_01234567_diSPIM_20150822_195142.corrected\SPM00\TM??????\']; %base folder where original images are located. ??? characters will be filled with the TM value
+
+imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00.klb']};
+%imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00.klb'], ['SPM00_TM??????_CM01_CHN01.klb'], ['SPM00_TM??????_CM03_CHN00.klb']};
 
 
-imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00.klb'], ['SPM00_TM??????_CM01_CHN01.klb'], ['SPM00_TM??????_CM03_CHN00.klb']};%filenames of each view. CRITICAL: the same order should be preserved when giving the transformations to match images between cameras
 
-samplingXYZ = [0.40625, 0.40625, 6.780];%sampling in um
-
-FWHMpsf = [0.8, 0.8, 5.0]; %theoretical full-width to half-max of the PSF in um.
+samplingXYZ = [0.40625, 0.40625, 3.00];%sampling in um
+FWHMpsf = [0.8, 0.8, 4.0]; %theoretical full-width to half-max of the PSF in um.
 
 outputFolderPattern = ['E:\temp\Drosophila_GCamp6_20150505_TM??????\'];
 transposeOrigImage = false; %true if raw data was saved in tiff, since cluster PT transposed them after saving them in KLB.
@@ -19,7 +20,7 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %%
 %downsample images
 Nviews = length(imFilenameCell);
-numLevels = 2;
+numLevels = 1;
 imCell = cell(Nviews,1);
 
 TM = TMvec(1);
@@ -33,10 +34,9 @@ end
 
 %%
 %test transformations
-cameraTransformCell = [10, 20, 30, 40];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
+cameraTransformCell = [10, 21];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
 
-
-TrCellPre = {[0 0 0], [15 -11 -31], [15 8 11],[34 -13 59]};
+TrCellPre = {[0 0 0], [0 0 0], [0 0 0], [0 0 0]};  %Translation for each camera after the camera transform cell in order to perform coarse alignmnet. Leave empty if you want to automatically calculate it using normalized cross correlation
 
 anisotropyZ = samplingXYZ(3) / samplingXYZ(1);
 imRefSize = ceil(size(imCell{1}) .* [1 1 anisotropyZ]);
