@@ -40,16 +40,31 @@ multiviewImage<imgType>::multiviewImage(size_t numViews)
 template<class imgType>
 multiviewImage<imgType>::~multiviewImage()
 {
+	clear();
+};
+
+//===========================================================================================
+template<class imgType>
+void multiviewImage<imgType>::clear()
+{
 	for (size_t ii = 0; ii < imgVec_CPU.size(); ii++)
 	{
 		if (imgVec_CPU[ii] != NULL)
+		{
 			delete[]imgVec_CPU[ii];
+			imgVec_CPU[ii] = NULL;
+		}
 
 		if (imgVec_GPU[ii] != NULL)
+		{
 			HANDLE_ERROR(cudaFree(imgVec_GPU[ii]));
+			imgVec_GPU[ii] = NULL;
+		}
 	}
-};
 
+	imgVec_CPU.clear();
+	imgVec_GPU.clear();
+};
 
 //===========================================================================================
 template<class imgType>
@@ -462,6 +477,23 @@ int multiviewImage<imgType>::readImage(const std::string& filename, int pos)
 }
 //===========================================================================================
 template<class imgType>
+int multiviewImage<imgType>::readImageSizeFromHeader(const std::string& filename, int64_t dimsOut[MAX_DATA_DIMS])
+{
+
+	klb_imageIO imgFull(filename);
+	int err = 0;
+
+	err = imgFull.readHeader();
+	if (err > 0)
+		return err;
+
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+		dimsOut[ii] = imgFull.header.xyzct[ii];
+
+	return 0;
+}
+//===========================================================================================
+template<class imgType>
 int multiviewImage<imgType>::writeImage(const std::string& filename, int pos)
 {
 	if ( pos >= imgVec_CPU.size() || imgVec_CPU[pos] == NULL)
@@ -571,6 +603,10 @@ int multiviewImage<imgType>::writeImage_uint16(const std::string& filename, int 
 			  {
 				  imUint16[ii] = (uint16_t)(scale * (imgVec_CPU[pos][ii] - Imin) / (Imax - Imin));
 			  }
+
+			  //save scaling factor in header's metadata
+			  sprintf(imgIO.header.metadata, "scale=%.8f;Imin=%.8f;Imax=%.8f", scale, Imin, Imax);
+
 			  //write image
 			  error = imgIO.writeImage((char*)(imUint16), -1);//all the threads available
 			  delete[] imUint16;
@@ -685,6 +721,23 @@ void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_
 	imgVec_CPU[pos] = imOut;
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 		dimsImgVec[pos].dims[ii] = dimsOut[ii];
+}
+
+//=========================================================================
+template<class imgType>
+void multiviewImage<imgType>::subtractBackground(size_t pos, imgType imgBackground)
+{	
+	imgType* ptr = getPointer_CPU(pos);
+	if (ptr == NULL)
+		return;
+
+	for (int64_t ii = 0; ii < numElements(pos); ii++)
+	{
+		if (ptr[ii] > imgBackground)
+			ptr[ii] -= imgBackground;
+		else
+			ptr[ii] = 0;
+	}
 }
 
 //============================================================================

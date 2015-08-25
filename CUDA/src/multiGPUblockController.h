@@ -58,6 +58,11 @@ public:
 	multiviewImage<psfType> full_psf_mem;
 	multiviewImage<outputType> full_img_mem;
 
+	//in case we use disk to store files to save memory
+	std::vector<std::string> full_weights_filename;
+	std::vector<std::string> full_psf_filename;
+	std::vector<std::string> full_img_filename;
+
     //constructor/destructor
     multiGPUblockController();
 	multiGPUblockController(std::string filenameXML);
@@ -70,25 +75,32 @@ public:
 	size_t getNumGPU() const{ return GPUinfoVec.size(); };
 	int writeDeconvoutionResult(const std::string& filename);
 	int writeDeconvoutionResultRaw(const std::string& filename);
-	int writeDeconvoutionResult_uint16(const std::string& filename);
+	int writeDeconvoutionResult_uint16(const std::string& filename){ return writeDeconvoutionResult_uint16(filename, J, imgDims); };
+	static int writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS], float scale = 16384.0f);
 	int getDimBlockPartition(){ return dimBlockParition; };
+	imgTypeDeconvolution* getJpointer(){ return J; };
+	void deallocateMemJ(){ if (J != NULL) { delete[] J; J = NULL; } };
+
+	int getDevCUDA_maxMem();
 
     //methods
 	void queryGPUs(int maxNumber = -1);
 	int findBestBlockPartitionDimension();
 	void findMaxBlockPartitionDimensionPerGPU();
 	int findBestBlockPartitionDimension_inMem();
-	void findMaxBlockPartitionDimensionPerGPU_inMem();
+	void findMaxBlockPartitionDimensionPerGPU_inMem();	
 
 	int runMultiviewDeconvoution(MV_deconv_fn p);//main function to start distirbuting multiview deconvolution to different blocks		
 	void copyBlockResultToJ(const imgTypeDeconvolution* Jsrc, const uint32_t blockDims[MAX_DATA_DIMS], int64_t Joffset, int64_t Boffset, int64_t numPlanes);
 	static std::uint32_t ceilToGoodFFTsize(std::uint32_t n);
 	static std::uint32_t padToGoodFFTsize(std::uint32_t n);
 	void calculateWeights();//main function to calculate weights on each image using multiple GPU
-	
+	void calculateWeights(int view, int devCUDA);//without multi-GPU. Using one GPU for the view
+
 	//functions to perform different kinds of deconvolution on each block	
 	void multiviewDeconvolutionBlockWise_fromFile(size_t threadIdx);//main function for each GPU to process different blocks
 	void multiviewDeconvolutionBlockWise_fromMem(size_t threadIdx);
+	void multiviewDeconvolutionBlockWise_lowMem(size_t threadIdx);
 
     //debug functions
 	void debug_listGPUs();
@@ -120,6 +132,11 @@ protected:
 
 	void calculateWeightsSingleView(size_t threadIdx);
 private:
+
+	//calculate DCT weioghts all at once
+	void calculateWeightsSingleView_allAtOnce(int view, float anisotropyZ);
+	//calculate DCT weights into blocks
+	void calculateWeightsSingleView_lowMem(int view, float anisotropyZ, int64_t availMem);
 
 };
 

@@ -84,13 +84,10 @@ __global__ void CUDAkernelDCTShannonEntropyFloat(float *SrcDst, int Stride, floa
 
 //================================================================
 
-void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ)
+void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ, bool normalize)
 {
 	assert(ndims <= 3);
 	assert(ndims > 1);
-
-	const float cutoffDCT = 6.0f;
-	const float cellDiameterPixels = 15.0f;	
 
 	int64_t imSize = 1;
 	for (int ii = 0; ii < ndims; ii++)
@@ -153,12 +150,16 @@ void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t
 		
 	imgaussianAnisotropy(temp_CUDA, weights_CUDA, dims, sigma, kernel_radius);
 	
+	
 	//normalize weights
-	float minW = reductionOperation(weights_CUDA, imSize, op_reduction_type::min_elem);
-	float maxW = reductionOperation(weights_CUDA, imSize, op_reduction_type::max_elem);
-	elementwiseOperationInPlace(weights_CUDA, minW, imSize, op_elementwise_type::minus);
-	elementwiseOperationInPlace(weights_CUDA, maxW-minW, imSize, op_elementwise_type::divide);
+	if (normalize)
+	{
 
+		float minW = reductionOperation(weights_CUDA, imSize, op_reduction_type::min_elem);
+		float maxW = reductionOperation(weights_CUDA, imSize, op_reduction_type::max_elem);
+		elementwiseOperationInPlace(weights_CUDA, minW, imSize, op_elementwise_type::minus);
+		elementwiseOperationInPlace(weights_CUDA, maxW - minW, imSize, op_elementwise_type::divide);
+	}
 	//release memory
 	HANDLE_ERROR(cudaFree(temp_CUDA));
 	

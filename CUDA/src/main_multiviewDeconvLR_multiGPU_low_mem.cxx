@@ -1,21 +1,24 @@
 /*
 *
 * Authors: Fernando Amat
-*  main_multiviewDeconvLR_multiGPU.cxx
+*  main_multiviewDeconvLR_multiGPU_low_mem.cxx
 *
 *  Created on : July 27th, 2015
 * Author : Fernando Amat
 *
-* \brief main executable to perform multiview deconvolution Lucy-Richardson with multi-GPU
+* \brief main executable to perform multiview deconvolution Lucy-Richardson with multi-GPU using temporary saved files on disk to save memory (for large images or computers with low memory)
 *
 */
 
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <cstdio>
 #include <math.h>  
 #include <algorithm>
 #include "multiGPUblockController.h"
+#include "klb_Cwrapper.h"
+#include "imgUtils.h"
 
 
 using namespace std;
@@ -28,7 +31,7 @@ int main(int argc, const char** argv)
 	auto t2 = Clock::now();
 
 	//main inputs
-	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv_bin4/regDeconvParam.xml");
+	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv/regDeconvParam.xml");
 	int maxNumberGPU = -1;//default value
 
 	if (argc > 1)
@@ -85,23 +88,48 @@ int main(int argc, const char** argv)
 			dimsOut[ii] = master.padToGoodFFTsize(dimsOut[ii]);
 	}
 
-	//apply transformation
+	//apply transformation to weights and then save it in disk to reduce memory consumption
+	int64_t imSize = dimsOut[0] * dimsOut[1] * dimsOut[2];
+	uint16_t *weightsCompress = new uint16_t[imSize];
+	uint32_t xyzct[KLB_DATA_DIMS] = {dimsOut[0], dimsOut[1], dimsOut[2], 1, 1};
 	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
-	{
-				
-		t1 = Clock::now();
-		cout << "Applying affine transformation to view " << ii << endl;
-		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
-		t2 = Clock::now();
-		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
-
+	{		
 		t1 = Clock::now();
 		cout << "Applying affine transformation to weight array " << endl;
 		master.full_weights_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 1);//linear interpolation with border pixels assigned to 0
 		t2 = Clock::now();
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
+		t1 = Clock::now();
+		std::string tmpFile = generateTempFilename("MVddec_");//temporary filename	
+		tmpFile += ".klb";
+		cout << "Saving weight array in temporary file "<<tmpFile << endl;
+		weightType* wPtr = master.full_weights_mem.getPointer_CPU(ii);
+		for (int64_t jj = 0; jj < imSize; jj++)
+		{
+			weightsCompress[jj] = (uint16_t)(100 * wPtr[jj]);//this is plenty quantization for weights and allows KLB to compress the file by a lot
+		}
+		err = writeKLBstack((void*)weightsCompress, tmpFile.c_str(), xyzct, KLB_DATA_TYPE::UINT16_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
+		if (err > 0)
+			return err;
+		master.full_weights_filename.push_back(tmpFile);
+		t2 = Clock::now();
+		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
+		//deallocate weight memory
+		master.full_weights_mem.deallocateView_CPU(ii);
 	}
+	delete[] weightsCompress;
+
+	//apply transofrmation to images (in this case we save it in memory)
+	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
+	{
+		t1 = Clock::now();
+		cout << "Applying affine transformation to view " << ii << endl;
+		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
+		t2 = Clock::now();
+		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;		
+	}
+
 
 	if (master.paramDec.verbose > 0)
 	{
@@ -110,9 +138,7 @@ int main(int argc, const char** argv)
 		{
 			char buffer[256];
 			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
-			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);
-			sprintf(buffer, "%s_debug_weigths_%d.klb", filenameXML.c_str(), ii);
-			master.full_weights_mem.writeImage_uint16(string(buffer), ii, 100);
+			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);			
 		}
 	}
 
@@ -122,7 +148,7 @@ int main(int argc, const char** argv)
 	t1 = Clock::now();
 	cout << "Calculating multiview deconvolution..." << endl;
 	//launch multi-thread as a producer consumer queue to calculate blocks as they come
-	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem);
+	err = master.runMultiviewDeconvoution(&multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem);
 	if (err > 0)
 		return err;
 	t2 = Clock::now();
@@ -130,7 +156,7 @@ int main(int argc, const char** argv)
 	
 
 	//write result
-	char fileoutName[256];	
+	char fileoutName[256];
 	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;
@@ -143,6 +169,15 @@ int main(int argc, const char** argv)
 	}
 	t2 = Clock::now();
 	std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;	
+	
+
+	//delete temporary files
+	cout << "Deleting temporary files " << endl;
+	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
+	{
+		remove(master.full_weights_filename[ii].c_str());
+	}
+
 
 	auto tEnd = Clock::now();
 	std::cout << "Total process  took " << std::chrono::duration_cast<std::chrono::milliseconds>(tEnd - tStart).count() << " ms" << std::endl;

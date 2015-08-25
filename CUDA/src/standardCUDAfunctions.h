@@ -24,6 +24,8 @@ extern "C" DLL_EXPORT bool isDeviceCUDAusedByDisplay(int devCUDA);
 extern "C" DLL_EXPORT  int getNumDevicesCUDA();
 extern "C" DLL_EXPORT  void getNameDeviceCUDA(int devCUDA, char *name);
 extern "C" DLL_EXPORT  long long int getMemDeviceCUDA(int devCUDA);
+extern "C" DLL_EXPORT  long long int getAvailableMemDeviceCUDA(int devCUDA);
 extern "C" DLL_EXPORT  void setDeviceCUDA(int devCUDA);
+extern "C" DLL_EXPORT  void resetDeviceCUDA(int devCUDA);
 
 #endif /* STANDARDCUDAFUNCTIONS_H_ */

@@ -52,6 +52,11 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 template<class T>
 void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
+/*
+\brief C[i] = f(A[i], B[i])  where f is defined by the enum op
+*/
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T A, const T* B, std::uint64_t arrayLength, op_elementwise_type op);
 
 
 void elementwiseOperationInPlace_TVreg(float* A, const float* B, std::uint64_t arrayLength, float lambdaTV);
@@ -69,5 +74,22 @@ template<class T>
 T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op);
 
 
+
+//=============================================================================
+//memory allocation and deallocation
+//==============================================================================
+
+
+template<class T>
+T* allocateMem_GPU(size_t numElem);
+
+template<class T>
+void deallocateMem_GPU(T* ptr);
+
+template<class T>
+void copy_GPU_to_CPU(T* ptr_CPU, const T* ptr_CUDA, size_t numElem);
+
+template<class T>
+void copy_CPU_to_GPU(const T* ptr_CPU, T* ptr_CUDA, size_t numElem);
 
 #endif

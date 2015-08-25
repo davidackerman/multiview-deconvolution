@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "affine_transform_3d_single.h"
 #include "image_interpolation.h"
 #include "multiple_os_thread.h"
@@ -66,9 +67,9 @@ int getNumberOfCores()
 
 voidthread transformvolume(float **Args) {
     float *Isize_d, *mean, *A, *Iin, *Iout, *ThreadID, *moded;
-    int Isize[3]={0, 0, 0};
+    int64_t Isize[3]={0, 0, 0};
     int mode=0;
-    int x, y, z;
+    int64_t x, y, z;
     float *Nthreadsd;
     int Nthreads;
     bool black, cubic;   
@@ -80,7 +81,7 @@ voidthread transformvolume(float **Args) {
     float xd, yd, zd;
     
     // Variables to store 1D index */
-    int indexI;
+    int64_t indexI;
     
     // Multiple threads, one does the odd the other even indexes */
     int ThreadOffset;
@@ -104,9 +105,9 @@ voidthread transformvolume(float **Args) {
     if(mode==0||mode==2){ black = false; } else { black = true; }
     if(mode==0||mode==1){ cubic = false; } else { cubic = true; }
 	
-    Isize[0] = (int)Isize_d[0];
-    Isize[1] = (int)Isize_d[1];
-    Isize[2] = (int)Isize_d[2];
+    Isize[0] = (int64_t)Isize_d[0];
+    Isize[1] = (int64_t)Isize_d[1];
+    Isize[2] = (int64_t)Isize_d[2];
     
     ThreadOffset=(int) ThreadID[0];
     
@@ -259,7 +260,19 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	float Aaux[AFFINE_3D_MATRIX_SIZE];
 	float* imInPadded;
 	int ii;
+	int64_t imSize;
 	
+
+	//check if the transformation is the identity. Then we only need to copy the file
+	bool isId = true;
+	for (ii = 0; ii < AFFINE_3D_MATRIX_SIZE; ii++)
+	{
+		if (fabs(A[ii] - B[ii]) > 1e-3)
+		{
+			isId = false;
+			break;
+		}
+	}
 
 	for (ii = 0; ii < 3; ii++)
 	{		
@@ -288,22 +301,33 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 		imInPadded = imIn;
 	}
 
-	//apply transformations to A	
-	affine_3d_transpose(A, Af);
-	//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
-	affine_3d_compose(Af, F, Aaux);
-	affine_3d_inverse(Aaux, Af);
-	affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
 
-	//recenter transformation
-	affine_3d_compose(C, Aaux, Af);
-	affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+	if (isId)
+	{		
+		imSize = 1;
+		for (ii = 0; ii < 3; ii++)
+			imSize *= dimsOut[ii];
+		memcpy(imOut, imInPadded, sizeof(float)* imSize);		
+		return;
+	}
+	else{
 
-	
-	//apply transformation	
-	affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
-	affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
-	
+		//apply transformations to A	
+		affine_3d_transpose(A, Af);
+		//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
+		affine_3d_compose(Af, F, Aaux);
+		affine_3d_inverse(Aaux, Af);
+		affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
+
+		//recenter transformation
+		affine_3d_compose(C, Aaux, Af);
+		affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+
+
+		//apply transformation	
+		affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
+		affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
+	}
 
 	//release memory
 	if (imResize)

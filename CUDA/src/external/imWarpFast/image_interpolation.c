@@ -23,9 +23,10 @@ double getcolor_mindex3(int x, int y, int z, int sizx, int sizy, int sizz, doubl
 }
 
 /* Get an pixel from an image, if outside image, black or nearest pixel */
-float getcolor_mindex3_float(int x, int y, int z, int sizx, int sizy, int sizz, float *I) {
+float getcolor_mindex3_float(int64_t x, int64_t y, int64_t z, int64_t sizx, int64_t sizy, int64_t sizz, float *I) {
     return I[z*sizx*sizy+y*sizx+x];
 }
+
 
 double interpolate_2d_nearest_gray_black(double Tlocalx, double Tlocaly, int *Isize, double *Iin) {
     /*  Linear interpolation variables */
@@ -833,10 +834,10 @@ double interpolate_3d_cubic(double Tlocalx, double Tlocaly, double Tlocalz, int 
     return Ipixelxyz;
 }
 
-float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float *Iin) {
+float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     float Iout;
     /*  Linear interpolation variables */
-    int xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
+    int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
     float perc[8];
     float xCom, yCom, zCom;
     float xComi, yComi, zComi;
@@ -847,7 +848,7 @@ float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tloc
     
     /* Determine the coordinates of the pixel(s) which will be come the current pixel */
     /* (using linear interpolation) */
-    xBas0=(int) fTlocalx; yBas0=(int) fTlocaly; zBas0=(int) fTlocalz;
+	xBas0 = (int64_t)fTlocalx; yBas0 = (int64_t)fTlocaly; zBas0 = (int64_t)fTlocalz;
     xBas1=xBas0+1;      yBas1=yBas0+1;      zBas1=zBas0+1;
     
     
@@ -905,10 +906,10 @@ float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tloc
     return Iout;
 }
 
-float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float *Iin) {
+float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     float Iout;
     /*  Linear interpolation variables */
-    int xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
+	int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
     float perc[8];
     float xCom, yCom, zCom;
     float xComi, yComi, zComi;
@@ -919,7 +920,7 @@ float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, i
     
     /* Determine the coordinates of the pixel(s) which will be come the current pixel */
     /* (using linear interpolation) */
-    xBas0=(int) fTlocalx; yBas0=(int) fTlocaly; zBas0=(int) fTlocalz;
+	xBas0 = (int64_t)fTlocalx; yBas0 = (int64_t)fTlocaly; zBas0 = (int64_t)fTlocalz;
     xBas1=xBas0+1;      yBas1=yBas0+1;      zBas1=zBas0+1;
     
     /* Clamp to boundary */
@@ -954,15 +955,15 @@ float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, i
     return Iout;
 }
 
-float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float *Iin) {
+float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     /* Floor of coordinate */
     float fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
-    int xBas0, yBas0, zBas0;
+    int64_t xBas0, yBas0, zBas0;
     /* The location in between the pixels 0..1 */
     float tx, ty, tz;
     /* Neighbor loccations */
-    int xn[4], yn[4], zn[4];
+    int64_t xn[4], yn[4], zn[4];
     
     /* The vectors */
     float vector_tx[4], vector_ty[4], vector_tz[4];
@@ -976,7 +977,7 @@ float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tloca
     
     /* Determine of the zero neighbor */
     fTlocalx=floorfloat(Tlocalx); fTlocaly=floorfloat(Tlocaly); fTlocalz=floorfloat(Tlocalz);
-    xBas0=(int) fTlocalx; yBas0=(int) fTlocaly; zBas0=(int) fTlocalz;
+    xBas0=(int64_t) fTlocalx; yBas0=(int64_t) fTlocaly; zBas0=(int64_t) fTlocalz;
     
     /* Determine the location in between the pixels 0..1 */
     tx=Tlocalx-fTlocalx; ty=Tlocaly-fTlocaly; tz=Tlocalz-fTlocalz;
@@ -1032,15 +1033,15 @@ float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tloca
     }
     return Ipixelxyz;
 }
-float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float *Iin) {
+float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     /* Floor of coordinate */
     float fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
-    int xBas0, yBas0, zBas0;
+    int64_t xBas0, yBas0, zBas0;
     /* The location in between the pixels 0..1 */
     float tx, ty, tz;
     /* Neighbor loccations */
-    int xn[4], yn[4], zn[4];
+    int64_t xn[4], yn[4], zn[4];
     
     /* The vectors */
     float vector_tx[4], vector_ty[4], vector_tz[4];
@@ -1049,7 +1050,7 @@ float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, in
     /* Interpolated Intensity; */
     float Ipixelx=0, Ipixelxy=0, Ipixelxyz=0;
     /* Temporary value boundary */
-    int b;
+    int64_t b;
     /* Loop variable */
     int i, j;
     /* const 0.5; */
@@ -1057,7 +1058,7 @@ float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, in
     
     /* Determine of the zero neighbor */
     fTlocalx = floorfloat(Tlocalx); fTlocaly = floorfloat(Tlocaly); fTlocalz = floorfloat(Tlocalz);
-    xBas0=(int) fTlocalx; yBas0=(int) fTlocaly; zBas0=(int) fTlocalz;
+	xBas0 = (int64_t)fTlocalx; yBas0 = (int64_t)fTlocaly; zBas0 = (int64_t)fTlocalz;
     
     /* Determine the location in between the pixels 0..1 */
     tx=Tlocalx-fTlocalx; ty=Tlocaly-fTlocaly; tz=Tlocalz-fTlocalz;
@@ -1152,17 +1153,18 @@ double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz
     }
     return Ipixel;
 }
-float interpolate_3d_float_gray(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float  *Iin, int cubic, int black){
-    float Ipixel;
-    if(cubic) {
-		if(black) { Ipixel=interpolate_3d_float_cubic_black(Tlocalx, Tlocaly, Tlocalz, Isize, Iin);}
-        else {Ipixel= interpolate_3d_float_cubic(Tlocalx, Tlocaly, Tlocalz, Isize, Iin);}
-    }
-    else {
-        if(black) { Ipixel=interpolate_3d_float_linear_black(Tlocalx, Tlocaly, Tlocalz, Isize, Iin);}
-        else { Ipixel=interpolate_3d_float_linear(Tlocalx, Tlocaly, Tlocalz, Isize, Iin); }
-    }
-    return Ipixel;
+
+float interpolate_3d_float_gray(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float  *Iin, int cubic, int black){
+	float Ipixel;
+	if (cubic) {
+		if (black) { Ipixel = interpolate_3d_float_cubic_black(Tlocalx, Tlocaly, Tlocalz, Isize, Iin); }
+		else { Ipixel = interpolate_3d_float_cubic(Tlocalx, Tlocaly, Tlocalz, Isize, Iin); }
+	}
+	else {
+		if (black) { Ipixel = interpolate_3d_float_linear_black(Tlocalx, Tlocaly, Tlocalz, Isize, Iin); }
+		else { Ipixel = interpolate_3d_float_linear(Tlocalx, Tlocaly, Tlocalz, Isize, Iin); }
+	}
+	return Ipixel;
 }
 
 

@@ -16,7 +16,8 @@ project (multi-view_deconvolution_src)
 #
 #add flags for the C++11 
 if(CMAKE_COMPILER_IS_GNUCXX) 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+	LINK_DIRECTORIES("/lib64")
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
 endif()
@@ -97,3 +98,11 @@ SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX
 #executable for multiview deconvolution
 ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU main_multiviewDeconvLR_multiGPU.cxx )
 TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)
+
+#executable for multiview deconvolution with low memory computers (using I/O)
+ADD_EXECUTABLE(multiview_deconvolution_LR_multiGPU_low_mem main_multiviewDeconvLR_multiGPU_low_mem.cxx )
+TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU_low_mem multiview_deconvolution_GPU)
+
+#executable for multiview deconvolution with very large datasets. Deconvolution is performed in blocks along z to fit in CPU and GPU memory
+ADD_EXECUTABLE(main_multiviewDeconvLR_multiGPU_blocksZ main_multiviewDeconvLR_multiGPU_blocksZ.cxx )
+TARGET_LINK_LIBRARIES(main_multiviewDeconvLR_multiGPU_blocksZ multiview_deconvolution_GPU)

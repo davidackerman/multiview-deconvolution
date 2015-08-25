@@ -163,6 +163,18 @@ __global__ void elementwiseOperationOutOfPlace_kernel(T* C, const T *A, const T 
 
 //==============================================================================================
 template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_kernel(T* C, const T A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] = op(A, B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
+
+//==============================================================================================
+template<class T, class operation>
 __global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, const T *B, std::uint64_t arrayLength, operation op)
 {
 	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -173,7 +185,17 @@ __global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T *A, 
 	}
 }
 
-
+//==============================================================================================
+template<class T, class operation>
+__global__ void elementwiseOperationOutOfPlace_compund_kernel(T* C, const T A, const T *B, std::uint64_t arrayLength, operation op)
+{
+	std::uint64_t tid = blockDim.x * blockIdx.x + threadIdx.x;
+	while (tid < arrayLength)
+	{
+		C[tid] += op(A, B[tid]);
+		tid += blockDim.x * gridDim.x;
+	}
+}
 //==============================================================================================
 template<class T, class operation>
 __global__ void reductionOperation_kernel(const T *A, T* temp_accumulator_CUDA, std::uint64_t arrayLength, operation op, T defaultVal)
@@ -340,6 +362,47 @@ void elementwiseOperationOutOfPlace(T* C, const T* A, const T* B, std::uint64_t 
 
 }
 
+//==========================================================================================================
+template<class T>
+void elementwiseOperationOutOfPlace(T* C, const T A, const T* B, std::uint64_t arrayLength, op_elementwise_type op)
+{
+
+	int numThreads = std::min((uint64_t)MAX_THREADS_CUDA / 4, arrayLength);//profiling it is better to not use all threads for better occupancy
+	int numBlocks = std::min((uint64_t)MAX_BLOCKS_CUDA, (uint64_t)(arrayLength + (uint64_t)(numThreads - 1)) / ((uint64_t)numThreads));
+
+
+	switch (op)
+	{
+	case op_elementwise_type::plus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::minus:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::multiply:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+
+	case op_elementwise_type::divide:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, div_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::compound_plus:
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, add_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::compound_multiply:
+		elementwiseOperationOutOfPlace_compund_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, mul_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::minus_positive:
+		elementwiseOperationOutOfPlace_kernel << <numBlocks, numThreads >> > (C, A, B, arrayLength, sub_pos_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	default:
+		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;
+	}
+
+}
+
 //======================================================================
 template<class T>
 T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op)
@@ -420,6 +483,35 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 	return finalVal;
 }
 
+//==================================================================
+template<class T>
+T* allocateMem_GPU(size_t numElem)
+{
+	T* ptr;
+	HANDLE_ERROR(cudaMalloc((void**)&(ptr), numElem * sizeof(T)));
+	return ptr;
+
+};
+
+template<class T>
+void deallocateMem_GPU(T* ptr)
+{	
+	if ( ptr != NULL)
+		HANDLE_ERROR(cudaFree(ptr));//you still need to set the pointer to NULL
+};
+
+template<class T>
+void copy_GPU_to_CPU(T* ptr_CPU, const T* ptr_CUDA, size_t numElem)
+{
+	HANDLE_ERROR(cudaMemcpy(ptr_CPU, ptr_CUDA, numElem * sizeof(T), cudaMemcpyDeviceToHost));
+}
+
+template<class T>
+void copy_CPU_to_GPU(const T* ptr_CPU, T* ptr_CUDA, size_t numElem)
+{
+	HANDLE_ERROR(cudaMemcpy(ptr_CUDA, ptr_CPU, numElem * sizeof(T), cudaMemcpyHostToDevice));
+}
+
 //======================================================================
 //instantiate templates
 template void elementwiseOperationInPlace<std::uint8_t>(std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
@@ -436,7 +528,27 @@ template void elementwiseOperationOutOfPlace<std::uint16_t>(std::uint16_t* C, co
 template void elementwiseOperationOutOfPlace<std::uint8_t>(std::uint8_t* C, const std::uint8_t* A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
 
 
+template void elementwiseOperationOutOfPlace<float>(float* C, const float A, const float* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint16_t>(std::uint16_t* C, const std::uint16_t A, const std::uint16_t* B, std::uint64_t arrayLength, op_elementwise_type op);
+template void elementwiseOperationOutOfPlace<std::uint8_t>(std::uint8_t* C, const std::uint8_t A, const std::uint8_t* B, std::uint64_t arrayLength, op_elementwise_type op);
+
 template float reductionOperation<float>(const float* A, std::uint64_t arrayLength, op_reduction_type op);
 template std::uint8_t reductionOperation<std::uint8_t>(const std::uint8_t* A, std::uint64_t arrayLength, op_reduction_type op);
 template std::uint16_t reductionOperation<std::uint16_t>(const std::uint16_t* A, std::uint64_t arrayLength, op_reduction_type op);
 template double reductionOperation<double>(const double* A, std::uint64_t arrayLength, op_reduction_type op);
+
+template void deallocateMem_GPU<float>(float* ptr);
+template void deallocateMem_GPU<std::uint8_t>(std::uint8_t* ptr);
+template void deallocateMem_GPU<std::uint16_t>(std::uint16_t* ptr);
+
+template float* allocateMem_GPU<float>(size_t numElem);
+template std::uint8_t* allocateMem_GPU<std::uint8_t>(size_t numElem);
+template std::uint16_t* allocateMem_GPU<std::uint16_t>(size_t numElem);
+
+template void copy_GPU_to_CPU<float>(float* ptr_CPU, const float* ptr_CUDA, size_t numElem);
+template void copy_GPU_to_CPU<std::uint8_t>(std::uint8_t* ptr_CPU,const std::uint8_t* ptr_CUDA, size_t numElem);
+template void copy_GPU_to_CPU<std::uint16_t>(std::uint16_t* ptr_CPU, const std::uint16_t* ptr_CUDA, size_t numElem);
+
+template void copy_CPU_to_GPU<float>(const float* ptr_CPU, float* ptr_CUDA, size_t numElem);
+template void copy_CPU_to_GPU<std::uint8_t>(const std::uint8_t* ptr_CPU, std::uint8_t* ptr_CUDA, size_t numElem);
+template void copy_CPU_to_GPU<std::uint16_t>(const std::uint16_t* ptr_CPU, std::uint16_t* ptr_CUDA, size_t numElem);

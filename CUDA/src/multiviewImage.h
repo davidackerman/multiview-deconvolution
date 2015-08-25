@@ -21,6 +21,7 @@
 #include <string>
 #include <cstdint>
 #include <cstring>
+#include <assert.h>
 #include "affine_transform_3d_single.h"
 
 
@@ -64,9 +65,11 @@ public:
 	multiviewImage();
 	multiviewImage(size_t numViews);
 	~multiviewImage();
+	void clear();//release all memory
 
 	//I/O functions
 	int readImage(const std::string& filename, int pos);//if pos<0 then we add one image to the vector
+	static int readImageSizeFromHeader(const std::string& filename, int64_t dimsOut[MAX_DATA_DIMS]);
 	int readROI(const std::string& filename, int pos, const klb_ROI& ROI);
 	void copyROI(const imgType *p, std::int64_t dims[MAX_DATA_DIMS], int ndims, int pos, const klb_ROI& ROI);//copy ROI form another image in memory
 	int writeImage(const std::string& filename, int pos);	
@@ -76,12 +79,14 @@ public:
 	static int getImageDimensionsFromHeader(const std::string& filename, std::uint32_t xyzct[MAX_DATA_DIMS]);
 
 	void apply_affine_transformation_img(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode);
+	void subtractBackground(size_t pos, imgType imgBackground);
 
 	//short IO functions
 	size_t getNumberOfViews() const{ return imgVec_CPU.size(); };
 	void resize(size_t numViews) { imgVec_CPU.resize(numViews, NULL); imgVec_GPU.resize(numViews, NULL); dimsImgVec.resize(numViews); };
 	imgType* getPointer_CPU(size_t pos) { return(imgVec_CPU.size() <= pos ? NULL : imgVec_CPU[pos]);};
 	imgType* getPointer_CPU(size_t pos) const { return(imgVec_CPU.size() <= pos ? NULL : imgVec_CPU[pos]); };
+	void setPointer_CPU(size_t pos, imgType* ptr) { assert(imgVec_CPU.size() > pos); assert(imgVec_CPU[pos] == NULL); imgVec_CPU[pos] = ptr; };//use this function with a lot of caution (easy to have memory leaks
 	imgType* getPointer_GPU(size_t pos) { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	imgType* getPointer_GPU(size_t pos) const { return(imgVec_GPU.size() <= pos ? NULL : imgVec_GPU[pos]); };
 	std::int64_t numElements(size_t pos) const;
@@ -96,6 +101,7 @@ public:
 	void setImgDims(size_t pos, const dimsImg &d);
 
 	void padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad);
+
 	
 protected:
 
