@@ -34,19 +34,16 @@ save([imPath 'MVreg_workspace_TM' num2str(TM,'%.6d') '.mat']);
 %save XML filename
 Nviews = length(tformCoarseCell);
 Acell = cell(Nviews,1);
-PSFcell = Acell;
 filenameCell = Acell;
 psfFilenameCell = Acell;
 for ii = 1:Nviews
-    Acell{ii} = tformCoarseCell{ii} * tformFineCell{ii};
-    PSFcell{ii} = single(imwarp(PSF, affine3d(Acell{ii}), 'interp', 'cubic'));
-    PSFcell{ii} = PSFcell{ii} / sum(PSFcell{ii}(:));
+    Acell{ii} = tformCoarseCell{ii} * tformFineCell{ii};    
     filenameCell{ii} = [imPath imFilenameCell{ii}];
     
     [~, name] = fileparts(filenameCell{ii});
-    psfFilenameCell{ii} = [imPath name '_psfReg.klb'];
-    writeKLBstack(PSFcell{ii}, psfFilenameCell{ii}, -1, [], [], 0, 'Registered PSF');
+    psfFilenameCell{ii} = [imPath name '_psfReg.klb'];    
 end
+PSFcell = generateTransformedPSF(samplingXYZ, FWHMpsf,Acell,psfFilenameCell);
 
 filenameXML = [imPath 'MVdeconv_LR_multiGPU_param_TM' num2str(TM,'%.6d') '.xml'];
 saveRegistrationDeconvolutionParameters(filenameXML,filenameCell, psfFilenameCell, Acell, deconvParam.verbose, deconvParam);

@@ -31,25 +31,20 @@ for TM = TMvec
     Nviews = length(Acell);
     
     imgFilenameClusterCell = cell(Nviews,1);
-    psfFilenameClusterCell = cell(Nviews,1);
-    %generate PSF files
-    PSF = generatePSF(samplingXYZ, FWHMpsf, []);
+    psfFilenameClusterCell = cell(Nviews,1);    
+    psfFilenameCell = cell(Nviews,1);
+    
+    %generate PSF files    
     for ii = 1:Nviews
        [PATHSTR,NAME,EXT] = fileparts(imgFilenameCell{ii}); 
        
        imgFilenameClusterCell{ii} = [pathCluster NAME EXT];
-       
-       %generate PSF
-        %apply transformation
-        PSFaux = single(imwarp(PSF, affine3d(Acell{ii}), 'interp', 'cubic'));        
-        %crop PSF to reduce it in size
-        PSFaux = trimPSF(PSFaux, 1e-10);
-        
+               
         %save psf
-        psfFilename = [pathOut NAME '_psfReg.klb'];        
-        writeKLBstack(PSFaux, psfFilename, -1, [],[],0,[]);
+        psfFilenameCell{ii} = [pathOut NAME '_psfReg.klb'];                
         psfFilenameClusterCell{ii} = [pathCluster NAME '_psfReg.klb'];  
     end
+    PSFcell = generateTransformedPSF(samplingXYZ, FWHMpsf,Acell,psfFilenameCell);
     
     %write out file
     filenameXML = [pathOut 'MVref_deconv_LR_multiGPU_param_JFCluster_TM' num2str(TM) '.xml'];

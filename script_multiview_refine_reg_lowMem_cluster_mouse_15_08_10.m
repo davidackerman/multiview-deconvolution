@@ -26,7 +26,7 @@ transposeOrigImage = false; %true if raw data was saved in tiff, since cluster P
 %critical parameters for RANSAC alignment> This is a refinement, so parameters can be tight
 RANSACparameterSet.minIntensityValue = 150; %global threshold. Any pixel below that intesnity will not be considered a point of interest for matching
 RANSACparameterSet.blockSize = 144;         %blocks size (in pixels) around points of interest to match between views. The larger it is the more memory is required but the easier it is to match
-RANSACparameterSet.searchRadius = 32;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
+RANSACparameterSet.searchRadius = 64;      %maximum distance (in pixels) between two views to match corresponding points after coarse alignment. If coarse alignment works well, this can be small. The smaller the value, the less memory is required.
 
 %usually "stable" parameters for RANSAC alignment
 RANSACparameterSet.numHypothesis = 3;       %number of possible matches for each point of interest

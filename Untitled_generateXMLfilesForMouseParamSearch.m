@@ -27,9 +27,8 @@ lambdaTVvec = [0 ];
 
 
 Nviews = length(imgFilenameCell);
-PSFcell = cell(4,1);
 psfFilenameCell = PSFcell;
-
+psfFilenameClusterCell = PSFcell;
 count = 36;
 for FWHMpsfZ = FWHMpsfZvec
     FWHMpsf = FWHMpsfOrig;
@@ -37,21 +36,14 @@ for FWHMpsfZ = FWHMpsfZvec
     
     deconvParam.prefix = ['FWHMpsfZ_' num2str(round(FWHMpsfZ),'%.2d') ];
     
-    %generate PSF files
-    PSF = generatePSF(samplingXYZ, FWHMpsf, []);
-    for ii = 1:Nviews
-        %apply transformation
-        PSFcell{ii} = single(imwarp(PSF, affine3d(Acell{ii}), 'interp', 'cubic'));
-        
-        %crop PSF to reduce it in size
-        PSFcell{ii} = trimPSF(PSFcell{ii}, 1e-10);
-        
-        %save psf
-        psfFilenameCell{ii} = [pathFiles 'psfFiles\psfReg_' deconvParam.prefix '_view' num2str(ii) '.klb'];        
-        writeKLBstack(PSFcell{ii}, psfFilenameCell{ii}, -1, [],[],0,[]);
-        psfFilenameCell{ii} = [pathFilesCluster 'psfFiles/psfReg_' deconvParam.prefix '_view' num2str(ii) '.klb'];        
+    %generate PSF files    
+    for ii = 1:Nviews        
+        psfFilenameCell{ii} = [pathFiles 'psfFiles\psfReg_' deconvParam.prefix '_view' num2str(ii) '.klb'];                
+        psfFilenameClusterCell{ii} = [pathFilesCluster 'psfFiles/psfReg_' deconvParam.prefix '_view' num2str(ii) '.klb'];        
     end
+    PSFcell = generateTransformedPSF(samplingXYZ, FWHMpsf,Acell,psfFilenameCell);
     
+    %generate xml
     for numIters = numItersVec
         deconvParam.numIter = numIters;
         
@@ -61,7 +53,7 @@ for FWHMpsfZ = FWHMpsfZvec
             %save deconvolition XML parameters
             count = count + 1;
             filenameXML = [pathFiles 'xmlFiles\MVparam_' num2str(count) '.xml'];
-            saveRegistrationDeconvolutionParameters(filenameXML,imgFilenameClusterCell, psfFilenameCell, Acell, verbose, deconvParam);
+            saveRegistrationDeconvolutionParameters(filenameXML,imgFilenameClusterCell, psfFilenameClusterCell, Acell, verbose, deconvParam);
         end
     end
 end

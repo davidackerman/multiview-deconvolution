@@ -22,11 +22,6 @@ clear pp;
 anisotropyZ = samplingXYZ(3) / samplingXYZ(1);
 
 %%
-%generate PSF for reference view
-disp(['Generating PSF']);
-PSF = generatePSF(samplingXYZ, FWHMpsf, []); 
-
-%%
 %read images and apply initial registration
 Nviews = length(imFilenameCell);
 tic;
@@ -114,19 +109,16 @@ save([imPath 'MVrefine_reg_workspace_TM' num2str(TM,'%.6d') '.mat']);
 %save XML filename
 Nviews = length(AcellPre);
 Acell = cell(Nviews,1);
-PSFcell = Acell;
 filenameCell = Acell;
 psfFilenameCell = Acell;
 for ii = 1:Nviews
-    Acell{ii} = AcellPre{ii} * tformFineCell{ii};
-    PSFcell{ii} = single(imwarp(PSF, affine3d(Acell{ii}), 'interp', 'cubic'));
-    PSFcell{ii} = PSFcell{ii} / sum(PSFcell{ii}(:));
+    Acell{ii} = AcellPre{ii} * tformFineCell{ii};    
     filenameCell{ii} = [imPath imFilenameCell{ii}];
     
     [~, name] = fileparts(filenameCell{ii});
-    psfFilenameCell{ii} = [imPath name '_ref_psfReg.klb'];
-    writeKLBstack(PSFcell{ii}, psfFilenameCell{ii}, -1, [], [], 0, 'Registered PSF');
+    psfFilenameCell{ii} = [imPath name '_ref_psfReg.klb'];    
 end
+PSFcell = generateTransformedPSF(samplingXYZ, FWHMpsf,Acell,psfFilenameCell);
 
 filenameXML = [imPath 'MVrefine_deconv_LR_multiGPU_param_TM' num2str(TM,'%.6d') '.xml'];
 saveRegistrationDeconvolutionParameters(filenameXML,filenameCell, psfFilenameCell, Acell, deconvParam.verbose, deconvParam);
