@@ -23,8 +23,17 @@ else
 end
 
 
+if( ~isfield(deconvParam,'saveAsUINT16') )
+    deconvParam.saveAsUINT16 = 1;%default value
+end
 
-fprintf(fid,'<deconvolution lambdaTV="%f" numIter="%d" imBackground="%f" verbose="%d" blockZsize="%d" prefix="%s">', deconvParam.lambdaTV, deconvParam.numIter, deconvParam.imBackground, verbose, deconvParam.blockZsize, prefix);
+if( ~isfield(deconvParam,'weightThreshold') )
+    deconvParam.weightThreshold = 0.05;%default value
+end
+
+
+
+fprintf(fid,'<deconvolution lambdaTV="%f" numIter="%d" imBackground="%f" verbose="%d" blockZsize="%d" prefix="%s" weightThreshold="%f" saveAsUINT16="%d">', deconvParam.lambdaTV, deconvParam.numIter, deconvParam.imBackground, verbose, deconvParam.blockZsize, prefix, deconvParam.weightThreshold, deconvParam.saveAsUINT16);
 fprintf(fid,'</deconvolution>\n');
 
 %write footer

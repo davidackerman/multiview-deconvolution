@@ -3,17 +3,16 @@
 
 TMvec = [1]; %time points to be registered
 
-imPathPattern = ['S:\SiMView3\15-08-22\Dme_E1_His2AvRFP_01234567_diSPIM_20150822_195142.corrected\SPM00\TM??????\']; %base folder where original images are located. ??? characters will be filled with the TM value
+imPathPattern = ['S:\SiMView3\15-08-24\Dme_E1_His2AvRFP_01234567_diSPIM_20150824_220200.corrected\SPM00\TM??????\']; %base folder where original images are located. ??? characters will be filled with the TM value
 
-imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00.klb']};
-%imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'], ['SPM00_TM??????_CM02_CHN00.klb'], ['SPM00_TM??????_CM01_CHN01.klb'], ['SPM00_TM??????_CM03_CHN00.klb']};
-
+imFilenameCell = {['SPM00_TM??????_CM00_CHN01.klb'],['SPM00_TM??????_CM02_CHN00.klb'],['SPM00_TM??????_CM02_CHN04.klb'],['SPM00_TM??????_CM01_CHN05.klb'],['SPM00_TM??????_CM01_CHN07.klb'],['SPM00_TM??????_CM03_CHN06.klb'],['SPM00_TM??????_CM03_CHN02.klb'],['SPM00_TM??????_CM00_CHN03.klb']};
 
 
-samplingXYZ = [0.40625, 0.40625, 3.00];%sampling in um
+
+samplingXYZ = [0.40625, 0.40625, 1.625];%sampling in um
 FWHMpsf = [0.8, 0.8, 4.0]; %theoretical full-width to half-max of the PSF in um.
 
-outputFolderPattern = ['E:\temp\Drosophila_GCamp6_20150505_TM??????\'];
+outputFolderPattern = ['E:\temp\diSPIM_20150824_220200_TM??????\'];
 transposeOrigImage = false; %true if raw data was saved in tiff, since cluster PT transposed them after saving them in KLB.
 
 
@@ -34,9 +33,9 @@ end
 
 %%
 %test transformations
-cameraTransformCell = [10, 21];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
+cameraTransformCell = [10, 21, 41, 30,30, 41, 41, 10];%CRITICAL. index indicating transformation selection based on flip and permutation to set all the views in the same x,y,z coordinate system. See function_multiview_camera_transformation for all the options.
 
-TrCellPre = {[0 0 0], [0 0 0], [0 0 0], [0 0 0]};  %Translation for each camera after the camera transform cell in order to perform coarse alignmnet. Leave empty if you want to automatically calculate it using normalized cross correlation
+TrCellPre = {[0 0 0], [0 0 0], [0 0 0], [0 0 0],[0 0 0], [0 0 0], [0 0 0], [0 0 0]};  %Translation for each camera after the camera transform cell in order to perform coarse alignmnet. Leave empty if you want to automatically calculate it using normalized cross correlation
 
 anisotropyZ = samplingXYZ(3) / samplingXYZ(1);
 imRefSize = ceil(size(imCell{1}) .* [1 1 anisotropyZ]);
@@ -62,5 +61,5 @@ for ii = 1:Nviews
     end
     writeKLBstack(imAux,[ff 'debug_findCoarseTranformation_view' num2str(ii-1) '.klb' ]);
     
-    subplot(2,2,ii); imagesc(imAux(:,:,166));title(['view ' num2str(ii-1)]);
+    subplot(4,2,ii); imagesc(imAux(:,:,166));title(['view ' num2str(ii-1)]);
 end

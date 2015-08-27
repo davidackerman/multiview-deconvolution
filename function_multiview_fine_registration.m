@@ -48,6 +48,9 @@ for ii = 1:numIm
         tstart = tic;
         Tcell{ii,jj} = pairwiseImageBlockMatching(imCoarseCell{ii},imCoarseCell{jj}, param.blockSize, param.searchRadius, param.numHypothesis, interestPts(:,1:3), param.numWorkers, param.thrNCC);
         disp(['Took ' num2str(toc(tstart)) ' secs']);
+        if( ~isempty(debugFolder) )
+            save([debugFolder filesep 'Tcell_backup.mat'], 'Tcell');
+        end
     end
 end
 
