@@ -85,6 +85,27 @@ struct mul_func
 };
 
 template <class T>
+struct power_func
+{
+	power_func(){};
+	__device__ T operator () (const T& a, const T& b) { return pow(a,b); }
+};
+
+template <>
+struct power_func<unsigned char>
+{
+	power_func(){};
+	__device__ unsigned char operator () (const unsigned char& a, const unsigned char& b) { return (unsigned char)pow((float)a, (float)b); }
+};
+
+template <>
+struct power_func<unsigned short>
+{
+	power_func(){};
+	__device__ unsigned short operator () (const unsigned short& a, const unsigned short& b) { return (unsigned short)pow((float)a, (float)b); }
+};
+
+template <class T>
 struct isnan_func
 {
 	isnan_func(){};
@@ -106,12 +127,39 @@ struct isnan_func <double>
 };
 
 template <class T>
+struct isinf_func
+{
+	isinf_func(){};
+	__device__ T operator () (const T& a, const T& b) { return a; }
+};
+
+template <>
+struct isinf_func <float>
+{
+	isinf_func(){};
+	__device__ float operator () (const float& a, const float& b) { return(::isinf(a) ? b : a); }
+};
+
+template <>
+struct isinf_func <double>
+{
+	isinf_func(){};
+	__device__ double operator () (const double& a, const double& b) { return(::isinf(a) ? b : a); }
+};
+
+template <class T>
 struct equal_func
 {
 	equal_func(){};
 	__device__ T operator () (const T& a, const T& b) { return b; }
 };
 
+template <class T>
+struct threshold_func
+{
+	threshold_func(){};
+	__device__ T operator () (const T& a, const T& b) { return (a > b ? a : b); }
+};
 
 //inspired by https://github.com/DrMikeMorgan/Cuda/blob/master/functors.cu.h on how to use functors for CUDA
 //starting with CUDA 7.0 we can probably use lambda functions instead of struct (CUDA 7.0 inciroirates C++11 standards)
@@ -313,6 +361,15 @@ void elementwiseOperationInPlace(T* A, const T B, std::uint64_t arrayLength, op_
 		break;
 	case op_elementwise_type::isnanop:
 		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, isnan_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::isinfop:
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, isinf_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::power:
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, power_func<T>()); HANDLE_ERROR_KERNEL;
+		break;
+	case op_elementwise_type::threshold:		
+		elementwiseOperationInPlace_kernel << <numBlocks, numThreads >> > (A, B, arrayLength, threshold_func<T>()); HANDLE_ERROR_KERNEL;
 		break;
 	default:
 		cout << "ERROR: elementwiseOperationInPlace: operation not supported" << endl;

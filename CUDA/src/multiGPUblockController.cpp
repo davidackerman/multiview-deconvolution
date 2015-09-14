@@ -44,6 +44,9 @@ using namespace std;
 const std::uint32_t multiGPUblockController::goodFFTdims[65] = { 1, 2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 32, 36, 48, 64, 72, 96, 128, 144, 192, 256, 288, 384, 512, 576, 768, 1024, 1152, 1536, 2048, 2304, 3072, 4096, 4608, 6144, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192 };
 //const std::uint32_t multiGPUblockController::goodFFTdims[65] = {1,2,3,4,5,8,9,16,25,27,32,64,81,125,128,243,256,512,625,729,1024,2048,2187,3125,4096,6561,8192,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
+float multiGPUblockController::weightsPower = 3.0;
+float multiGPUblockController::weightsThreshold = 0.03;
+
 multiGPUblockController::multiGPUblockController()
 {
 	dimBlockParition = -1;
@@ -142,11 +145,31 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		ll.clear();
 	}
 
+	aux = node.getAttribute("saveAsUINT16");
+	if (aux != NULL)
+	{
+		parseString<int>(string(aux), ll);
+		if (ll[0] != 0)
+			paramDec.saveAsUINT16 = true;
+		else
+			paramDec.saveAsUINT16 = false;
+		ll.clear();
+	}
+
+	aux = node.getAttribute("weightThreshold");
+	if (aux != NULL)
+	{
+		parseString<float>(string(aux), vv);
+		paramDec.weightThr = vv[0];
+		vv.clear();
+	}
+
 	aux = node.getAttribute("prefix");
 	if (aux != NULL)
 	{		
 		paramDec.outputFilePrefix = string(aux);
 	}
+
 
 	paramDec.anisotropyZ = paramDec.getAnisotropyZfromAffine();
 }
@@ -953,7 +976,7 @@ void multiGPUblockController::calculateWeightsSingleView_allAtOnce(int view, flo
 	full_weights_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
 
 	//calculate weights
-	calculateWeightsDeconvolution(full_weights_mem.getPointer_GPU(view), full_img_mem.getPointer_GPU(view), full_img_mem.dimsImgVec[view].dims, full_img_mem.dimsImgVec[view].ndims, anisotropyZ);
+	calculateWeightsDeconvolution(full_weights_mem.getPointer_GPU(view), full_img_mem.getPointer_GPU(view), full_img_mem.dimsImgVec[view].dims, full_img_mem.dimsImgVec[view].ndims, anisotropyZ, true, weightsPower, weightsThreshold);
 
 	//copy weights back
 	full_weights_mem.copyView_GPU_to_CPU(view);
@@ -1083,7 +1106,9 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 	maxW -= minW;
 	for (int ii = 0; ii < full_weights_mem.numElements(view); ii++)
 	{
-		auxPtr[ii] = (auxPtr[ii] - minW) / maxW;
+		auxPtr[ii] = powf((auxPtr[ii] - minW) / maxW, weightsPower );	
+		if (auxPtr[ii] <= weightsThreshold)
+			auxPtr[ii] = weightsThreshold;//setting them to zero causes inestabilities with edges. Here we just set a floor
 	}
 }
 

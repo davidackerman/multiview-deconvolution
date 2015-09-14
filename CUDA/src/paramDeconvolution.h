@@ -38,7 +38,10 @@ struct paramDeconvolution
 	float anisotropyZ;
 	
 	int blockZsize;
-    
+
+	bool saveAsUINT16;
+	float weightThr;
+
     imgTypeDeconvolution imgBackground;	
 	float lambdaTV;
 
@@ -53,6 +56,8 @@ struct paramDeconvolution
 		verbose = 0;
 		blockZsize = -1;//compute deconvolution all at once
 		outputFilePrefix = std::string("");
+		saveAsUINT16 = true;
+		weightThr = 0.0f;
 	}
 
 	float getAnisotropyZfromAffine();

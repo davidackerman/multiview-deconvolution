@@ -44,6 +44,7 @@ int main(int argc, const char** argv)
 	cout << "Reading parameters from XML file" << endl;
 	multiGPUblockController master(filenameXML);
 
+	master.setWeightsThreshold(master.paramDec.weightThr);
 	//check number of GPUs and the memory available for each of them
 	master.queryGPUs(maxNumberGPU);
 	master.debug_listGPUs();
@@ -157,11 +158,14 @@ int main(int argc, const char** argv)
 
 	//write result
 	char fileoutName[256];
-	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
+	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;
-	//err = master.writeDeconvoutionResult(string(fileoutName)));
-	err = master.writeDeconvoutionResult_uint16(string(fileoutName));
+	if (master.paramDec.saveAsUINT16)
+		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");
+	else
+		err = master.writeDeconvoutionResultRaw(string(fileoutName) + ".raw");
+
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;

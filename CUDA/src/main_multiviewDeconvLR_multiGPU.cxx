@@ -41,6 +41,7 @@ int main(int argc, const char** argv)
 	cout << "Reading parameters from XML file" << endl;
 	multiGPUblockController master(filenameXML);
 
+	master.setWeightsThreshold(master.paramDec.weightThr);
 	//check number of GPUs and the memory available for each of them
 	master.queryGPUs(maxNumberGPU);
 	master.debug_listGPUs();
@@ -109,10 +110,14 @@ int main(int argc, const char** argv)
 		for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 		{
 			char buffer[256];
-			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
+/*			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
 			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);
 			sprintf(buffer, "%s_debug_weigths_%d.klb", filenameXML.c_str(), ii);
 			master.full_weights_mem.writeImage_uint16(string(buffer), ii, 100);
+			*/
+			
+			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
+			master.full_img_mem.writeImage(string(buffer), ii);
 		}
 	}
 
@@ -131,11 +136,16 @@ int main(int argc, const char** argv)
 
 	//write result
 	char fileoutName[256];	
-	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
+	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;
-	//err = master.writeDeconvoutionResult(string(fileoutName)));
-	err = master.writeDeconvoutionResult_uint16(string(fileoutName));
+	
+	if ( master.paramDec.saveAsUINT16 )
+		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");	
+	else
+		err = master.writeDeconvoutionResultRaw(string(fileoutName) + ".raw");
+	
+	
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;

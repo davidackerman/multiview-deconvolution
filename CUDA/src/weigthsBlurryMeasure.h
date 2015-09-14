@@ -17,6 +17,6 @@ static const float cutoffDCT = 6.0f;
 static const float cellDiameterPixels = 15.0f;
 
 //we assume memory for both arrays has been allocated in the GPU
-void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ, bool normalize = true);
+void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ, bool normalize = true, float weightsPower = 1.0f, float weightsThreshold = 0.0f);
 
 #endif /* STANDARDCUDAFUNCTIONS_H_ */

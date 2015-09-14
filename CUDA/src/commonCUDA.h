@@ -30,7 +30,7 @@ static const int MAX_BLOCKS_CUDA = 2147483647;
 #endif
 
 //defines the types of operations implement for elementwise function
-enum op_elementwise_type { plus, minus, multiply, divide, divide_inv, compound_plus, copy, compound_multiply, minus_positive, isnanop};
+enum op_elementwise_type { plus, minus, multiply, divide, divide_inv, compound_plus, copy, compound_multiply, minus_positive, isnanop, isinfop, power, threshold};
 
 
 

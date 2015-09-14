@@ -84,7 +84,7 @@ __global__ void CUDAkernelDCTShannonEntropyFloat(float *SrcDst, int Stride, floa
 
 //================================================================
 
-void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ, bool normalize)
+void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t *dims, int ndims, float anisotropyZ, bool normalize, float weightsPower, float weightsThreshold)
 {
 	assert(ndims <= 3);
 	assert(ndims > 1);
@@ -159,6 +159,15 @@ void calculateWeightsDeconvolution(float* weights_CUDA, float* img_CUDA, int64_t
 		float maxW = reductionOperation(weights_CUDA, imSize, op_reduction_type::max_elem);
 		elementwiseOperationInPlace(weights_CUDA, minW, imSize, op_elementwise_type::minus);
 		elementwiseOperationInPlace(weights_CUDA, maxW - minW, imSize, op_elementwise_type::divide);
+
+		if (weightsPower != 1.0f)
+		{			
+			elementwiseOperationInPlace(weights_CUDA, weightsPower, imSize, op_elementwise_type::power);
+		}		
+		if (weightsThreshold > 0.0f)
+		{			
+			elementwiseOperationInPlace(weights_CUDA, weightsThreshold, imSize, op_elementwise_type::threshold);
+		}
 	}
 	//release memory
 	HANDLE_ERROR(cudaFree(temp_CUDA));
