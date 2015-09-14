@@ -1,3 +1,7 @@
+#ifndef __IMAGE_INTERPOLATION_H__
+#define __IMAGE_INTERPOLATION_H__
+
+#include <stdint.h>
 /* Image and Volume interpolation 
  *
  * Function is written by D.Kroon University of Twente (June 2009)
@@ -8,7 +12,7 @@
 
 /* Convert 2D/3D matrix index to 1D index */
 static __inline int mindex2(int x, int y, int sizx) { return y*sizx+x; }
-static __inline int mindex3(int x, int y, int z, int sizx, int sizy) { return z*sizx*sizy+y*sizx+x;}
+static __inline int64_t mindex3(int64_t x, int64_t y, int64_t z, int64_t sizx, int64_t sizy) { return z*sizx*sizy + y*sizx + x; }
 static __inline int mindex2c(int x, int y, int sizx, int sizy)  
 { 
     if(x<0) { x=0;}
@@ -86,14 +90,15 @@ double getcolor_mindex2(int x, int y, int sizx, int sizy, double *I, int rgb);
 
 /* Get an pixel from an image, if outside image, black or nearest pixel */
 double getcolor_mindex3(int x, int y, int z, int sizx, int sizy, int sizz, double *I);
-float  getcolor_mindex3_float(int x, int y, int z, int sizx, int sizy, int sizz, float *I);
+float  getcolor_mindex3_float(int64_t x, int64_t y, int64_t z, int64_t sizx, int64_t sizy, int64_t sizz, float *I);
 
 /* Pixel Interpolation */
 double interpolate_2d_double_gray(double Tlocalx, double Tlocaly, int *Isize, double *Iin,int cubic,int black);
 void interpolate_2d_double_color(double *Ipixel, double Tlocalx, double Tlocaly, int *Isize, double *Iin, int cubic, int black);
 double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz, int *Isize, double *Iin,int cubic,int black);
-float interpolate_3d_float_gray(float Tlocalx, float Tlocaly, float Tlocalz, int *Isize, float *Iin,int cubic,int black);
+float interpolate_3d_float_gray(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin, int cubic, int black);
 
 
 
 
+#endif

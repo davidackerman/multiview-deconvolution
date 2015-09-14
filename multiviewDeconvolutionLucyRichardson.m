@@ -3,7 +3,7 @@ function J = multiviewDeconvolutionLucyRichardson(imCell,PSFcell, weightsCell, b
 
 sigmaDer = 2.0;%smoothing to calculate the Gaussian derivatives
 numIm = length(imCell);
-stepWriteOutput = 5;
+stepWriteOutput = 10;
 
 
 if( length(numIters) == 1)%we start from zero

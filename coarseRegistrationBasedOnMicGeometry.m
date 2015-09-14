@@ -55,15 +55,20 @@ switch(angleDeg)
         A(3,3) = anisotropyZ;
     case 90
         
-        A = [1 0 0 0; 0 0 1 0; 0 -anisotropyZ 0 0; 0 sizeImRef(1) 0 1];
+        %original Gcamp6 drosophila experiments
+        %A = [1 0 0 0; 0 0 1 0; 0 -anisotropyZ 0 0; 0 sizeImRef(1) 0 1];
         
+        %original Gcamp6 zebrafish experiments        
+        A = [1 0 0 0; 0 0 -1 0; 0 anisotropyZ 0 0; 0 0 sizeImRef(3) 1];
     case 180
         
         A = [1 0 0 0; 0 -1 0 0 ; 0 0 anisotropyZ 0; 0 sizeImRef(1) 0 1];
         
     case 270
-        
-        A = [1 0 0 0; 0 0 -1 0; 0 -anisotropyZ 0 0; 0 sizeImRef(1) sizeImRef(3) 1];
+        %original Gcamp6 drosophila experiments
+        %A = [1 0 0 0; 0 0 -1 0; 0 -anisotropyZ 0 0; 0 sizeImRef(1) sizeImRef(3) 1];
+        %original Gcamp6 zebrafish experiments
+        A = [1 0 0 0; 0 0 1 0; 0 anisotropyZ 0 0; 0 0 0 1];
     otherwise
         error 'Angle not coded here'
         

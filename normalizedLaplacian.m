@@ -24,8 +24,10 @@ for ii = 1:ndims(im)
             h(1,1,:) = hx;
     end
     
-    gL1 = gL1 + abs(imfilter(single(im), h, 'symmetric','same','conv'));
+    %gL1 = gL1 + abs(imfilter(single(im), h, 'symmetric','same','conv'));
+    gL1 = gL1 + (imfilter(single(im), h, 'symmetric','same','conv')).^2;
 end
+gL1 = sqrt(gL1);
 
 %calculate laplacian and normalization by absolute norm
 L = zeros(size(im),'single');
@@ -47,6 +49,6 @@ for ii = 1:ndims(im)
     
     aux = imfilter(single(im), h, 'symmetric','same','conv') ./ (gL1 + eps('single'));
     
-    %apply divergence (easy since it is just a bunch of sign)
+    %apply divergence
     L = L + imfilter(aux , hf, 'symmetric','same','conv');    
 end

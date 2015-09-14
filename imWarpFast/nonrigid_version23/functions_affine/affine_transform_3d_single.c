@@ -2,7 +2,7 @@
 #include "math.h"
 #include "image_interpolation.h"
 #include "multiple_os_thread.h"
-
+#include <stdint.h>
 
 /* This function transforms a volume with a 4x4 transformation matrix
  *
@@ -23,28 +23,30 @@
  * Function is written by D.Kroon University of Twente (June 2009)
  */
 
+//================================================================================
+
 voidthread transformvolume(float **Args) {
     float *Isize_d, *mean, *A, *Iin, *Iout, *ThreadID, *moded;
-    int Isize[3]={0, 0, 0};
+    int64_t Isize[3]={0, 0, 0};
     int mode=0;
-    int x, y, z;
+    int64_t x, y, z;
     float *Nthreadsd;
     int Nthreads;
     bool black, cubic;   
     
-    /* Location of pixel which will be come the current pixel */
+    // Location of pixel which will be come the current pixel */
     float Tlocalx, Tlocaly, Tlocalz;
     
-    /* X,Y,Z coordinates of current pixel */
+    // X,Y,Z coordinates of current pixel */
     float xd, yd, zd;
     
-    /* Variables to store 1D index */
-    int indexI;
+    // Variables to store 1D index */
+    int64_t indexI;
     
-    /* Multiple threads, one does the odd the other even indexes */
+    // Multiple threads, one does the odd the other even indexes */
     int ThreadOffset;
     
-    /* Split up matrix multiply to make registration process faster  */
+    // Split up matrix multiply to make registration process faster  */
     float acomp0, acomp1, acomp2;
     float bcomp0, bcomp1, bcomp2;
     float ccomp0, ccomp1, ccomp2;
@@ -55,20 +57,22 @@ voidthread transformvolume(float **Args) {
     Iin=Args[3];
     Iout=Args[4];
     ThreadID=Args[5];
-    moded=Args[6]; mode=(int)moded[0];
-    Nthreadsd=Args[7];  Nthreads=(int)Nthreadsd[0];
+    moded=Args[6]; 
+	mode=(int)moded[0];
+    Nthreadsd=Args[7];  
+	Nthreads=(int)Nthreadsd[0];
                 
     if(mode==0||mode==2){ black = false; } else { black = true; }
     if(mode==0||mode==1){ cubic = false; } else { cubic = true; }
 	
-    Isize[0] = (int)Isize_d[0];
-    Isize[1] = (int)Isize_d[1];
-    Isize[2] = (int)Isize_d[2];
+    Isize[0] = (int64_t)Isize_d[0];
+    Isize[1] = (int64_t)Isize_d[1];
+    Isize[2] = (int64_t)Isize_d[2];
     
     ThreadOffset=(int) ThreadID[0];
     
     acomp0=mean[0] + A[3]; acomp1=mean[1] + A[7]; acomp2=mean[2] + A[11];
-    /*  Loop through all image pixel coordinates */
+    //  Loop through all image pixel coordinates */
     for (z=ThreadOffset; z<Isize[2]; z=z+Nthreads) {
         zd=z-mean[2];
         bcomp0 = A[2] *zd + acomp0;
@@ -87,19 +91,21 @@ voidthread transformvolume(float **Args) {
                 
                 indexI=mindex3(x, y, z, Isize[0], Isize[1]);
                   
-                /* the pixel interpolation */
+                // the pixel interpolation */
                 Iout[indexI]=interpolate_3d_float_gray(Tlocalx, Tlocaly, Tlocalz, Isize, Iin, cubic, black);
             }
         }
     }
     
-    /*  explicit end thread, helps to ensure proper recovery of resources allocated for the thread */
+    //  explicit end thread, helps to ensure proper recovery of resources allocated for the thread */
     EndThread;
 }
 
+
+
 /* The matlab mex function */
-void mexFunction( int nlhs, mxArray *plhs[],
-        int nrhs, const mxArray *prhs[] ) {
+void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) 
+{
     /* Ox and Oy are the grid points */
     /* Zo is the input image */
     /* Zi is the transformed image */
@@ -212,5 +218,3 @@ void mexFunction( int nlhs, mxArray *plhs[],
     free(ThreadID );
     free(ThreadList);
 }
-
-

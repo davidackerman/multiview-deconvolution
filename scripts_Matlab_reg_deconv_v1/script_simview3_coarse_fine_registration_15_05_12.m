@@ -1,5 +1,5 @@
 
-TMvec = [250:50:1300, 2500:50:3600];
+TMvec = [3200:50:3400];
 
 %%
 %parameters
@@ -16,7 +16,7 @@ for TM = TMvec
     outputFolder = ['T:\temp\deconvolution\15_05_12_fly_functionalImage\TM' TMstr '\']
     
     transposeOrigImage = false;
-    
+    RANSACparameterSet = 1;%1->functional imaging; 2->nuclear channel development; 3->membrane channel development
     %%
     if( exist(outputFolder) == 0 )
         mkdir(outputFolder);
@@ -24,6 +24,6 @@ for TM = TMvec
     
     %%
     %call registration function
-    function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder, transposeOrigImage);
+    function_simview3_coarse_fine_registration(imPath, imFilenameCell, samplingXYZ, FWHMpsfZ, outputFolder, transposeOrigImage, RANSACparameterSet);
     
 end

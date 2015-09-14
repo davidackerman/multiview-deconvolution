@@ -1,0 +1,1 @@
+mex -O -v -output bin3Darray binning3Darray_mex.cpp -DWINDOWS
