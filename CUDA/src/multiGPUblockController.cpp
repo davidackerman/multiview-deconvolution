@@ -949,7 +949,8 @@ void multiGPUblockController::calculateWeightsSingleView(size_t threadIdx)
 
 		//check if we can calculate everything at once or we need to do it in blocks due to memory limitations
 		std::int64_t required_mem = full_img_mem.numBytes(view) * 3 + 104857600;//image, weights, temp for convolution + 100MB extra
-		std::int64_t availMem = getAvailableMemDeviceCUDA(devCUDA);
+		std::int64_t availMem = getAvailableMemDeviceCUDA(devCUDA);		
+
 		if (availMem > required_mem)
 		{
 			//computing all at once (most cases)			
@@ -971,7 +972,7 @@ void multiGPUblockController::calculateWeightsSingleView_allAtOnce(int view, flo
 	full_img_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
 	full_img_mem.copyView_CPU_to_GPU(view);
 	if (full_weights_mem.getPointer_CPU(view) == NULL)
-		full_weights_mem.allocateView_CPU(view, full_img_mem.numBytes(view));
+		full_weights_mem.allocateView_CPU(view, full_img_mem.numElements(view));
 
 	full_weights_mem.allocateView_GPU(view, full_img_mem.numBytes(view));
 
@@ -988,11 +989,13 @@ void multiGPUblockController::calculateWeightsSingleView_allAtOnce(int view, flo
 
 //=========================================================
 void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float anisotropyZ, int64_t availMem)
-{	
+{		
+	
 	//allocate final memory for weights in CPU
 	if (full_weights_mem.getPointer_CPU(view) == NULL)
-		full_weights_mem.allocateView_CPU(view, full_img_mem.numBytes(view));
-
+	{
+		full_weights_mem.allocateView_CPU(view, full_img_mem.numElements(view));
+	}
 	//calculate per blocks	
 	int64_t stride = 1;//number of pixels on each plane
 	for (int ii = 0; ii < full_img_mem.dimsImgVec[view].ndims - 1; ii++)
@@ -1039,7 +1042,6 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 		blockDims[ii] = xyzct[ii];
 
-
 	//main loop
 	while (JoffsetIni < xyzct[dimBlockParition])
 	{		
@@ -1060,8 +1062,7 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 
 		
 		ROI.xyzctUB[dimBlockParition] = JoffsetEnd + PSFpadding - 1;
-		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image	
-		
+		ROI.xyzctUB[dimBlockParition] = std::min(ROI.xyzctUB[dimBlockParition], xyzct[dimBlockParition] - 1);//make sure we do not go over the end of the image					
 
 		//copy image and weights ROI to CUDA
 		int64_t offset = ROI.xyzctLB[dimBlockParition];
@@ -1090,6 +1091,7 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 		//update offset counter
 		JoffsetIni = JoffsetEnd;
 	}
+
 	//deallocate GPU memory
 	deallocateMem_GPU<float>(block_weights_mem_GPU);
 	deallocateMem_GPU<float>(block_img_mem_GPU);		
@@ -1098,18 +1100,18 @@ void multiGPUblockController::calculateWeightsSingleView_lowMem(int view, float 
 	float minW = numeric_limits<float>::max();
 	float maxW = -minW;
 	float* auxPtr = full_weights_mem.getPointer_CPU(view);
-	for (int ii = 0; ii < full_weights_mem.numElements(view); ii++)
+	for (int64_t ii = 0; ii < full_weights_mem.numElements(view); ii++)
 	{
 		minW = std::min(minW, auxPtr[ii]);
 		maxW = std::max(maxW, auxPtr[ii]);
 	}
 	maxW -= minW;
-	for (int ii = 0; ii < full_weights_mem.numElements(view); ii++)
+	for (int64_t ii = 0; ii < full_weights_mem.numElements(view); ii++)
 	{
 		auxPtr[ii] = powf((auxPtr[ii] - minW) / maxW, weightsPower );	
 		if (auxPtr[ii] <= weightsThreshold)
 			auxPtr[ii] = weightsThreshold;//setting them to zero causes inestabilities with edges. Here we just set a floor
-	}
+	}	
 }
 
 //=========================================================

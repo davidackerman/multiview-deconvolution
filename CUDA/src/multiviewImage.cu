@@ -91,9 +91,9 @@ void multiviewImage<imgType>::deallocateView_GPU(size_t pos)
 //===========================================================================================
 template<class imgType>
 void multiviewImage<imgType>::allocateView_GPU(size_t pos, size_t numBytes)
-{
+{	
 	if (pos < imgVec_GPU.size())
-	{
+	{		
 		if (imgVec_GPU[pos] != NULL)
 			deallocateView_GPU(pos);
 
