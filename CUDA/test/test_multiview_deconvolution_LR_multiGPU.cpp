@@ -84,9 +84,11 @@ int main(int argc, const char** argv)
     
 	//write result
 	char fileoutName[256];
-	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d.klb", filepath.c_str(), numIters);
-	//err = master.writeDeconvoutionResult(string(fileoutName)));
-	err = master.writeDeconvoutionResult_uint16(string(fileoutName));
+	sprintf(fileoutName, "%stest_mv_deconv_LR_multiGPU_iter%d", filepath.c_str(), numIters);
+	if (master.paramDec.saveAsUINT16)
+		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");
+	else
+		err = master.writeDeconvoutionResultRaw(string(fileoutName) + ".raw");
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;

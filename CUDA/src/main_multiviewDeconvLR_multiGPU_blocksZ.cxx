@@ -41,6 +41,8 @@ int main(int argc, const char** argv)
 	//main object to control the deconvolution process
 	cout << "Reading parameters from XML file" << endl;
 	multiGPUblockController master(filenameXML);
+	
+	master.setWeightsThreshold(master.paramDec.weightThr);
 
 	if (master.paramDec.blockZsize <= 0)
 	{

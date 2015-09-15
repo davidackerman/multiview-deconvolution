@@ -80,6 +80,8 @@ public:
 	int getDimBlockPartition(){ return dimBlockParition; };
 	imgTypeDeconvolution* getJpointer(){ return J; };
 	void deallocateMemJ(){ if (J != NULL) { delete[] J; J = NULL; } };
+	static void setWeightsThreshold(float p){ weightsThreshold = p; };
+	static void setWeightsPower(float p){ weightsPower = p; };
 
 	int getDevCUDA_maxMem();
 
@@ -138,6 +140,8 @@ private:
 	//calculate DCT weights into blocks
 	void calculateWeightsSingleView_lowMem(int view, float anisotropyZ, int64_t availMem);
 
+	static float weightsPower; //in order to enhance the used of high contrast views, we use weights^wieghtsPower on each view after normalization
+	static float weightsThreshold; //any value (after normalization) below this number will be set to zero (to remove ghosting artifacts and prevent blurrying images from low contrast information)
 };
 
 

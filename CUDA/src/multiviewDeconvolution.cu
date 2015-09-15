@@ -446,8 +446,6 @@ int multiviewDeconvolution<imgType>::allocate_workspace_update_multiGPU(imgType 
 		}
 	}
 
-	
-
 
 	return 0;
 }
@@ -589,7 +587,7 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 		//main loop over the different views
 		for (int vv = 0; vv < nViews; vv++)
 		{
-			//multiply LR currant result and kernel in fourier space (and normalize)
+			//multiply LR current result and kernel in fourier space (and normalize)
 			//NOTE: from CUFFT manual: CUFFT performs un-normalized FFTs; that is, performing a forward FFT on an input data set followed by an inverse FFT on the resulting set yields data that is equal to the input scaled by the number of elements.			
 			modulateAndNormalize_outOfPlace_kernel << <numBlocks, numThreads >> >((cufftComplex *)(aux_FFT), (cufftComplex *)(J_GPU_FFT), (cufftComplex *)(psf.getPointer_GPU(vv)), imSizeFFT / 2, 1.0f / (float)(nImg));//last parameter is the size of the FFT
 
@@ -622,6 +620,9 @@ void multiviewDeconvolution<imgType>::deconvolution_LR_TV(int numIters, float la
 			//calculate ratio img.getPointer_GPU(ii) ./ aux_FFT
 			elementwiseOperationInPlace(aux_FFT, img.getPointer_GPU(vv), nImg, op_elementwise_type::divide_inv);
 			elementwiseOperationInPlace(aux_FFT, 0.0f, nImg, op_elementwise_type::isnanop);//set nan elements to zero
+			elementwiseOperationInPlace(aux_FFT, 0.0f, nImg, op_elementwise_type::isinfop);//set inf elements to zero
+
+
 
 			//calculate FFT of ratio (for convolution)
 			result = cufftExecR2C(fftPlanFwd, aux_FFT, (cufftComplex *)aux_FFT);
