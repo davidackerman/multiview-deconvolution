@@ -54,6 +54,9 @@ for ii = 1:numIm
     end
 end
 
+%put it in the base workspace so it is saved
+assignin('caller','Tcell',Tcell);
+
 %%
 %fit affine transformation for all views
 disp(['Running multiview RANSAC alignment']);

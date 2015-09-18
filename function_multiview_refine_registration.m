@@ -4,23 +4,23 @@ function function_multiview_refine_registration(imPath, imFilenameCell, AcellPre
 
 %%
 if( nargin == 1)%being called from the cluster
-
-parameterDatabase = imPath;
-
-%parse parameters
-pp = load(parameterDatabase);
-imPath = pp.imPath;
-imFilenameCell = pp.imFilenameCellTM;
-AcellPre = pp.Acell;
-samplingXYZ = pp.samplingXYZ;
-FWHMpsf = pp.FWHMpsf;
-outputFolder = pp.outputFolder; 
-transposeOrigImage = pp.transposeOrigImage;
-RANSACparameterSet = pp.RANSACparameterSet;
-deconvParam = pp.deconvParam;
-TM = pp.TM;
-
-clear pp;
+    
+    parameterDatabase = imPath;
+    
+    %parse parameters
+    pp = load(parameterDatabase);
+    imPath = pp.imPath;
+    imFilenameCell = pp.imFilenameCellTM;
+    AcellPre = pp.Acell;
+    samplingXYZ = pp.samplingXYZ;
+    FWHMpsf = pp.FWHMpsf;
+    outputFolder = pp.outputFolder;
+    transposeOrigImage = pp.transposeOrigImage;
+    RANSACparameterSet = pp.RANSACparameterSet;
+    deconvParam = pp.deconvParam;
+    TM = pp.TM;
+    
+    clear pp;
     
 end
 

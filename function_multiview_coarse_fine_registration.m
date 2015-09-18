@@ -28,7 +28,7 @@ disp(['Saving all the registration information to folder ' imPath]);
 %save XML file and log file be able to apply deconvolution
 clear imCoarseCell;
 
-%save workspase
+%save workspace
 save([imPath 'MVreg_workspace_TM' num2str(TM,'%.6d') '.mat']);
 
 %save XML filename
