@@ -6,7 +6,8 @@ $cmd="main_multiviewDeconvLR_multiGPU_blocksZ.exe"
 $datadir="S:\SiMView1\Temp\150810\SiMView-XMLs\WithPSFS"
 
 function Timepoint($time) {
-	"TM{0}\MVref_deconv_LR_multiGPU_param_TM{1}.xml" -f ($time).toString("00000"),($time).toString()
+	$file = "TM{0}\MVref_deconv_LR_multiGPU_param_TM{1}.xml" -f ($time).toString("000000"),($time).toString()
+	join-path $datadir $file
 }
 
 for($i=$start;$i -le $end;$i++) {
