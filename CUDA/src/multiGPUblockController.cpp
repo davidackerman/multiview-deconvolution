@@ -309,8 +309,8 @@ void multiGPUblockController::findMaxBlockPartitionDimensionPerGPU_inMem(size_t 
 {
 
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
-	{
-		imgDims[ii] = full_img_mem.dimsImgVec[pos].dims[ii];
+	{		
+		imgDims[ii] = full_img_mem.dimsImgVec[0].dims[ii];
 	}
 
 
