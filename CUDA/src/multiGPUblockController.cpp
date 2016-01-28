@@ -10,7 +10,7 @@
 *
 * \brief main interface to control splitting blocks to different resources and stitching them back together
 */
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <thread>
 #include <iostream>
 #include <algorithm>
@@ -168,6 +168,28 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 	if (aux != NULL)
 	{		
 		paramDec.outputFilePrefix = string(aux);
+	}
+
+	aux = node.getAttribute("minSaturation");
+	if (aux != NULL)
+	{
+		vector<float> v;
+		if (parseString<float>(string(aux), v))
+		{
+			paramDec.saturation.use_min = true;
+			paramDec.saturation.min = v[0];
+		}
+	}
+
+	aux = node.getAttribute("maxSaturation");
+	if (aux != NULL)
+	{
+		vector<float> v;
+		if (parseString<float>(string(aux), v))
+		{
+			paramDec.saturation.use_max = true;
+			paramDec.saturation.max = v[0];
+		}
 	}
 
 
@@ -667,7 +689,6 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 #ifdef _DEBUG
 	cout << "Thread " << threadIdx << " reading PSF" << endl;
 #endif	
-	int err;
 	Jobj->psf.resize(paramDec.Nviews);
 	for (int ii = 0; ii < paramDec.Nviews; ii++)
 	{				
@@ -1319,6 +1340,14 @@ int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& f
 				  Imin = min(imgPtr[ii], Imin);
 				  Imax = max(imgPtr[ii], Imax);
 			  }
+
+			  if (paramDec.saturation.use_min) {
+				  Imin = paramDec.saturation.min;
+			  }
+			  if (paramDec.saturation.use_max) {
+				  Imax = paramDec.saturation.max;
+			  }
+
 			  Imax = Imax - Imin;
 			  for (uint64_t ii = 0; ii < N; ii++)
 			  {
@@ -1358,7 +1387,73 @@ int multiGPUblockController::writeDeconvoutionResult_uint16(const std::string& f
 
 	return error;
 }
-//=============================================
+
+//===========================================================================================
+// Outputs the deconvolution result using a float for 4-byte pixel data.
+// The "float" in the name specifically refers to how 4-byte data is handled.  In the "uint16" version,
+// it's converted to a uint16 range.  Here, it's just output using a float type.
+// 1-byte or 2-byte pixel data is handle the same in both cases: it is output using the corresponding
+// unsigned integer type.
+int multiGPUblockController::writeDeconvolutionResult_float(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS])
+{
+	int error;
+
+	//initialize I/O object	
+	klb_imageIO imgIO(filename);
+
+	uint32_t xyzct[KLB_DATA_DIMS];
+	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = imgDims_[ii];
+	}
+	for (int ii = MAX_DATA_DIMS; ii <KLB_DATA_DIMS; ii++)
+	{
+		xyzct[ii] = 1;
+	}
+
+	//set header
+	switch (sizeof(imgTypeDeconvolution))//TODO: this is not accurate since int8 will be written as uint8
+	{
+	case 1:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT8_TYPE);
+		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
+		break;
+	case 2:
+		imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::UINT16_TYPE);
+		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
+		break;
+	case 4:
+	{
+    	imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::FLOAT32_TYPE);
+		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
+    	break;
+	}
+	default:
+		cout << "ERROR: format not supported yet" << endl;
+		return 10;
+	}
+
+
+
+	if (error > 0)
+	{
+		switch (error)
+		{
+		case 2:
+			printf("Error during BZIP compression of one of the blocks");
+			break;
+		case 5:
+			printf("Error generating the output file in the specified location");
+			break;
+		default:
+			printf("Error writing the image");
+		}
+	}
+
+	return error;
+}
+
+
 //===========================================================================================
 int multiGPUblockController::writeDeconvoutionResultRaw(const std::string& filename)
 {

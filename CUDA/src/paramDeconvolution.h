@@ -40,6 +40,12 @@ struct paramDeconvolution
 	int blockZsize;
 
 	bool saveAsUINT16;
+	struct {			       // when saveAsUINT16=true, and min/max saturation values are set
+		float min, max;        // the min will be mapped to 0 and max will be mapped to 2^16-1.
+		bool use_min, use_max; // Otherwise, the min and max values used will be the min and max
+	} saturation;              // values found in the output volume.
+	float minSaturation; 
+	float maxSaturation;
 	float weightThr;
 
     imgTypeDeconvolution imgBackground;	
@@ -58,6 +64,9 @@ struct paramDeconvolution
 		outputFilePrefix = std::string("");
 		saveAsUINT16 = true;
 		weightThr = 0.0f;
+
+		saturation.use_max = false;
+		saturation.use_min = false;
 	}
 
 	float getAnisotropyZfromAffine();

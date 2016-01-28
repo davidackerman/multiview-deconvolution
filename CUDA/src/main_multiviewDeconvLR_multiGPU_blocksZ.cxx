@@ -256,7 +256,10 @@ int main(int argc, const char** argv)
 	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;		
-	err = master.writeDeconvoutionResult_uint16(string(fileoutName), JfullImg, xyzct);
+	if (master.paramDec.saveAsUINT16)
+		err = master.writeDeconvoutionResult_uint16(string(fileoutName), JfullImg, xyzct);
+	else
+		err = master.writeDeconvolutionResult_float(string(fileoutName), JfullImg, xyzct);
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;

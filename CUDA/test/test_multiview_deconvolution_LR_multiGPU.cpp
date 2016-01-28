@@ -88,7 +88,7 @@ int main(int argc, const char** argv)
 	if (master.paramDec.saveAsUINT16)
 		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");
 	else
-		err = master.writeDeconvoutionResultRaw(string(fileoutName) + ".raw");
+		err = master.writeDeconvolutionResult_float(string(fileoutName) + ".klb");
 	if (err > 0)
 	{
 		cout << "ERROR: writing result" << endl;

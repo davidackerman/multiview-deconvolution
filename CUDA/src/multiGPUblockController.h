@@ -76,7 +76,9 @@ public:
 	int writeDeconvoutionResult(const std::string& filename);
 	int writeDeconvoutionResultRaw(const std::string& filename);
 	int writeDeconvoutionResult_uint16(const std::string& filename){ return writeDeconvoutionResult_uint16(filename, J, imgDims); };
-	static int writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS], float scale = 16384.0f);
+	int writeDeconvoutionResult_uint16(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS], float scale = 16384.0f);
+	int writeDeconvolutionResult_float(const std::string& filename){ return writeDeconvolutionResult_float(filename, J, imgDims); };
+	static int writeDeconvolutionResult_float(const std::string& filename, const imgTypeDeconvolution* imgPtr, std::uint32_t imgDims_[MAX_DATA_DIMS]);
 	int getDimBlockPartition(){ return dimBlockParition; };
 	imgTypeDeconvolution* getJpointer(){ return J; };
 	void deallocateMemJ(){ if (J != NULL) { delete[] J; J = NULL; } };
