@@ -75,9 +75,8 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 	paramDec.Nviews = xMainNode.nChildNode("view");
 	int position;
 
-	for (int ii = 0; ii < paramDec.Nviews; ii++)
+	for (int ii = 0,position=0; ii < paramDec.Nviews; ii++)
 	{
-		position = ii;
 		XMLNode node = xMainNode.getChildNode("view", &position);
 
 		XMLCSTR aux = node.getAttribute("imgFilename");		
@@ -1425,6 +1424,7 @@ int multiGPUblockController::writeDeconvolutionResult_float(const std::string& f
 	case 4:
 	{
     	imgIO.header.setHeader(xyzct, KLB_DATA_TYPE::FLOAT32_TYPE);
+        imgIO.header.compressionType = KLB_COMPRESSION_TYPE::NONE;
 		error = imgIO.writeImage((char*)(imgPtr), -1);//all the threads available
     	break;
 	}
