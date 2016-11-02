@@ -133,6 +133,10 @@ int main(int argc, const char** argv)
 	t2 = Clock::now();
 	std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 	
+    // clear input memory
+    master.full_img_mem.clear();
+    master.full_psf_mem.clear();
+    master.full_weights_mem.clear();
 
 	//write result
 	char fileoutName[256];	
