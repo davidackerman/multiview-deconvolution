@@ -222,6 +222,10 @@ void multiGPUblockController::queryGPUs(int maxNumber)
 		getNameDeviceCUDA(ii, buffer);
 		GPUinfoVec.back().devName = string(buffer);
 	}
+    if (!GPUinfoVec.size()) {
+        cout << "No valid GPUs found." << endl;
+        throw std::exception("No valid GPUs found.");
+    }        
 }
 
 //========================================================

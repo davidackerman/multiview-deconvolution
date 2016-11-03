@@ -139,7 +139,7 @@ int main(int argc, const char** argv)
     master.full_weights_mem.clear();
 
 	//write result
-	char fileoutName[256];	
+    char fileoutName[256] = { 0 };
 	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
 	cout << "Writing result to "<<string(fileoutName) << endl;
