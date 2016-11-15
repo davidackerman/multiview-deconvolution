@@ -68,7 +68,7 @@ int main(int argc, const char** argv)
 	
 	int64_t dimsOut[3];
 	const int refView = 0;
-	cout << "We assume first view is the reference. So its affine transformation is just a scalign in Z" << endl;
+	cout << "We assume first view is the reference. So its affine transformation is just a scaling in Z" << endl;
 	//set parameters	
 	dimsOut[0] = master.full_img_mem.dimsImgVec[refView].dims[0];
 	dimsOut[1] = master.full_img_mem.dimsImgVec[refView].dims[1];
@@ -88,9 +88,15 @@ int main(int argc, const char** argv)
 
 	//apply transformation
 	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
-	{
+        {
 				
-		t1 = Clock::now();
+        t1 = Clock::now();
+        cout << "Applying affine transformation to PSF array " << endl;
+        master.full_psf_mem.apply_affine_transformation_psf(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
+        t2 = Clock::now();
+        std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
+
+        t1 = Clock::now();
 		cout << "Applying affine transformation to view " << ii << endl;
 		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
 		t2 = Clock::now();
@@ -102,11 +108,11 @@ int main(int argc, const char** argv)
 		t2 = Clock::now();
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
-	}
+        }
 
 	if (master.paramDec.verbose > 0)
 	{
-		cout << "Saving transformed images and weights for all views in file " << filenameXML <<"*"<<endl;
+		cout << "Saving transformed images and PSFs for all views in file " << filenameXML << "*" << endl ;
 		for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 		{
 			char buffer[256];
@@ -118,6 +124,9 @@ int main(int argc, const char** argv)
 			
 			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
 			master.full_img_mem.writeImage(string(buffer), ii);
+
+            sprintf(buffer, "%s_debug_psf_%d.klb", filenameXML.c_str(), ii);
+            master.full_psf_mem.writeImage(string(buffer), ii);
 		}
 	}
 

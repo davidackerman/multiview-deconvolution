@@ -295,6 +295,7 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 
 	if (imResize)
 	{
+        // Pad the input array with zeros, thus imInPadded will be of size dimsOut
 		imInPadded = fa_padArrayWithZeros(imIn, dimsIn, dimsOut, 3);
 	}
 	else{

@@ -22,4 +22,15 @@ imgType* fa_padArrayWithZeros(const imgType* im, const std::int64_t *dimsNow, co
 
 std::string generateTempFilename(const char* prefix);
 
+int copySlice(float* target, int64_t* targetSize,
+              int64_t* nElementsToTrim,
+              int64_t arity, int64_t sliceArity,
+              float* source, int64_t* sourceSize) ;
+int64_t indexOfFirstSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
+int64_t indexOfLastSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
+bool isSliceSuperthreshold(float *x, int64_t arity, int64_t* xDims, int64_t iDim, int64_t iElement, float threshold) ;
+int64_t chunkSize(int64_t* xDims, int64_t iDim) ;
+int64_t chunkCount(int64_t arity, int64_t* xDims, int64_t iDim) ;
+int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity) ;
+
 #endif 
