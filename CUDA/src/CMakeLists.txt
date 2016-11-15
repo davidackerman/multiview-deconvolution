@@ -35,7 +35,7 @@ SET(CUDA_NVCC_FLAGS_DEBUG -g; -G;-O0 CACHE STRING "Semi-colon delimit multiple a
 SET(CUDA_NVCC_FLAGS_RELEASE -O3 CACHE STRING "Semi-colon delimit multiple arguments")
 SET(CUDA_NVCC_FLAGS_RELWITHDEBINFO -O3 CACHE STRING "Semi-colon delimit multiple arguments")
 
-FIND_PACKAGE(CUDA REQUIRED)
+FIND_PACKAGE(CUDA 6.5 EXACT REQUIRED)
 SET(CUDA_VERBOSE_BUILD ON FORCE)
 INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS}) 
 #lcudart and lcuda  are already added as variables with find package
