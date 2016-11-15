@@ -66,19 +66,20 @@ int getNumberOfCores()
 //================================================================================
 
 voidthread transformvolume(float **Args) {
-    float *Isize_d, *mean, *A, *Iin, *Iout, *ThreadID, *moded;
-    int64_t Isize[3]={0, 0, 0};
-    int mode=0;
-    int64_t x, y, z;
+    float *Isize_out_d, *Isize_in_d, *center_out, *center_in, *A, *Iin, *Iout, *ThreadID, *moded;
+    int64_t Isize_out[3]={0, 0, 0};
+    int64_t Isize_in[3] = { 0, 0, 0 };
+    int mode = 0;
+    int64_t x_out, y_out, z_out;
     float *Nthreadsd;
     int Nthreads;
     bool black, cubic;   
     
     // Location of pixel which will be come the current pixel */
-    float Tlocalx, Tlocaly, Tlocalz;
+    float x_in, y_in, z_in;
     
     // X,Y,Z coordinates of current pixel */
-    float xd, yd, zd;
+    float xd_out, yd_out, zd_out;
     
     // Variables to store 1D index */
     int64_t indexI;
@@ -91,8 +92,8 @@ voidthread transformvolume(float **Args) {
     float bcomp0, bcomp1, bcomp2;
     float ccomp0, ccomp1, ccomp2;
     
-    Isize_d=Args[0];
-    mean=Args[1];
+    Isize_out_d=Args[0];
+    center_out=Args[1];
     A=Args[2];
     Iin=Args[3];
     Iout=Args[4];
@@ -101,38 +102,46 @@ voidthread transformvolume(float **Args) {
 	mode=(int)moded[0];
     Nthreadsd=Args[7];  
 	Nthreads=(int)Nthreadsd[0];
-                
+    Isize_in_d = Args[8];
+    center_in = Args[9];
+
     if(mode==0||mode==2){ black = false; } else { black = true; }
     if(mode==0||mode==1){ cubic = false; } else { cubic = true; }
 	
-    Isize[0] = (int64_t)Isize_d[0];
-    Isize[1] = (int64_t)Isize_d[1];
-    Isize[2] = (int64_t)Isize_d[2];
-    
+    Isize_out[0] = (int64_t)Isize_out_d[0];
+    Isize_out[1] = (int64_t)Isize_out_d[1];
+    Isize_out[2] = (int64_t)Isize_out_d[2];
+
+    Isize_in[0] = (int64_t)Isize_in_d[0];
+    Isize_in[1] = (int64_t)Isize_in_d[1];
+    Isize_in[2] = (int64_t)Isize_in_d[2];
+
     ThreadOffset=(int) ThreadID[0];
     
-    acomp0=mean[0] + A[3]; acomp1=mean[1] + A[7]; acomp2=mean[2] + A[11];
+    acomp0 = center_in[0] + A[3]; 
+    acomp1 = center_in[1] + A[7]; 
+    acomp2 = center_in[2] + A[11];
     //  Loop through all image pixel coordinates */
-    for (z=ThreadOffset; z<Isize[2]; z=z+Nthreads) {
-        zd=z-mean[2];
-        bcomp0 = A[2] *zd + acomp0;
-        bcomp1 = A[6] *zd + acomp1;
-        bcomp2 = A[10]*zd + acomp2;
-        for (y=0; y<Isize[1]; y++) {
-            yd=y-mean[1];
-            ccomp0 = A[1] *yd + bcomp0;
-            ccomp1 = A[5] *yd + bcomp1;
-            ccomp2 = A[9] *yd + bcomp2;
-            for (x=0; x<Isize[0]; x++) {
-                xd=x-mean[0];
-                Tlocalx = A[0] * xd + ccomp0;
-                Tlocaly = A[4] * xd + ccomp1;
-                Tlocalz = A[8] * xd + ccomp2;
+    for (z_out=ThreadOffset; z_out<Isize_out[2]; z_out=z_out+Nthreads) {
+        zd_out=z_out-center_out[2];  // this center_out is the center_out of the output space
+        bcomp0 = A[2] *zd_out + acomp0;
+        bcomp1 = A[6] *zd_out + acomp1;
+        bcomp2 = A[10]*zd_out + acomp2;
+        for (y_out=0; y_out<Isize_out[1]; y_out++) {
+            yd_out = y_out - center_out[1];  // this center_out is the center_out of the output space
+            ccomp0 = A[1] *yd_out + bcomp0;
+            ccomp1 = A[5] *yd_out + bcomp1;
+            ccomp2 = A[9] *yd_out + bcomp2;
+            for (x_out=0; x_out<Isize_out[0]; x_out++) {
+                xd_out = x_out - center_out[0];  // this center_out is the center_out of the output space
+                x_in = A[0] * xd_out + ccomp0;
+                y_in = A[4] * xd_out + ccomp1;
+                z_in = A[8] * xd_out + ccomp2;
                 
-                indexI=mindex3(x, y, z, Isize[0], Isize[1]);
+                indexI=mindex3(x_out, y_out, z_out, Isize_out[0], Isize_out[1]);
                   
                 // the pixel interpolation */
-                Iout[indexI]=interpolate_3d_float_gray(Tlocalx, Tlocaly, Tlocalz, Isize, Iin, cubic, black);
+                Iout[indexI]=interpolate_3d_float_gray(x_in, y_in, z_in, Isize_in, Iin, cubic, black);
             }
         }
     }
@@ -252,10 +261,19 @@ void affine3d_printMatrix(const float A[AFFINE_3D_MATRIX_SIZE])
 void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn[3], int64_t dimsOut[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
 {
 	//matrix to flip xy coodinates
-	const float F[AFFINE_3D_MATRIX_SIZE] = { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
-	//recenter origina to apply transformation
-	float B[AFFINE_3D_MATRIX_SIZE] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
-	float C[AFFINE_3D_MATRIX_SIZE] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+	const float F[AFFINE_3D_MATRIX_SIZE] = { 0.0f, 1.0f, 0.0f, 0.0f, 
+                                             1.0f, 0.0f, 0.0f, 0.0f, 
+                                             0.0f, 0.0f, 1.0f, 0.0f, 
+                                             0.0f, 0.0f, 0.0f, 1.0f };
+	//recenter original to apply transformation
+	float B[AFFINE_3D_MATRIX_SIZE] = { 1.0f, 0.0f, 0.0f, 0.0f, 
+                                       0.0f, 1.0f, 0.0f, 0.0f, 
+                                       0.0f, 0.0f, 1.0f, 0.0f, 
+                                       0.0f, 0.0f, 0.0f, 1.0f };
+	float C[AFFINE_3D_MATRIX_SIZE] = { 1.0f, 0.0f, 0.0f, 0.0f, 
+                                       0.0f, 1.0f, 0.0f, 0.0f, 
+                                       0.0f, 0.0f, 1.0f, 0.0f, 
+                                       0.0f, 0.0f, 0.0f, 1.0f };
 	float Af[AFFINE_3D_MATRIX_SIZE];
 	float Aaux[AFFINE_3D_MATRIX_SIZE];
 	float* imInPadded;
@@ -264,7 +282,8 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	
 
 	//check if the transformation is the identity. Then we only need to copy the file
-	bool isId = true;
+	bool isId = false;
+    /*
 	for (ii = 0; ii < AFFINE_3D_MATRIX_SIZE; ii++)
 	{
 		if (fabs(A[ii] - B[ii]) > 1e-3)
@@ -273,25 +292,34 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 			break;
 		}
 	}
+    */
 
+    // Define a matrix that does a translation, then undoes that translation at the end.  So C==inv(B)
 	for (ii = 0; ii < 3; ii++)
-	{		
-		B[ii + 12] = 0.5f * dimsOut[ii] + 1.0f;
-		C[ii + 12] = -B[ii + 12];
-	}
+        {
+        //B[ii + 12] = 0.5f * dimsOut[ii] + 1.0f  ;
+        //C[ii + 12] = - B[ii + 12] ;
+        B[ii + 12] =   0.5f * dimsIn[ii] + 1.0f  ;  // might have to swap these
+        C[ii + 12] = -(0.5f * dimsOut[ii] + 1.0f) ;
+        }
 
 
 	//resize input image if necessary
 	bool imResize = false;
 	for (ii = 0; ii < 3; ii++)
-	{
+        {
 		if (dimsOut[ii] < dimsIn[ii])
-		{
-			printf("ERROR: code is not ready for output image size smaller than input image size\n");
-		}
-		else if (dimsOut[ii] > dimsIn[ii])
-			imResize = true;
-	}
+            {
+			//printf("ERROR: code is not ready for output image size smaller than input image size\n");
+            printf("WARNING: Code might not work right when output image size is smaller than input image size\n");
+            }
+        else if (dimsOut[ii] > dimsIn[ii])
+            {
+            /*imResize = true;*/
+            imResize = false ;
+            printf("WARNING: Code might not work right when output image size is larger than input image size\n");
+            }
+        }
 
 	if (imResize)
 	{
@@ -301,7 +329,6 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	else{
 		imInPadded = imIn;
 	}
-
 
 	if (isId)
 	{		
@@ -314,20 +341,22 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	else{
 
 		//apply transformations to A	
-		affine_3d_transpose(A, Af);
+		affine_3d_transpose(A, Af);  // After, Af == A'
 		//memcpy(Af, A, sizeof(float)* AFFINE_3D_MATRIX_SIZE);
-		affine_3d_compose(Af, F, Aaux);
-		affine_3d_inverse(Aaux, Af);
-		affine_3d_compose(Af, F, Aaux); //Aaux = (A'*F)\F = inv(A'*F) *F
+		affine_3d_compose(Af, F, Aaux);  // After, Aaux == A'*F
+		affine_3d_inverse(Aaux, Af);  // After, Af == inv(A'*F)
+		affine_3d_compose(Af, F, Aaux);  // After, Aaux == inv(A'*F) * F == inv(F) * inv(A') * F
 
 		//recenter transformation
-		affine_3d_compose(C, Aaux, Af);
-		affine_3d_compose(Af, B, Aaux);//Aaux = C * ((A'*F)\F) * B
+		affine_3d_compose(C, Aaux, Af);  // After, Af == C * inv(F) * inv(A') * F
+		affine_3d_compose(Af, B, Aaux);  // After, Aaux ==  C * inv(F) * inv(A') * F * B
 
 
 		//apply transformation	
-		affine_3d_transpose(Aaux, Af);//apply transposition to set it in the right order for the c librabry
-		affineTransform_3d_float(imInPadded, imOut, dimsOut, Af, interpMode);
+		affine_3d_transpose(Aaux, Af);  // Apply transposition to get it in the right order for the C library
+          // After, Af ==  (C * inv(F) * inv(A') * F * B)' == B' * F' * (inv(A'))' * (inv(F))' * C' == B' * F' * inv(A) * inv(F') * C'
+          // x = B' * F' * inv(A) * inv(F') * C' * y
+		affineTransform_3d_float(imInPadded, dimsIn, imOut, dimsOut, Af, interpMode);
 	}
 
 	//release memory
@@ -337,7 +366,7 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 
 //================================================================================================================
 //Function that replaces the original mex function
-void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+void affineTransform_3d_float(const float* Iin, int64_t dims_in[3], float* Iout, int64_t dims_out[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
 {
 
 	float *moded, *Nthreadsf;		
@@ -360,18 +389,26 @@ void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], fl
 
 
 	// Size of input image 
-	float Isize_d[3] = { 0, 0, 0 };
+	float Isize_out_d[3] = { 0, 0, 0 };
+    float Isize_in_d[3] = { 0, 0, 0 };
 
-	float mean[3] = { 0, 0, 0 };
+	float center_out[3] = { 0, 0, 0 };
+    float center_in[3] = { 0, 0, 0 };
 
 
 	// Get the sizes of the image 		
-	Isize_d[0] = (float)dims[0]; 
-	Isize_d[1] = (float)dims[1]; 
-	Isize_d[2] = (float)dims[2];
+	Isize_out_d[0] = (float)dims_out[0]; 
+	Isize_out_d[1] = (float)dims_out[1]; 
+	Isize_out_d[2] = (float)dims_out[2];
 	
 
-	// Assign pointers to each input. 	
+    // Get the sizes of the image 		
+    Isize_in_d[0] = (float)dims_in[0];
+    Isize_in_d[1] = (float)dims_in[1];
+    Isize_in_d[2] = (float)dims_in[2];
+
+
+    // Assign pointers to each input. 	
 	moded = (float*)malloc(sizeof(float));
 	*moded = ((float)(interpMode));
 
@@ -390,9 +427,14 @@ void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], fl
 
 
 	// Center of the volume 
-	mean[0] = Isize_d[0] / 2;  
-	mean[1] = Isize_d[1] / 2;  
-	mean[2] = Isize_d[2] / 2;
+	center_out[0] = Isize_out_d[0] / 2;  
+	center_out[1] = Isize_out_d[1] / 2;  
+	center_out[2] = Isize_out_d[2] / 2;
+
+    // Center of the volume 
+    center_in[0] = Isize_in_d[0] / 2;
+    center_in[1] = Isize_in_d[1] / 2;
+    center_in[2] = Isize_in_d[2] / 2;
 
 	for (i = 0; i<Nthreads; i++) 
 	{
@@ -402,16 +444,18 @@ void affineTransform_3d_float(const float* Iin, float* Iout, int64_t dims[3], fl
 		ThreadID[i] = ThreadID1;
 
 		//  Make Thread Structure  
-		ThreadArgs1 = (float **)malloc(8 * sizeof(float *));
-		ThreadArgs1[0] = Isize_d;
-		ThreadArgs1[1] = mean;
+		ThreadArgs1 = (float **)malloc(10 * sizeof(float *));
+		ThreadArgs1[0] = Isize_out_d;
+		ThreadArgs1[1] = center_out;
 		ThreadArgs1[2] = A;
 		ThreadArgs1[3] = Iin;
 		ThreadArgs1[4] = Iout;
 		ThreadArgs1[5] = ThreadID[i];
 		ThreadArgs1[6] = moded;
 		ThreadArgs1[7] = Nthreadsf;
-		// Start a Thread  
+        ThreadArgs1[8] = Isize_in_d;
+        ThreadArgs1[9] = center_in;
+        // Start a Thread  
 		ThreadArgs[i] = ThreadArgs1;
 		StartThread(ThreadList[i], &transformvolume, ThreadArgs[i])
 	}
