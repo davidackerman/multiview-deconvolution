@@ -33,4 +33,25 @@ int64_t chunkSize(int64_t* xDims, int64_t iDim) ;
 int64_t chunkCount(int64_t arity, int64_t* xDims, int64_t iDim) ;
 int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity) ;
 
+void transform_lattice_3d(int64_t* targetCount, double* targetOrigin,
+                          float* A,
+                          int64_t* sourceCount, double* sourceOrigin, double* sourceSpacing,
+                          double * targetSpacing) ;
+void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
+                         float* A,
+                         double* sourceOrigin, double* sourceExtent) ;
+void lattice_from_cuboid_3d(int64_t* count, double* origin,
+                            double* ideal_origin, double* ideal_extent, double *spacing) ;
+void affine_transform_3d(double* y, float* T, double* x) ;
+void extent_from_dims_and_spacing_3d(double* extent, int64_t* dims, double* spacing) ;
+void elementwise_product_3d(double* z, double* x, double* y) ;
+void scalar_product_3d(double* y, double a, double* x) ;
+void elementwise_quotient_3d(double* z, double* x, double* y) ;
+void dims_from_extent_with_unit_spacing_3d(int64_t* y, double* x) ;
+void difference_3d(double* z, double* x, double* y) ;
+void sum_3d(double* z, double* x, double* y) ;
+void sum_in_place_3d(double* y, double* x) ;
+int64_t element_count_from_dims_3d(int64_t* dims) ;
+float normalize_in_place_3d(float* x, int64_t* dims) ;
+
 #endif 

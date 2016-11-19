@@ -727,7 +727,7 @@ void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_
 
 //=========================================================================
 template<class imgType>
-void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
     {
     cout << "ERROR: TODO: multiviewImage<imgType>::apply_affine_transformation_psf: not implemented for types other than float" << endl;
     exit(3);
@@ -735,26 +735,39 @@ void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, std::int6
 
 //=========================================================================
 template<>
-void multiviewImage<float>::apply_affine_transformation_psf(int pos, std::int64_t dimsOut[MAX_DATA_DIMS], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
     {
     // If pos is out-of-range, return
     if (imgVec_CPU.size() < pos)
         return;
 
-    // Determine the number of elements needed in the output array imOut
-    int64_t imOutSize = 1;
-    for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
-        imOutSize *= dimsOut[ii];
+    // Get the dims of the raw PSF
+    int64_t rawPSFDims[3] ;
+    rawPSFDims[0] = dimsImgVec[pos].dims[0] ;
+    rawPSFDims[1] = dimsImgVec[pos].dims[1] ;
+    rawPSFDims[2] = dimsImgVec[pos].dims[2] ;
+
+    double rawPSFOrigin[3] = { 0.5, 0.5, 0.5 } ;  // Irrelevant, but let's be consistent with Matlab imwarp() defaults.
+    double rawPSFSpacing[3] = { 1.0, 1.0, 1.0 } ;  // Generally not really true, but again, let's be consistent with Matlab imwarp() defaults
+    int64_t psfDims[3] ;
+    double psfOrigin[3] ;
+    transform_lattice_3d(psfDims, psfOrigin,
+                         A,
+                         rawPSFDims, rawPSFOrigin, rawPSFSpacing,
+                         rawPSFSpacing) ;
+
+    // Determine the number of elements needed in the output array psf
+    int64_t psfElementCount = element_count_from_dims_3d(psfDims) ;
 
     //allocate memory for transformed image
-    float* imOut = new float[imOutSize];
+    float* psf = new float[psfElementCount] ;
 
     //perform transformation
-    imwarpFast_MatlabEquivalent(getPointer_CPU(pos), imOut, dimsImgVec[pos].dims, dimsOut, A, interpMode);
+    imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
 
     // Eliminate any negative elements that might have resulted from cubic interpolation
-    for (int64_t i = 0; i < imOutSize; i++)
-        imOut[i] = (imOut[i]>=0.0f) ? imOut[i] : 0.0f ;
+    for (int64_t i = 0; i < psfElementCount; i++)
+        psf[i] = (psf[i]>=0.0f) ? psf[i] : 0.0f ;
 
     //
     // Trim zero elements on all sides, keeping the PSF centered
@@ -765,7 +778,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, std::int64_
     int64_t nElementsToTrim[MAX_DATA_DIMS] ;
     for (int64_t iDim = 0; iDim < MAX_DATA_DIMS; iDim++)
         {
-        int64_t indexOfFirstSuperthresholdSliceHere = indexOfFirstSuperthresholdSlice(imOut, MAX_DATA_DIMS, dimsOut, iDim, threshold) ;
+        int64_t indexOfFirstSuperthresholdSliceHere = indexOfFirstSuperthresholdSlice(psf, MAX_DATA_DIMS, psfDims, iDim, threshold) ;
         if (indexOfFirstSuperthresholdSliceHere < 0)
             {
             // This means all slices are empty
@@ -775,38 +788,39 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, std::int64_
             {
             //int64_t nElementsToTrimAtLowEnd = max(1, indexOfFirstSuperthresholdSliceHere-2) ;  // Add some padding, if possible
             int64_t nElementsToTrimAtLowEnd = ((indexOfFirstSuperthresholdSliceHere-2) > 1) ? (indexOfFirstSuperthresholdSliceHere-2) : 1 ;  // Add some padding, if possible
-            int64_t indexOfLastSuperthresholdSliceHere = indexOfLastSuperthresholdSlice(imOut, MAX_DATA_DIMS, dimsOut, iDim, threshold) ;  // This can't return -1, because indexOfFirstSuperthresholdSlice() would have already done so if all slices were empty
-            //int64_t nElementsToTrimAtHighEnd = min(indexOfLastSuperthresholdSliceHere + 2, dimsOut[iDim]) ;  // Add some padding, if possible
-            int64_t nElementsToTrimAtHighEnd = ((indexOfLastSuperthresholdSliceHere+2)>dimsOut[iDim]) ? dimsOut[iDim] : (indexOfLastSuperthresholdSliceHere+2) ;  // Add some padding, if possible
+            int64_t indexOfLastSuperthresholdSliceHere = indexOfLastSuperthresholdSlice(psf, MAX_DATA_DIMS, psfDims, iDim, threshold) ;  // This can't return -1, because indexOfFirstSuperthresholdSlice() would have already done so if all slices were empty
+            //int64_t nElementsToTrimAtHighEnd = min(indexOfLastSuperthresholdSliceHere + 2, psfDims[iDim]) ;  // Add some padding, if possible
+            int64_t nElementsToTrimAtHighEnd = ((indexOfLastSuperthresholdSliceHere+2)>psfDims[iDim]) ? psfDims[iDim] : (indexOfLastSuperthresholdSliceHere+2) ;  // Add some padding, if possible
             //nElementsToTrim[iDim] = min(nElementsToTrimAtLowEnd, nElementsToTrimAtHighEnd) ;  // Have to be symmetric, so pick the smaller
             nElementsToTrim[iDim] = (nElementsToTrimAtLowEnd<nElementsToTrimAtHighEnd) ? nElementsToTrimAtLowEnd : nElementsToTrimAtHighEnd ;  // Have to be symmetric, so pick the smaller
             }
         }
 
     // Copy the data over to a smaller array
-    int64_t trimmedSize[MAX_DATA_DIMS] ;
+    int64_t trimmedPSFDims[MAX_DATA_DIMS] ;
     for (int64_t i=0; i<MAX_DATA_DIMS; ++i)
-        trimmedSize[i] = dimsOut[i] - 2 * nElementsToTrim[i] ;
+        trimmedPSFDims[i] = psfDims[i] - 2 * nElementsToTrim[i] ;
 
     // Calculate the number of elements to allocate
-    int64_t trimmedSizeSerial = 1 ;
-    for (int64_t i = 0; i < MAX_DATA_DIMS; ++i)
-        trimmedSizeSerial *= trimmedSize[i];
+    int64_t trimmedPSFElementCount = element_count_from_dims_3d(trimmedPSFDims) ;
 
     // Allocate it
-    float* trimmedStack = new float[trimmedSizeSerial] ;
+    float* trimmedPSF = new float[trimmedPSFElementCount] ;
 
     // Now copy the data over
-    copySlice(trimmedStack, trimmedSize, nElementsToTrim, MAX_DATA_DIMS, MAX_DATA_DIMS, imOut, dimsOut) ;
+    copySlice(trimmedPSF, trimmedPSFDims, nElementsToTrim, MAX_DATA_DIMS, MAX_DATA_DIMS, psf, psfDims) ;
 
+    // Normalize the trimmedPSF
+    normalize_in_place_3d(trimmedPSF, trimmedPSFDims) ;
+     
     // Update image dimensions and pointer
     deallocateView_CPU(pos);
-    imgVec_CPU[pos] = trimmedStack;
+    imgVec_CPU[pos] = trimmedPSF;
     for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
-        dimsImgVec[pos].dims[ii] = trimmedSize[ii];
+        dimsImgVec[pos].dims[ii] = trimmedPSFDims[ii];
 
     // Delete the temp
-    delete [] imOut ;
+    delete [] psf ;
     }
 
 //=========================================================================

@@ -249,6 +249,244 @@ int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity)
     return result ;
     }
 
+//=========================================================================
+void transform_lattice_3d(int64_t* targetDims, double* targetOrigin, 
+                          float* A,
+                          int64_t* sourceDims, double* sourceOrigin, double* sourceSpacing,
+                          double * targetSpacing)
+    {
+    // Given an affine transform and a source lattice, computes a target lattice with the same 
+    // spacing as the source lattice, that is designed to just include the image of the source 
+    // lattice after it is transformed by A.  A "lattice" is defined by an axis-aligned cuboid in 
+    // space combined with a number of voxels in each dimension.  The corner of the cuboid closest to the
+    // origin is the same point as the corner of the first voxel closest to the origin.  Similarly, the 
+    // corner of the cuboid farthest from the origin is the same point as the corner of the last voxel 
+    // farthest from the origin.  I.e. there is no voxel center at the corner of the cuboid.
+    //
+    // Inputs:
+    //   A is the transform matrix, serialized into an 1D array.  It should of size
+    //     4^2==16.  It is stored row-major, assuming y = A*x is used for the transform, with y and x col 
+    //     vectors.  Or, equivalently, it can be viewed as being stored col-major, assuming y = x*A is 
+    //     used for the transform, with y and x row vectors.  Taking the first view, the last row should 
+    //     be 0 0 0 1.
+    //   sourceDims is the size of the source lattice in each dimension.
+    //   sourceOrigin is the location of the "lowermost" corner of the cuboid associated with the lattice.
+    //   sourceSpacing is the spacing between voxels in each dimension.  
+    //     The "uppermost" corner of the source cuboid is located at sourceOrigin+sourceSize.*sourceSpacing.
+    //   targetSpacing is the desired spacing between voxels in the output lattice.
+    //
+    // Outputs:
+    //   targetDims is the size of the target lattice in each dimension.
+    //   targetOrigin is the location of the "lowermost" corner of the cuboid associated with the lattice.
+
+    double sourceExtent[3] ;
+    extent_from_dims_and_spacing_3d(sourceExtent, sourceDims, sourceSpacing) ;
+
+    double idealTargetOrigin[3] ;
+    double idealTargetExtent[3] ;
+    transform_cuboid_3d(idealTargetOrigin, idealTargetExtent,
+                        A,
+                        sourceOrigin, sourceExtent) ;
+
+    lattice_from_cuboid_3d(targetDims, targetOrigin, 
+                           idealTargetOrigin, idealTargetExtent, targetSpacing) ;
+
+    }
+
+//=========================================================================
+void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
+                         float* A,
+                         double* sourceOrigin, double* sourceExtent)
+    {
+    // Given a cuboid in a source space, computes that cuboid that just 
+    // contains the image of it in a target space, after the source cuboid goes through the affine transform defined by A.
+    // targetOrigin and targetExtent are outputs, and should be preallocated to length 3 by the caller.
+    // A should be of length 16, representing a 4x4 affine transform array.  It is stored row-major, assuming y = A*x is 
+    // used for the transform, with y and x col vectors.  Or, equivalently, it can be viewed as being stored col-major, assuming 
+    // y = x*A is used for the transform, with y and x row vectors.  Taking the first view, the last row should be 0 0 0 1.
+
+    /*
+    // Do the matrix multiply, treating the vectors as col vectors, and A as row-major
+    double sourceOriginImage[3] ;
+    double sourceExtentImage[3] ;
+    affine_transform_3d(sourceOriginImage, A, sourceOrigin) ;
+    affine_transform_3d(sourceExtentImage, A, sourceExtent) ;
+    */
+
+    // Generate all the corners of the image in the target space
+    double sourceCorner[3] ;
+    double targetCorners[8][3] ;  
+    double keep[3] ;
+    size_t n = 0 ;
+    for (size_t i = 0; i < 2; ++i)
+        {
+        keep[0] = double(i) ;
+        for (size_t j = 0; j < 2; ++j)
+            {
+            keep[1] = double(j) ;
+            for (size_t k = 0; k < 2; ++k)
+                {
+                keep[2] = double(k) ;
+                elementwise_product_3d(sourceCorner, keep, sourceExtent) ;
+                sum_in_place_3d(sourceCorner, sourceOrigin) ;
+                affine_transform_3d(targetCorners[n], A, sourceCorner) ;
+                ++n ;
+                }
+            }
+        }
+
+    // Extract the max and min in each dimension to find the bounding box targetCorners
+    const float inf = std::numeric_limits<float>::infinity() ;
+    targetOrigin[0] = inf ;
+    targetOrigin[1] = inf ;
+    targetOrigin[2] = inf ;
+    double targetOriginPlusExtent[3] = { -inf, -inf, -inf } ;
+    for (size_t i = 0; i < 8; i++)
+        for (size_t j = 0; j < 3; j++)
+            {
+            double targerCornerElement = targetCorners[i][j] ;
+            if (targerCornerElement<targetOrigin[j])
+                targetOrigin[j] = targerCornerElement ;
+            else if (targerCornerElement>targetOriginPlusExtent[j])
+                targetOriginPlusExtent[j] = targerCornerElement ;
+            }
+
+    // Take the difference of the bounding box targetCorners to get the extent
+    difference_3d(targetExtent, targetOriginPlusExtent, targetOrigin) ;
+    }
+
+//=========================================================================
+void lattice_from_cuboid_3d(int64_t* dims, double* origin,
+                            double* ideal_origin, double* ideal_extent, double *spacing)
+    {
+    // Given a bounding box and a spacing, compute a (generally) slightly larger bounding box
+    // centered on the original, with extent an integer multiple of spacing (in each dimension).
+    // The resulting bounding box, along with the integer multiple in each dimension, comprise a 
+    // "lattice": a set of regularly spaced points in Cartesian space for which voxel data might 
+    // be determined.
+
+    double ideal_count[3] ;
+    elementwise_quotient_3d(ideal_count, ideal_extent, spacing) ;
+
+    dims_from_extent_with_unit_spacing_3d(dims, ideal_count) ;
+
+    // From the dims and the spacing in each dimension, easy to get the final extent
+    double extent[3] ;
+    extent_from_dims_and_spacing_3d(extent, dims, spacing) ;
+    
+    double ideal_radius[3] ;
+    scalar_product_3d(ideal_radius, 0.5, ideal_extent) ;
+
+    double center[3] ;
+    sum_3d(center, ideal_origin, ideal_radius) ;  // This is the center of both the ideal cuboid and the final one
+
+    double radius[3] ;
+    scalar_product_3d(radius, 0.5, extent) ;
+
+    difference_3d(origin, center, radius) ;
+    }
+
+/*
+ void row_times_matrix(double* y, double* x, float *A)
+     {
+     // We assume A represents a 4x4 matrix stored row-major
+     for (size_t j = 0; j < 3; j++)
+         {
+         y[j] == 0.0 ;
+         for (size_t i = 0; i < 3; i++)
+             y[j] += x[i] * A[4 * i + j] ;
+         y[j] += A[4 * 3 + j] ;
+         }
+     }
+*/
+
+void affine_transform_3d(double y[3], float T[16],  double x[3])
+    {
+    // We assume T represents a 4x4 affine transform matrix stored row-major.
+    // I.e. T is of the form [ A b ]
+    //                       [ 1 0 ] ,
+    // where A is 3x3, and b is 3x1.
+    // This does y = A*x + b , with y and x treated as col vectors.
+    for (size_t i = 0; i < 3; i++)
+        {
+        double yi = 0.0 ;
+        for (size_t j = 0; j < 3; j++)
+            yi += double(T[4 * i + j]) * x[j] ;
+        yi += double(T[4 * i + 3]) ;
+        y[i] = yi ;
+        }
+    }
+
+void extent_from_dims_and_spacing_3d(double* extent, int64_t* dims, double* spacing)
+    {
+    extent[0] = double(dims[1]) * spacing[0] ;  // dims are in order n_y, n_x, n_z
+    extent[1] = double(dims[0]) * spacing[1] ;
+    extent[2] = double(dims[2]) * spacing[2] ;
+    }
+
+void elementwise_product_3d(double* z, double* x, double* y)
+    {
+    for (size_t i = 0; i < 3; i++)
+        z[i] = x[i] * y[i] ;
+    }
+
+void scalar_product_3d(double* y, double a, double* x)
+    {
+    for (size_t i = 0; i < 3; i++)
+        y[i] = a * x[i] ;
+    }
+
+void elementwise_quotient_3d(double* z, double* x, double* y)
+    {
+    for (size_t i = 0; i < 3; i++)
+        z[i] = x[i] / y[i] ;
+    }
+
+void dims_from_extent_with_unit_spacing_3d(int64_t* dims, double* extent)
+    {
+    // dims are in order n_y, n_x, n_z
+    dims[0] = int64_t(ceil(extent[1])) ;
+    dims[1] = int64_t(ceil(extent[0])) ;
+    dims[2] = int64_t(ceil(extent[2])) ;
+    }
+
+void difference_3d(double* z, double* x, double* y)
+    {
+    for (size_t i = 0; i < 3; i++)
+        z[i] = x[i] - y[i] ;
+    }
+
+void sum_3d(double* z, double* x, double* y)
+    {
+    for (size_t i = 0; i < 3; i++)
+        z[i] = x[i] + y[i] ;
+    }
+
+void sum_in_place_3d(double* y, double* x)
+    {
+    for (size_t i = 0; i < 3; i++)
+        y[i] += x[i] ;
+    }
+
+int64_t element_count_from_dims_3d(int64_t* dims)
+    {
+    int64_t element_count = 1 ;
+    for (size_t i = 0; i < 3; i++)
+        element_count *= dims[i] ;
+    return element_count ;
+    }
+
+float normalize_in_place_3d(float* x, int64_t* dims)
+    {
+    float sum = 0.0f ;
+    size_t n = size_t(element_count_from_dims_3d(dims)) ;
+    for (size_t i = 0; i < n; ++i)
+        sum += x[i] ;
+    for (size_t i = 0; i < n; ++i)
+        x[i] = x[i] / sum ;
+    return sum ;  // why not?
+    }
+
 //=============================================================
 template float* fa_padArrayWithZeros<float>(const float* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);
 template std::uint16_t* fa_padArrayWithZeros<std::uint16_t>(const std::uint16_t* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);

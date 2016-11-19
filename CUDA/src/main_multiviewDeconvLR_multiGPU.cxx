@@ -92,7 +92,7 @@ int main(int argc, const char** argv)
 				
         t1 = Clock::now();
         cout << "Applying affine transformation to PSF array " << endl;
-        master.full_psf_mem.apply_affine_transformation_psf(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
+        master.full_psf_mem.apply_affine_transformation_psf(ii, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
         t2 = Clock::now();
         std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
