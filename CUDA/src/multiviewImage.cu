@@ -747,6 +747,8 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     rawPSFDims[1] = dimsImgVec[pos].dims[1] ;
     rawPSFDims[2] = dimsImgVec[pos].dims[2] ;
 
+    int64_t j_nonzero = find_first_nonzero_element_3d(getPointer_CPU(pos), rawPSFDims) ;  // this is just for debugging
+
     double rawPSFOrigin[3] = { 0.5, 0.5, 0.5 } ;  // Irrelevant, but let's be consistent with Matlab imwarp() defaults.
     double rawPSFSpacing[3] = { 1.0, 1.0, 1.0 } ;  // Generally not really true, but again, let's be consistent with Matlab imwarp() defaults
     int64_t psfDims[3] ;
@@ -765,12 +767,13 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     //perform transformation
     imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
 
+    int64_t i_nonzero = find_first_nonzero_element_3d(psf, psfDims) ;  // this is just for debugging
+
     // Eliminate any negative elements that might have resulted from cubic interpolation
-    for (int64_t i = 0; i < psfElementCount; i++)
-        psf[i] = (psf[i]>=0.0f) ? psf[i] : 0.0f ;
+    pos_in_place_3d(psf, psfDims) ;
 
     //
-    // Trim zero elements on all sides, keeping the PSF centered
+    // Trim near-zero elements on all sides, keeping the PSF centered
     //
 
     // Figure out how many elements we're going to trim

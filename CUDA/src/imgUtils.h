@@ -53,5 +53,7 @@ void sum_3d(double* z, double* x, double* y) ;
 void sum_in_place_3d(double* y, double* x) ;
 int64_t element_count_from_dims_3d(int64_t* dims) ;
 float normalize_in_place_3d(float* x, int64_t* dims) ;
+void pos_in_place_3d(float *x, int64_t dims[3]) ;
+int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3]) ;
 
 #endif 

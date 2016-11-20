@@ -487,6 +487,32 @@ float normalize_in_place_3d(float* x, int64_t* dims)
     return sum ;  // why not?
     }
 
+void pos_in_place_3d(float *x, int64_t dims[3])
+    {
+    // Determine the number of elements needed in the output array x
+    int64_t n_elements = element_count_from_dims_3d(dims) ;
+
+    // Eliminate any negative elements that might have resulted from cubic interpolation
+    for (int64_t i = 0; i < n_elements; ++i)
+        {
+        if (x[i] < 0.0f)
+            x[i] = 0.0f;
+        }
+    }
+
+int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3])
+    {
+    int64_t n_elements = element_count_from_dims_3d(dims) ;
+    for (int64_t i=0; i<n_elements; ++i)
+        {
+        if (x[i]!=0.0f)
+            return i ;
+        }
+    return -1 ; 
+    }
+
+
+
 //=============================================================
 template float* fa_padArrayWithZeros<float>(const float* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);
 template std::uint16_t* fa_padArrayWithZeros<std::uint16_t>(const std::uint16_t* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);
