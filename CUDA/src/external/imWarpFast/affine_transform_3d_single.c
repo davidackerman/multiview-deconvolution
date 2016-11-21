@@ -170,8 +170,10 @@ void affine_3d_compose(const float  A[AFFINE_3D_MATRIX_SIZE], const float B[AFFI
 	}
 }
 
-#define _m(x,y) (A[x + 4 * y])
-#define _minv(x,y) (Ainv[x + 4 * y])
+// Macro to get the element of A at row i, col j, assuming A is stored col-major
+#define _m(i,j) (A[i + 4 * j])
+// Macro to get the element of Ainv at row i, col j, assuming Ainv is stored col-major
+#define _minv(i,j) (Ainv[i + 4 * j])
 void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_3D_MATRIX_SIZE])
 {
 	if (affine_3d_isAffine(A) == false)
