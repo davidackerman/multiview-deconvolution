@@ -252,6 +252,34 @@ void affine3d_printMatrix(const float A[AFFINE_3D_MATRIX_SIZE])
 //============================================================
 void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn[3], int64_t dimsOut[3], float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
 {
+	// This assumes imIn is stored Matlab-style in memory: It's a 3D array with dims [n_y n_x n_z], stored col-major.
+	// On exit, imOut will be in the same form.
+	// A is assumed to represent a 4x4 affine transform matrix, stored col-major.  
+	// A should be the "row form" representation of the 3D affine transform, i.e the last column should be [0 0 0 1]', and the last
+	// row should represent the translation.  In this form, output_coord = input_coord * A, with output_coord and input_coord being 
+	// row vectors of the form [x y z 1].
+	// dimsIn gives the dimensions of the input stack, in the order n_y, n_x, n_z.  (sic)
+	// dimsOut gives the desired dimensions of the output stack, in the order n_y, n_x, n_z.
+	// Each element of dimsOut must be greater than or equal to the corresponding element of dimsIn.
+	// The input stack is padded equally on all sides out to size dimsOut before the transforming is done.
+	// Once the input stack is padded out to the same dimensions as the input stack, the affine transform is done.
+	// It is done s.t. it is equal to the Matlab commands:
+	//
+	// default_frame = ...
+	//     imref3d(size(input_stack), ...
+	//	           0.5 + [0 size(input_stack, 2)], ...
+	//	           0.5 + [0 size(input_stack, 1)], ...
+	//	           0.5 + [0 size(input_stack, 3)]);
+	//
+	// output_stack = imwarp(input_stack, default_frame, ...
+	//	                     affine3d(A), ...
+	//	                     'OutputView', default_frame);
+	//
+	// That is, the element at row i, col j, page k of the input stack (using zero-based indexing) is assumed to be located at 
+	// <x,y,z> coordinate <j+1, i+1, k+1> (note that cols map to x, rows to y), and the same for the output stack.  The equation
+	// output_coord = input_coord * A then relates the output <x,y,z> coordinates to the input <x,y,z> coordinates, with 
+	// interpolation used when a given output point does not correspond exactly to an on-grid input point.
+
 	//matrix to flip xy coodinates
 	const float F[AFFINE_3D_MATRIX_SIZE] = { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 	//recenter origina to apply transformation
