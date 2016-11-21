@@ -243,6 +243,7 @@ bool affine_3d_isAffine(const float A[AFFINE_3D_MATRIX_SIZE])
 
 void affine3d_printMatrix(const float A[AFFINE_3D_MATRIX_SIZE])
 {
+    // This implies that all these affine3d* functions assume that A is stored in col-major order.   -- ALT, 2016-11-20
 	int ii;
 	for (ii = 0; ii < 4; ii++)
 		printf("%.6f\t%.6f\t%.6f\t%.6f\n", A[ii + 4 * 0], A[ii + 4 * 1], A[ii + 4 * 2], A[ii + 4 * 3] );
@@ -265,14 +266,15 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 
 	//check if the transformation is the identity. Then we only need to copy the file
 	bool isId = true;
-	for (ii = 0; ii < AFFINE_3D_MATRIX_SIZE; ii++)
-	{
-		if (fabs(A[ii] - B[ii]) > 1e-3)
-		{
-			isId = false;
-			break;
-		}
-	}
+	//for (ii = 0; ii < AFFINE_3D_MATRIX_SIZE; ii++)
+	//{
+	//	if (fabs(A[ii] - B[ii]) > 1e-3)
+	//	{
+	//		isId = false;
+	//		break;
+	//	}
+	//}
+    isId = false ;  // for testing
 
 	for (ii = 0; ii < 3; ii++)
 	{		
