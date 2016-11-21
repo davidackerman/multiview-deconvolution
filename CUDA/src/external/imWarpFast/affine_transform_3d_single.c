@@ -261,8 +261,8 @@ void imwarpFast_MatlabEquivalent(const float* imIn, float* imOut, int64_t dimsIn
 	// dimsIn gives the dimensions of the input stack, in the order n_y, n_x, n_z.  (sic)
 	// dimsOut gives the desired dimensions of the output stack, in the order n_y, n_x, n_z.
 	// Each element of dimsOut must be greater than or equal to the corresponding element of dimsIn.
-	// The input stack is padded equally on all sides out to size dimsOut before the transforming is done.
-	// Once the input stack is padded out to the same dimensions as the input stack, the affine transform is done.
+	// The input stack is padded with zeros on the "high" end of each dimension out to size dimsOut before the transforming is done.
+	// Once the input stack is padded out to the same dimensions as the output stack, the affine transform is done.
 	// It is done s.t. it is equal to the Matlab commands:
 	//
 	// default_frame = ...
