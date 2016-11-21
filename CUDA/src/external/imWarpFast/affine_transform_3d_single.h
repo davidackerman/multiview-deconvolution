@@ -42,10 +42,21 @@ float* fa_padArrayWithZeros(const float* im, const int64_t *dimsNow, const int64
 
 
 
-//the same as Matlab: row major order A[AFFINE_3D_MATRIX_SIZE] = [a00,a10, a20, a30,a01,a11,a21,a31,...] with a30 = tx; 
+//the same as Matlab: row major order A[AFFINE_3D_MATRIX_SIZE] = [a00,a10, a20, a30,a01,a11,a21,a31,...] with a30 = tx;
+
+// What is described by "[a00,a10, a20, a30,a01,a11,a21,a31,...]" is *column*-major order, which is what Matlab uses.
+// Having the translation in the last row is indeed what Matlab's imwarp() + affine3d() use.  
+// In particular, output_image = imwarp(input_image, affine3d(A)) uses the transform output_image_coord = input_image_coord * A, with output_coord 
+// and input_coord being row vectors of the form [x y z 1].  -- ALT, 2016-11-21
+
 //auxiliary functions for affine matrices
 void affine_3d_transpose(const float  A[AFFINE_3D_MATRIX_SIZE], float Atr[AFFINE_3D_MATRIX_SIZE]);
-void affine_3d_compose(const float  A[AFFINE_3D_MATRIX_SIZE], const float B[AFFINE_3D_MATRIX_SIZE], float C[AFFINE_3D_MATRIX_SIZE]);//C = A * B
+void affine_3d_compose(const float  A[AFFINE_3D_MATRIX_SIZE], const float B[AFFINE_3D_MATRIX_SIZE], float C[AFFINE_3D_MATRIX_SIZE]);  // C = A * B
+  // This yields the equivalent transform to transforming by A, then transforming by B, 
+  // if A and B are both the row-form representations of the respective transforms.
+  // i.e. the form where output_coord = input_coord * A, with with output_coord 
+  // and input_coord being row vectors of the form [x y z 1].  -- ALT, 2016-11-21
+
 void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_3D_MATRIX_SIZE]);
 bool affine_3d_isAffine(const float A[AFFINE_3D_MATRIX_SIZE]);
 
