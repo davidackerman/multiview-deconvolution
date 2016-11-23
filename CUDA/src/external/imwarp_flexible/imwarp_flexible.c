@@ -129,8 +129,8 @@ voidthread transform_subvolume(void **args) {
 	float* input_stack = args[4];
 	float* output_stack = args[5];
 	int thread_id = *((int *)(args[6])) ;
-	bool is_cubic = *((int *)(args[7]));
-	bool is_background_black = *((int *)(args[8]));
+	bool is_cubic = *((bool *)(args[7]));
+	bool is_background_black = *((bool *)(args[8]));
 	int n_threads = *((int *)(args[9]));
 	int64_t* input_dims = args[10] ;
 	float* input_origin = args[11] ;
