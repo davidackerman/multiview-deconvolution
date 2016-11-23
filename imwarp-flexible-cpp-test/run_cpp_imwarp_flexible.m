@@ -16,7 +16,7 @@ function output_stack = run_cpp_imwarp_flexible(input_stack, input_origin, input
     % Get the executable name
     absolute_path_to_this_file = mfilename('fullpath') ;
     absolute_path_to_repo_root = fileparts(fileparts(absolute_path_to_this_file)) ;
-    absolute_path_to_executable = fullfile(absolute_path_to_repo_root, 'CUDA/build/src/imwarp_flexible/Debug/run_imwarp_flexible.exe' ) ;
+    absolute_path_to_executable = fullfile(absolute_path_to_repo_root, 'CUDA/build/src/imwarp_flexible/Debug/run_imwarp_flexible.exe' )
     
     command_line = ...
         sprintf('%s %s %s %s %s %s %s', ...
@@ -27,6 +27,7 @@ function output_stack = run_cpp_imwarp_flexible(input_stack, input_origin, input
                 'output_origin_and_spacing.txt', ...
                 'output_dimensions.txt', ...
                 'output.klb') ;
+    fprintf('%s\n', command_line) ;        
     status = system(command_line) ;
 
     if status~=0 ,
