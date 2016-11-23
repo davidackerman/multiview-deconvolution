@@ -69,6 +69,12 @@ include_directories("${PROJECT_SOURCE_DIR}/external/imWarpFast")
 add_subdirectory("${PROJECT_SOURCE_DIR}/external/imWarpFast" "${CMAKE_CURRENT_BINARY_DIR}/imWarpFast")
 LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/imWarpFast")
 
+#
+# code to calculate affine transformatiosn of 3D images fast, and flexibly
+#
+include_directories("${PROJECT_SOURCE_DIR}/external/imwarp_flexible")
+add_subdirectory("${PROJECT_SOURCE_DIR}/external/imwarp_flexible" "${CMAKE_CURRENT_BINARY_DIR}/imwarp_flexible")
+LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/imwarp_flexible")
 
 
 #
