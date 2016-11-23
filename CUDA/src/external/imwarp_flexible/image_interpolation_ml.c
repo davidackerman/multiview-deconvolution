@@ -835,26 +835,26 @@ float getcolor_mindex3_float(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x,
 //    return Ipixelxyz;
 //}
 
-float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
-    float Iout;
+float interpolate_3d_float_linear_black(float x, float y, float z, int64_t *dims, float *stack) {
+    float result;
     /*  Linear interpolation variables */
     int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
     float perc[8];
     float xCom, yCom, zCom;
     float xComi, yComi, zComi;
     float color[8]={0, 0, 0, 0, 0, 0, 0, 0};
-    float fTlocalx, fTlocaly, fTlocalz;
+    float x_floor, y_floor, z_floor;
     
 	// Stack dimensions
-	int64_t n_x = Isize[1];
-	int64_t n_y = Isize[0];
-	int64_t n_z = Isize[2];
+	int64_t n_x = dims[1];
+	int64_t n_y = dims[0];
+	int64_t n_z = dims[2];
 
-    fTlocalx=floorfloat(Tlocalx); fTlocaly=floorfloat(Tlocaly); fTlocalz=floorfloat(Tlocalz);
+    x_floor=floorfloat(x); y_floor=floorfloat(y); z_floor=floorfloat(z);
     
     /* Determine the coordinates of the pixel(s) which will be come the current pixel */
     /* (using linear interpolation) */
-	xBas0 = (int64_t)fTlocalx; yBas0 = (int64_t)fTlocaly; zBas0 = (int64_t)fTlocalz;
+	xBas0 = (int64_t)x_floor; yBas0 = (int64_t)y_floor; zBas0 = (int64_t)z_floor;
     xBas1=xBas0+1;      yBas1=yBas0+1;      zBas1=zBas0+1;
     
     
@@ -864,42 +864,42 @@ float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tloc
     if((xBas0>=0)&&(xBas0<n_x)) {
         if((yBas0>=0)&&(yBas0<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[0]=getcolor_mindex3_float(xBas0, yBas0, zBas0, n_x, n_y, n_z, Iin);
+                color[0]=getcolor_mindex3_float(xBas0, yBas0, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[1]=getcolor_mindex3_float(xBas0, yBas0, zBas1, n_x, n_y, n_z, Iin);
+                color[1]=getcolor_mindex3_float(xBas0, yBas0, zBas1, n_x, n_y, n_z, stack);
             }
         }
         if((yBas1>=0)&&(yBas1<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[2]=getcolor_mindex3_float(xBas0, yBas1, zBas0, n_x, n_y, n_z, Iin);
+                color[2]=getcolor_mindex3_float(xBas0, yBas1, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[3]=getcolor_mindex3_float(xBas0, yBas1, zBas1, n_x, n_y, n_z, Iin);
+                color[3]=getcolor_mindex3_float(xBas0, yBas1, zBas1, n_x, n_y, n_z, stack);
             }
         }
     }
     if((xBas1>=0)&&(xBas1<n_x))  {
         if((yBas0>=0)&&(yBas0<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[4]=getcolor_mindex3_float(xBas1, yBas0, zBas0, n_x, n_y, n_z, Iin);
+                color[4]=getcolor_mindex3_float(xBas1, yBas0, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[5]=getcolor_mindex3_float(xBas1, yBas0, zBas1, n_x, n_y, n_z, Iin);
+                color[5]=getcolor_mindex3_float(xBas1, yBas0, zBas1, n_x, n_y, n_z, stack);
             }
         }
         if((yBas1>=0)&&(yBas1<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[6]=getcolor_mindex3_float(xBas1, yBas1, zBas0, n_x, n_y, n_z, Iin);
+                color[6]=getcolor_mindex3_float(xBas1, yBas1, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[7]=getcolor_mindex3_float(xBas1, yBas1, zBas1, n_x, n_y, n_z, Iin);
+                color[7]=getcolor_mindex3_float(xBas1, yBas1, zBas1, n_x, n_y, n_z, stack);
             }
         }
     }
     
     /* Linear interpolation constants (percentages) */
-    xCom=Tlocalx-fTlocalx;  yCom=Tlocaly-fTlocaly;   zCom=Tlocalz-fTlocalz;
+    xCom=x-x_floor;  yCom=y-y_floor;   zCom=z-z_floor;
     
     xComi=(1-xCom); yComi=(1-yCom); zComi=(1-zCom);
     perc[0]=xComi * yComi; perc[1]=perc[0] * zCom; perc[0]=perc[0] * zComi;
@@ -908,8 +908,8 @@ float interpolate_3d_float_linear_black(float Tlocalx, float Tlocaly, float Tloc
     perc[6]=xCom * yCom;   perc[7]=perc[6] * zCom; perc[6]=perc[6] * zComi;
     
     /* Set the current pixel value */
-    Iout =color[0]*perc[0]+color[1]*perc[1]+color[2]*perc[2]+color[3]*perc[3]+color[4]*perc[4]+color[5]*perc[5]+color[6]*perc[6]+color[7]*perc[7];
-    return Iout;
+    result =color[0]*perc[0]+color[1]*perc[1]+color[2]*perc[2]+color[3]*perc[3]+color[4]*perc[4]+color[5]*perc[5]+color[6]*perc[6]+color[7]*perc[7];
+    return result;
 }
 
 float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
