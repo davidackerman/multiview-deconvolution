@@ -4,3 +4,8 @@ HHMIcredentials.txt
 CUDA/build_release/
 CUDA/build_debug/
 CUDA/build/
+imwarp-flexible-cpp-test/affine_transform_matrix_in_y_equals_Ax_form_row_major.txt
+imwarp-flexible-cpp-test/input.klb
+imwarp-flexible-cpp-test/output_dimensions.txt
+imwarp-flexible-cpp-test/output.klb
+imwarp-flexible-cpp-test/output_origin_and_spacing.txt
