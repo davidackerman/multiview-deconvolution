@@ -2,7 +2,8 @@
 #define __IMAGE_INTERPOLATION_ML_H__
 
 #include <stdint.h>
-/* Image and Volume interpolation 
+#include <stdbool.h>
+/* Image and Volume interpolation
  *
  * Function is written by D.Kroon University of Twente (June 2009)
  */
@@ -96,9 +97,6 @@ float  getcolor_mindex3_float(int64_t x, int64_t y, int64_t z, int64_t sizx, int
 //double interpolate_2d_double_gray(double Tlocalx, double Tlocaly, int *Isize, double *Iin,int cubic,int black);
 //void interpolate_2d_double_color(double *Ipixel, double Tlocalx, double Tlocaly, int *Isize, double *Iin, int cubic, int black);
 //double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz, int *Isize, double *Iin,int cubic,int black);
-float interpolate_3d_float_gray(float x, float y, float z, int64_t *dims, float *stack, int is_cubic, int is_black);
-
-
-
+float interpolate_3d_float_gray(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_black);
 
 #endif

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <math.h>
+#include <stdbool.h>
 #include "klb_Cwrapper.h"
 #include "imwarp_flexible.h"
 
@@ -15,7 +16,7 @@ typedef std::chrono::high_resolution_clock Clock;
 int main(int argc, const char** argv)
 {
 	// Just to satisfy my neurosis
-	cout << "This is run_imwarp_flexible" << endl;
+	cout << "This is run_imwarp_flexible." << endl;
 
 	// Process the arguments
 	if (argc < 4)
@@ -62,22 +63,27 @@ int main(int argc, const char** argv)
 	print_affine_3d_matrix(A) ;
 
     // Set the input, output dims
-    int64_t input_dims[3] = { xyzct[0], xyzct[1], xyzct[2] };
+    int64_t input_dims[3] = { xyzct[0], xyzct[1], xyzct[2] };  // TODO: Is this right?  Do we need to swap x and y dims?
     int64_t output_dims[3] = { xyzct[0], xyzct[1], xyzct[2] };  // same as input_dims
     
     // Allocate memory for output stack
 	cout << "Applying affine transformation..." << endl;
-	size_t n_output_elements = (size_t) output_dims[0] * output_dims[1] * output_dims[2];
-	float* output_stack = new float[n_output_elements];
+	size_t n_output_elements = (size_t) output_dims[0] * output_dims[1] * output_dims[2] ;
+	float* output_stack = new float[n_output_elements] ;
 
 	// Call imwarp in CPU
 	float input_origin[3] = { 0.5, 0.5, 0.5 };
+	float input_spacing[3] = { 1.0, 1.0, 1.0 };
 	float output_origin[3] = { 0.5, 0.5, 0.5 };
-	int interpolation_mode = 2;  // cubic interpolation, no black background
+	float output_spacing[3] = { 1.0, 1.0, 1.0 };
+	//int interpolation_mode = 2;  // cubic interpolation, no black background
+	bool is_cubic = true ;
+	bool is_background_black = false ;
 	auto t1 = Clock::now();
-	imwarp_flexible(input_stack, input_dims, input_origin,
-		            output_stack, output_dims, output_origin,
-		            A, interpolation_mode) ;
+	imwarp_flexible(input_stack, input_dims, input_origin, input_spacing,
+		            output_stack, output_dims, output_origin, output_spacing,
+					A, 
+					is_cubic, is_background_black) ;
 	auto t2 = Clock::now();
 	std::cout << "Imwarp fast in CPU with "<<getNumberOfCores()<< " threads  took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms"<< std::endl;
 

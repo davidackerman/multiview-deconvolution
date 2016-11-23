@@ -1,4 +1,5 @@
-#include "math.h"
+#include <math.h>
+#include <stdbool.h>
 #include "image_interpolation_ml.h"
 
 /* Image and Volume interpolation 
@@ -1176,25 +1177,16 @@ double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz
 }
 */
 
-float interpolate_3d_float_gray(float x, float y, float z, int64_t *dims, float *stack, int is_cubic, int is_black)  {
+float interpolate_3d_float_gray(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_background_black)  {
 	float result;
 	if (is_cubic) {
-		if (is_black) { result = interpolate_3d_float_cubic_black(x, y, z, dims, stack); }
+		if (is_background_black) { result = interpolate_3d_float_cubic_black(x, y, z, dims, stack); }
 		else { result = interpolate_3d_float_cubic(x, y, z, dims, stack); }
 	}
 	else {
-		if (is_black) { result = interpolate_3d_float_linear_black(x, y, z, dims, stack); }
+		if (is_background_black) { result = interpolate_3d_float_linear_black(x, y, z, dims, stack); }
 		else { result = interpolate_3d_float_linear(x, y, z, dims, stack); }
 	}
 	return result;
 }
-
-
-
-
-
-
-
-
-
 

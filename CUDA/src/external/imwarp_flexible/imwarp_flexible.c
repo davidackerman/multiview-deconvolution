@@ -6,7 +6,7 @@
 #else
 #include <unistd.h>
 #endif
-#include "math.h"
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,46 +124,49 @@ voidthread transform_subvolume(void **args) {
 	// Sort out the arguments
 	int64_t* output_dims = (int64_t *)(args[0]);
 	float* output_origin = (float *)(args[1]);
-	float* Ainv = (float*)(args[2]);
-	float* input_stack = args[3];
-	float* output_stack = args[4];
-	int thread_id = *((int *)(args[5])) ;
-	int interpolation_mode = *((int *)(args[6]));
-	int n_threads = *((int *)(args[7]));
-	int64_t* input_dims = args[8] ;
-	float* input_origin = args[9] ;
+	float* output_spacing = (float *)(args[2]);
+	float* Ainv = (float*)(args[3]);
+	float* input_stack = args[4];
+	float* output_stack = args[5];
+	int thread_id = *((int *)(args[6])) ;
+	bool is_cubic = *((int *)(args[7]));
+	bool is_background_black = *((int *)(args[8]));
+	int n_threads = *((int *)(args[9]));
+	int64_t* input_dims = args[10] ;
+	float* input_origin = args[11] ;
+	float* input_spacing = (float *)(args[12]);
 
 	// Decode the interpolation_mode
-	int is_black = (interpolation_mode == 1 || interpolation_mode == 3) ;
-	int is_cubic = (interpolation_mode == 2 || interpolation_mode == 3) ;
+	//int is_black = (interpolation_mode == 1 || interpolation_mode == 3) ;
+	//int is_cubic = (interpolation_mode == 2 || interpolation_mode == 3) ;
 
 	float acomp0 = Ainv[3];  // the x translation
 	float acomp1 = Ainv[7];  // the y translation 
 	float acomp2 = Ainv[11];  // the z translation
 	//  Loop through all output image pixel coordinates */
 	for (int64_t i_z_out = thread_id; i_z_out<output_dims[2]; i_z_out = i_z_out + n_threads) {
-		float z_out = i_z_out + output_origin[2] + 0.5f ;
+		float z_out = output_spacing[2] * (i_z_out + 0.5f) + output_origin[2] ;
 		float bcomp0 = Ainv[2] * z_out + acomp0;
 		float bcomp1 = Ainv[6] * z_out + acomp1;
 		float bcomp2 = Ainv[10] * z_out + acomp2;
 		for (int64_t i_y_out = 0; i_y_out<output_dims[0]; i_y_out++) {
-			float y_out = i_y_out + output_origin[1] + 0.5f ;
+			float y_out = output_spacing[1] * (i_y_out + 0.5f) + output_origin[1] ;
 			float ccomp0 = Ainv[1] * y_out + bcomp0;
 			float ccomp1 = Ainv[5] * y_out + bcomp1;
 			float ccomp2 = Ainv[9] * y_out + bcomp2;
 			for (int64_t i_x_out = 0; i_x_out<output_dims[1]; i_x_out++) {
-				float x_out = i_x_out + output_origin[0] + 0.5f ;
+				float x_out = output_spacing[0] * (i_x_out + 0.5f) + output_origin[0] ;
 				float x_in = Ainv[0] * x_out + ccomp0;
 				float y_in = Ainv[4] * x_out + ccomp1;
 				float z_in = Ainv[8] * x_out + ccomp2;
 
-				float i_x_in = x_in - input_origin[0] - 0.5f ;  // NB: Not necessarily integral.
-				float i_y_in = y_in - input_origin[1] - 0.5f ;  // NB: Not necessarily integral.
-				float i_z_in = z_in - input_origin[2] - 0.5f ;  // NB: Not necessarily integral.
+				float i_x_in = (x_in - input_origin[0])/input_spacing[0] - 0.5f ;  // NB: Not necessarily integral.
+				float i_y_in = (y_in - input_origin[1])/input_spacing[1] - 0.5f ;  // NB: Not necessarily integral.
+				float i_z_in = (z_in - input_origin[2])/input_spacing[2] - 0.5f ;  // NB: Not necessarily integral.
 
 				int64_t i_out = mindex3(i_x_out, i_y_out, i_z_out, output_dims[1], output_dims[0]);
 
-				output_stack[i_out] = interpolate_3d_float_gray(i_x_in, i_y_in, i_z_in, input_dims, input_stack, is_cubic, is_black);
+				output_stack[i_out] = interpolate_3d_float_gray(i_x_in, i_y_in, i_z_in, input_dims, input_stack, is_cubic, is_background_black);
 			}
 		}
 	}
@@ -173,9 +176,10 @@ voidthread transform_subvolume(void **args) {
 }
 
 //================================================================================================================
-void imwarp_flexible(const float* input_stack, int64_t input_dims[3], float input_origin[3], 
-	                 float* output_stack, int64_t output_dims[3], float output_origin[3], 
-	                 float A[AFFINE_3D_MATRIX_SIZE], int interpolation_mode)
+void imwarp_flexible(const float* input_stack, int64_t input_dims[3], float input_origin[3], float input_spacing[3],
+	                 float* output_stack, int64_t output_dims[3], float output_origin[3], float output_spacing[3], 
+					 float A[AFFINE_3D_MATRIX_SIZE], 
+					 bool is_cubic, bool is_background_black)
 {
 	// This assumes imIn is stored Matlab-style in memory: It's a 3D array with dims [n_y n_x n_z], stored col-major.
 	// On exit, imOut will be in the same form.
@@ -221,23 +225,26 @@ void imwarp_flexible(const float* input_stack, int64_t input_dims[3], float inpu
 		thread_ids[i] = i;
 
 	// Define an array of pointers to thread argument arrays
-	const int n_thread_args = 10;
+	const int n_thread_args = 13 ;
 	void*** thread_args = (void ***)malloc(n_threads*sizeof(void **));
 	for (int i = 0; i < n_threads; i++)
 		thread_args[i] = (void **)malloc(n_thread_args * sizeof(void *));
 
 	// Package thread arguments
 	for (int i = 0; i < n_threads; i++)  {
-		thread_args[i][0] = (void *)output_dims;
-		thread_args[i][1] = (void *)output_origin;
-		thread_args[i][2] = (void *)Ainv;
-		thread_args[i][3] = (void *)input_stack;
-		thread_args[i][4] = (void *)output_stack;
-		thread_args[i][5] = (void *)(&(thread_ids[i]));
-		thread_args[i][6] = (void *)(&interpolation_mode);
-		thread_args[i][7] = (void *)(&n_threads);
-		thread_args[i][8] = (void *)input_dims;
-		thread_args[i][9] = (void *)input_origin;
+		thread_args[i][ 0] = (void *)output_dims;
+		thread_args[i][ 1] = (void *)output_origin;
+		thread_args[i][ 2] = (void *)output_spacing;
+		thread_args[i][ 3] = (void *)Ainv;
+		thread_args[i][ 4] = (void *)input_stack;
+		thread_args[i][ 5] = (void *)output_stack;
+		thread_args[i][ 6] = (void *)(&(thread_ids[i]));
+		thread_args[i][ 7] = (void *)(&is_cubic);
+		thread_args[i][ 8] = (void *)(&is_background_black);
+		thread_args[i][ 9] = (void *)(&n_threads);
+		thread_args[i][10] = (void *)input_dims;
+		thread_args[i][11] = (void *)input_origin;
+		thread_args[i][12] = (void *)input_spacing;
 	}
 
 	// Start the threads
