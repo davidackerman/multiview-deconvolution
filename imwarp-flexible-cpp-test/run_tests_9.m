@@ -1,30 +1,42 @@
-spacing = [1 1 1]' ;  % xyz
+input_spacing = [1 2 4]' ;  % xyz
 FWHM = [2.5 5 10] ;  % xyz
-dims = [137 69 275] ; % yxz
-input_stack = generate_PSF_with_given_dims(spacing, FWHM, dims) ;
-input_stack_dims = size(input_stack)
+input_dims = [69 69 69] ; % yxz
+input_stack = generate_PSF_with_given_dims(input_spacing, FWHM, input_dims) ;
 
 % scale the input stack, convert to uint16
 input_stack = single(input_stack) ;
 
 % Define the frame
 [n_y_input, n_x_input, n_z_input] = size(input_stack) ;
-origin = -0.5 * [n_x_input n_y_input n_z_input]'
+input_origin = -0.5 * (input_spacing .* [n_x_input n_y_input n_z_input]')
 %spacing = ones(3,1) ;
-frame = ...
+input_frame = ...
     imref3d(size(input_stack), ...
-            origin(1)+spacing(1)*[0 n_x_input], ...
-            origin(2)+spacing(2)*[0 n_y_input], ...
-            origin(3)+spacing(3)*[0 n_z_input])  
+            input_origin(1)+input_spacing(1)*[0 n_x_input], ...
+            input_origin(2)+input_spacing(2)*[0 n_y_input], ...
+            input_origin(3)+input_spacing(3)*[0 n_z_input])  
+
+% Define the output frame
+output_spacing = [1 1 1]' ;  % xyz
+n_x_output = 137 ;
+n_y_output = 137 ;
+n_z_output = 137 ;
+output_dims = [n_y_output n_x_output n_z_output] ; % yxz
+output_origin = -0.5 * (output_spacing .* [n_x_output n_y_output n_z_output]')
+output_frame = ...
+    imref3d(output_dims, ...
+            output_origin(1)+output_spacing(1)*[0 n_x_output], ...
+            output_origin(2)+output_spacing(2)*[0 n_y_output], ...
+            output_origin(3)+output_spacing(3)*[0 n_z_output])          
 
 % Test 1
 A= [ 1 0 0 0 ;
      0 1 0 0 ;
      0 0 1 0 ;
      0 0 0 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -34,9 +46,9 @@ A= [ 0 1 0 0 ;
      0 0 1 0 ;
      1 0 0 0 ;
      0 0 0 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -46,9 +58,9 @@ A= [ 1 0 0 0 ;
      0 2 0 0 ;
      0 0 1 0 ;
      0 0 0 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -58,9 +70,9 @@ A= [ 0 2 0 0 ;
      0 0 1 0 ;
      1 0 0 0 ;
      0 0 0 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -70,9 +82,9 @@ A= [ 0 2 0 0 ;
      0 0 1 0 ;
      1 0 0 0 ;
      1 2 3 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -82,9 +94,9 @@ A= [ 1 2 0 0 ;
      0 0 1 0 ;
      1 0 0 0 ;
      1 2 3 1 ] ;
-output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
 output_stack_cpp_size = size(output_stack_cpp) ;
-output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
 %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
 is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
 if ~is_cpp_output_close_to_matlab , error('Deviation!  Deviation!') ; end
@@ -97,9 +109,9 @@ for i=1:5
     A(1,1) = 1 ;
     A(2,2) = 1 ;
     A(2,2) = 1 ;    
-    output_stack_cpp = run_cpp_imwarp_flexible(input_stack, origin, spacing, A, origin, spacing, input_stack_dims) ;
+    output_stack_cpp = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims) ;
     output_stack_cpp_size = size(output_stack_cpp) ;
-    output_stack_matlab = imwarp(input_stack, frame, affine3d(A), 'OutputView', frame, 'Interp', 'cubic') ;
+    output_stack_matlab = imwarp(input_stack, input_frame, affine3d(A), 'OutputView', output_frame, 'Interp', 'cubic') ;
     %is_matlab_output_close_to_input = is_close_enough(output_stack_matlab, input_stack) ;
     is_cpp_output_close_to_matlab = is_close_enough(output_stack_cpp, output_stack_matlab) 
     % These seem to always match, in that both are zero everywhere.

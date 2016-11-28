@@ -8,6 +8,10 @@ if ~exist('FWHM_xyz', 'var') || isempty(FWHM_xyz) ,
     FWHM = [1.0 1.0 4.5] ;  % um, in order x y z
 end
 
+if iscolumn(spacing_xyz) ,
+    spacing_xyz = spacing_xyz' ;
+end
+
 % sigma = zeros(1,2) ;
 % for ii = 1:3
 %    sigma(ii) = sqrt( -0.5*((FWHM(ii)/sampling(ii))^2)/log(0.5));     

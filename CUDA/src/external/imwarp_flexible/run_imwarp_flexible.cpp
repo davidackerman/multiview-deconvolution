@@ -151,9 +151,46 @@ int main(int argc, const char** argv)
 	writeKLBstack(output_stack, outputFileName.c_str(), output_yxzct, KLB_DATA_TYPE::FLOAT32_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
 
 	// Release memory
-	delete[] output_stack;
 	free(input_stack);
 
+	// Read the output stack back in, to make sure we can
+	cout << "Reading output file back in, as sanity check..." ;
+	uint32_t output_check_yxzct[KLB_DATA_DIMS];
+	KLB_DATA_TYPE output_check_data_type;
+	float32_t output_check_pixel_size[KLB_DATA_DIMS];
+	uint32_t output_check_block_size[KLB_DATA_DIMS];
+	KLB_COMPRESSION_TYPE output_check_compression_type;
+	char output_check_metadata[KLB_METADATA_SIZE];
+	float* output_check_stack = (float*)readKLBstack(outputFileName.c_str(), output_check_yxzct, &output_check_data_type, -1, output_check_pixel_size, output_check_block_size, &output_check_compression_type, output_check_metadata);
+	if (output_check_data_type != KLB_DATA_TYPE::FLOAT32_TYPE || output_check_stack == NULL)
+	{
+		cout << "ERROR: output stack, as read back from disk, is not single-precision float" << endl;
+		return 6 ;
+	}
+	for (size_t i = 0; i < KLB_DATA_DIMS; ++i)
+	{	
+		if ( output_check_yxzct[i] != output_yxzct[i] )
+		{
+			cout << "ERROR: Dimensions of output stack, as read back from disk, do not match dimensions of original output stack" << endl;
+			return 7 ;
+		}
+	}
+	// If the dimensions match, can use the already-computed number of output elements
+	for (size_t i = 0; i < n_output_elements; ++i)
+	{
+		if (output_check_stack[i] != output_stack[i])
+		{
+			cout << "ERROR: Data in output stack, as read back from disk, does not match original output stack at element" << i << "(using zero-based indexing)" << endl ;
+			return 8 ;
+		}
+	}
+	cout << "done, and matches original output stack." << endl ;
+
+	// Release memory allocated by us in main() via new operator, and memory allocated in readKLBstack() via malloc()
+	delete[] output_stack;
+	free(output_check_stack) ;
+
+	// Output final message, and execute a normal return
 	std::cout << "...OK" << endl;
 	return 0;
 }

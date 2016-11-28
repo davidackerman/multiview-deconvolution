@@ -1,4 +1,4 @@
-spacing = [1 1 1]' ;  % xyz
+spacing = [1 2 4]' ;  % xyz
 FWHM = [2.5 5 10] ;  % xyz
 dims = [137 69 275] ; % yxz
 input_stack = generate_PSF_with_given_dims(spacing, FWHM, dims) ;
@@ -9,7 +9,7 @@ input_stack = single(input_stack) ;
 
 % Define the frame
 [n_y_input, n_x_input, n_z_input] = size(input_stack) ;
-origin = -0.5 * [n_x_input n_y_input n_z_input]'
+origin = -0.5 * (spacing .* [n_x_input n_y_input n_z_input]')
 %spacing = ones(3,1) ;
 frame = ...
     imref3d(size(input_stack), ...

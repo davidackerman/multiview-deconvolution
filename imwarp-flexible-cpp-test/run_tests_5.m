@@ -1,4 +1,4 @@
-spacing = [1 1 1]' ;  % xyz
+spacing = [1 2 4]' ;  % xyz
 FWHM = [2.5 5 10] ;  % xyz
 dims = [137 69 275] ; % yxz
 input_stack = generate_PSF_with_given_dims(spacing, FWHM, dims) ;
