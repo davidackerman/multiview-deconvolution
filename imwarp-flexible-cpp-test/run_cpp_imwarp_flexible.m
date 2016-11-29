@@ -1,5 +1,5 @@
 function output_stack = run_cpp_imwarp_flexible(input_stack, input_origin, input_spacing, A, output_origin, output_spacing, output_dims)   %#ok<INUSD,INUSL>
-    writeKLBstack(input_stack, 'input.klb') ;
+    writeKLBstack('input.klb', input_stack) ;
     
     input_origin_and_spacing = [input_origin input_spacing] ; %#ok<NASGU>
     save('input_origin_and_spacing.txt', 'input_origin_and_spacing', '-ascii') ;
