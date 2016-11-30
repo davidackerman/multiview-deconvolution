@@ -18,6 +18,7 @@
 #include "cuda.h"
 #include "book.h"
 #include "imgUtils.h"
+#include "imwarp_flexible.h"
 
 
 using namespace std;
@@ -751,12 +752,13 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
 
     double rawPSFOrigin[3] = { 0.5, 0.5, 0.5 } ;  // Irrelevant, but let's be consistent with Matlab imwarp() defaults.
     double rawPSFSpacing[3] = { 1.0, 1.0, 1.0 } ;  // Generally not really true, but again, let's be consistent with Matlab imwarp() defaults
+    double psfSpacing[3] = { 1.0, 1.0, 1.0 } ;
     int64_t psfDims[3] ;
     double psfOrigin[3] ;
     transform_lattice_3d(psfDims, psfOrigin,
                          A,
                          rawPSFDims, rawPSFOrigin, rawPSFSpacing,
-                         rawPSFSpacing) ;
+                         psfSpacing) ;
 
     // Determine the number of elements needed in the output array psf
     int64_t psfElementCount = element_count_from_dims_3d(psfDims) ;
@@ -764,8 +766,25 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     //allocate memory for transformed image
     float* psf = new float[psfElementCount] ;
 
+    // Make float versions of origins and spacing
+    float rawPSFOriginAsFloat[3] ;
+    float_from_double(rawPSFOriginAsFloat, rawPSFOrigin, 3) ;
+    float rawPSFSpacingAsFloat[3] ;
+    float_from_double(rawPSFSpacingAsFloat, rawPSFSpacing, 3) ;
+    float psfOriginAsFloat[3] ;
+    float_from_double(psfOriginAsFloat, psfOrigin, 3) ;
+    float psfSpacingAsFloat[3] ;
+    float_from_double(psfSpacingAsFloat, psfSpacing, 3) ;
+
     //perform transformation
-    imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
+    //imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
+    float* rawPSF = getPointer_CPU(pos) ;
+    bool is_background_black = (interpMode & 1) ;  // bit 0 indicates whether background should be treated as black or extrapolated
+    bool is_cubic = (interpMode & 2) ; // bit 1 indicates whether cubic interpolation should be used (as opposed to linear)
+    imwarp_flexible(rawPSF, rawPSFDims, rawPSFOriginAsFloat, rawPSFSpacingAsFloat,
+                    psf, psfDims, psfOriginAsFloat, psfSpacingAsFloat,
+                    A,
+                    is_cubic, is_background_black) ;
 
     int64_t i_nonzero = find_first_nonzero_element_3d(psf, psfDims) ;  // this is just for debugging
 
@@ -822,7 +841,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
         dimsImgVec[pos].dims[ii] = trimmedPSFDims[ii];
 
-    // Delete the temp
+    // Delete the untrimmed PSF
     delete [] psf ;
     }
 

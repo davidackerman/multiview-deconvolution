@@ -142,7 +142,7 @@ int main(int argc, const char** argv)
 					A, 
 					is_cubic, is_background_black) ;
 	auto t2 = Clock::now() ;
-	std::cout << "Imwarp fast in CPU with " << getNumberOfCores() << " threads  took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms"<< std::endl ;
+    std::cout << "Imwarp fast in CPU with " << get_number_of_cores() << " threads  took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl ;
 
 	// Write out solution
 	cout << "Writing out solution..." << endl;

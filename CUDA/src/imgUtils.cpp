@@ -511,6 +511,13 @@ int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3])
     return -1 ; 
     }
 
+void float_from_double(float* y, double* x, int64_t n)
+    {
+    for (int64_t i = 0; i < n; ++i)
+        {
+        y[i] = float(x[i]) ;
+        }
+    }
 
 
 //=============================================================

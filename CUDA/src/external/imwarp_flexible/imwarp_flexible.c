@@ -37,12 +37,12 @@ void print_affine_3d_matrix(const float A[AFFINE_3D_MATRIX_SIZE])
 #define _m(i,j) (A[i + 4 * j])
 // Macro to get the element of Ainv at row i, col j, assuming Ainv is stored col-major
 #define _minv(i,j) (Ainv[i + 4 * j])
-void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_3D_MATRIX_SIZE])
+void invert_affine_3d_matrix(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_3D_MATRIX_SIZE])
 {
 	// A is assumed to be stored col-major, and to be a "row form" affine transform matrix, s.t. y' = x'*A .
 	if (!is_affine_3d_matrix(A))
 	{
-		printf("ERROR: affine_3d_inverse: trying to calculate inverse of a non-affine matrix\n");
+		printf("ERROR: invert_affine_3d_matrix: trying to calculate inverse of a non-affine matrix\n");
 		print_affine_3d_matrix(A);
 		exit(2);
 	}
@@ -60,7 +60,7 @@ void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_
 
 	if (fabs(det) < 1e-8)
 	{
-		printf("ERROR: affine_3d_inverse: matrix is close to singular\n");
+		printf("ERROR: invert_affine_3d_matrix: matrix is close to singular\n");
 		print_affine_3d_matrix(A);
 		exit(2);
 	}
@@ -94,7 +94,7 @@ void affine_3d_inverse(const float  A[AFFINE_3D_MATRIX_SIZE], float Ainv[AFFINE_
 
 //================================================================================================================
 //from http://www.cprogramming.com/snippets/source-code/find-the-number-of-cpu-cores-for-windows-mac-or-linux
-int getNumberOfCores()
+int get_number_of_cores()
 {
 #ifdef WIN32
 	SYSTEM_INFO sysinfo;
@@ -211,10 +211,10 @@ void imwarp_flexible(const float* input_stack, int64_t input_dims[3], float inpu
 
 	// Take the inverse of A once, since we need it at each voxel
 	float Ainv[AFFINE_3D_MATRIX_SIZE];
-	affine_3d_inverse(A, Ainv);
+	invert_affine_3d_matrix(A, Ainv);
 
 	// Determine the number of threads to use
-	int n_threads = getNumberOfCores();
+    int n_threads = get_number_of_cores();
 
 	// Reserve room for handles of threads in ThreadList  
 	ThreadHANDLE* thread_list = (ThreadHANDLE*)malloc(n_threads*sizeof(ThreadHANDLE));
