@@ -191,6 +191,13 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		}
 	}
 
+    aux = node.getAttribute("isPSFAlreadyTransformed");
+    if (aux != NULL)
+    {
+        parseString<int>(string(aux), ll);
+        paramDec.isPSFAlreadyTransformed = bool(ll[0]) ;
+        ll.clear();
+    }
 
 	paramDec.anisotropyZ = paramDec.getAnisotropyZfromAffine();
 }

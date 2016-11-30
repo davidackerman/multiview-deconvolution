@@ -53,6 +53,8 @@ struct paramDeconvolution
 
 	std::string outputFilePrefix;
 
+    bool isPSFAlreadyTransformed ;
+
 	//default paramaters
 	void setDefaultParam()
 	{
@@ -67,6 +69,8 @@ struct paramDeconvolution
 
 		saturation.use_max = false;
 		saturation.use_min = false;
+
+        isPSFAlreadyTransformed = true ;
 	}
 
 	float getAnisotropyZfromAffine();
