@@ -1,17 +1,18 @@
 
-project ( multiview_deconvolution )
-cmake_minimum_required ( VERSION 2.8 )
+project(multiview_deconvolution)
+cmake_minimum_required(VERSION 3.0)
 
-#folder where all the executables go (this is seens by all elements called using add_subdirectory)
-SET(PROJECT_BINARY_FOLDER "${PROJECT_SOURCE_DIR}/bin")
+include(cmake/git-versioning.cmake)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
 
-#contains main source files
-add_subdirectory("${PROJECT_SOURCE_DIR}/src")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_STANDARD   99)
+set(CMAKE_CXX_STANDARD 11)
 
-#contains files to test different aspects of the code
-add_subdirectory("${PROJECT_SOURCE_DIR}/test")
+enable_testing()
+add_subdirectory(src)
+add_subdirectory(test)
 
-
-#copy binaries to specific folder for release version
-#INSTALL(TARGETS  klblib klblibs test_klbIO test_klbIO_C DESTINATION "${KLB_BINARY_FOLDER}" CONFIGURATIONS Release)
+include(InstallRequiredSystemLibraries)
+include(CPack)

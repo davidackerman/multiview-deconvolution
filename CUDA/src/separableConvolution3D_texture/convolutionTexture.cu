@@ -16,10 +16,10 @@
 #include <stdint.h>
 
 // Utilities and system includes
-#include <helper_functions.h>
-#include <helper_cuda.h>
+#include "helper_functions.h"
+#include "helper_cuda.h"
 
-#include <cuda_runtime.h>
+#include "cuda_runtime.h"
 #include "convolutionTexture_common.h"
 #include "book.h"
 

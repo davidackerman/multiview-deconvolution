@@ -20,7 +20,7 @@
 #include <algorithm>
 
 #include <assert.h>
-#include <exception.h>
+#include "exception.h"
 #include <math.h>
 
 #ifndef MIN
@@ -34,7 +34,7 @@
 #define EXIT_WAIVED 2
 #endif
 
-#include <helper_string.h>
+#include "helper_string.h"
 
 // namespace unnamed (internal)
 namespace

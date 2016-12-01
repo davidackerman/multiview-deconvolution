@@ -11,9 +11,8 @@
 #include "cuda.h"
 #include "commonCUDA.h"
 #include "weigthsBlurryMeasure.h"
-#include "dct8x8_kernel2.cuh"
-#include "convolutionTexture_common.h"
-
+#include "dct8x8/dct8x8_kernel2.cuh"
+#include "separableConvolution3D_texture/convolutionTexture_common.h"
 
 
 /**
