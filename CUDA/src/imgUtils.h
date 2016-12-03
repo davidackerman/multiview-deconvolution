@@ -22,16 +22,21 @@ imgType* fa_padArrayWithZeros(const imgType* im, const std::int64_t *dimsNow, co
 
 std::string generateTempFilename(const char* prefix);
 
-int copySlice(float* target, int64_t* targetSize,
+int copySliceOld(float* target, int64_t* targetSize,
               int64_t* nElementsToTrim,
               int64_t arity, int64_t sliceArity,
+              float* source, int64_t* sourceSize) ;
+int copySlice(float* target, int64_t* targetSize,
+              int64_t* nElementsToTrim,
+              int64_t arity,
               float* source, int64_t* sourceSize) ;
 int64_t indexOfFirstSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
 int64_t indexOfLastSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
 bool isSliceSuperthreshold(float *x, int64_t arity, int64_t* xDims, int64_t iDim, int64_t iElement, float threshold) ;
 int64_t chunkSize(int64_t* xDims, int64_t iDim) ;
 int64_t chunkCount(int64_t arity, int64_t* xDims, int64_t iDim) ;
-int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity) ;
+int64_t elementsPerSliceOld(int64_t arity, int64_t* size, int64_t sliceArity) ;
+int64_t elementsPerSlice(int64_t arity, int64_t* size) ;
 
 void transform_lattice_3d(int64_t* targetCount, double* targetOrigin,
                           float* A,
@@ -56,5 +61,6 @@ float normalize_in_place_3d(float* x, int64_t* dims) ;
 void pos_in_place_3d(float *x, int64_t dims[3]) ;
 int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3]) ;
 void float_from_double(float* y, double* x, int64_t n) ;
+void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64_t* psfDims, float threshold) ;
 
 #endif 

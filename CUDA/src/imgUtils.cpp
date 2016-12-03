@@ -109,7 +109,7 @@ std::string generateTempFilename(const char* prefix)
 }
 
 //=========================================================================
-int copySlice(float* target, int64_t* targetSize,
+int copySliceOld(float* target, int64_t* targetSize,
               int64_t* nElementsToTrim,
               int64_t arity, int64_t sliceArity,
               float* source, int64_t* sourceSize)
@@ -127,20 +127,54 @@ int copySlice(float* target, int64_t* targetSize,
         }
     else
         {
-        int64_t elementsPerTargetSlice = elementsPerSlice(arity, targetSize, sliceArity) ;
-        int64_t elementsPerSourceSlice = elementsPerSlice(arity, sourceSize, sliceArity) ;
+        int64_t elementsPerTargetSlice = elementsPerSliceOld(arity, targetSize, sliceArity) ;
+        int64_t elementsPerSourceSlice = elementsPerSliceOld(arity, sourceSize, sliceArity) ;
         int64_t nElementsToTrimInThisDimension = nElementsToTrim[iDim] ;
         float* sourcePlusOffset = source + elementsPerSourceSlice*nElementsToTrimInThisDimension ;
         for (int64_t i = 0; i < targetSize[iDim]; ++i)
             {
             float* targetSlice = target + elementsPerTargetSlice*i ;
             float* sourceSlice = sourcePlusOffset + elementsPerSourceSlice*i ;
-            int err = copySlice(targetSlice, targetSize + 1, nElementsToTrim + 1, arity - 1, sliceArity - 1, sourceSlice, sourceSize + 1) ;
+            int err = copySliceOld(targetSlice, targetSize + 1, nElementsToTrim + 1, arity - 1, sliceArity - 1, sourceSlice, sourceSize + 1) ;
             if (err) { return err ; }
             }
         return 0 ;
         }
     }
+
+//=========================================================================
+int copySlice(float* target, int64_t* targetSize,
+              int64_t* nElementsToTrim,
+              int64_t arity, 
+              float* source, int64_t* sourceSize)
+{
+    // Copy the source array to the target array, trimming the given number of elements off each end of each dimension of the source array.
+    // Arity is the dimensionality of both target and source. targetSize, sourceSize, and nElementsToTrim should all be of length arity.
+    // sliceArity gives the number of dimensions remaining to be copied over.
+    // Returns 0 if everything works, a negative error code otherwise.
+    int64_t iDim = arity - 1 ;  // The dimension we will work on, always the last one
+    if (arity == 1)
+    {
+        // If only on dimension left, a simple memcpy() should do it
+        memcpy(target, &(source[nElementsToTrim[iDim]]), sizeof(float)*targetSize[iDim]) ;
+        return 0 ;
+    }
+    else
+    {
+        int64_t elementsPerTargetSlice = elementsPerSlice(arity, targetSize) ;
+        int64_t elementsPerSourceSlice = elementsPerSlice(arity, sourceSize) ;
+        int64_t nElementsToTrimInThisDimension = nElementsToTrim[iDim] ;
+        float* sourcePlusOffset = source + elementsPerSourceSlice*nElementsToTrimInThisDimension ;
+        for (int64_t iTargetSlice = 0; iTargetSlice < targetSize[iDim]; ++iTargetSlice)
+        {
+            float* targetSlice = target + elementsPerTargetSlice*iTargetSlice ;
+            float* sourceSlice = sourcePlusOffset + elementsPerSourceSlice*iTargetSlice ;
+            int err = copySlice(targetSlice, targetSize, nElementsToTrim, arity - 1, sourceSlice, sourceSize) ;
+            if (err) { return err ; }
+        }
+        return 0 ;
+    }
+}
 
 //=========================================================================
 int64_t indexOfFirstSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold)
@@ -232,7 +266,7 @@ int64_t chunkCount(int64_t arity, int64_t* xDims, int64_t iDim)
     }
 
 //=========================================================================
-int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity)
+int64_t elementsPerSliceOld(int64_t arity, int64_t* size, int64_t sliceArity)
     {
     // Computes the number of elements in a slice of an array.  We assume the 
     // slice corresponds to the last sliceArity dimensions of the array.
@@ -248,6 +282,22 @@ int64_t elementsPerSlice(int64_t arity, int64_t* size, int64_t sliceArity)
         }
     return result ;
     }
+
+//=========================================================================
+int64_t elementsPerSlice(int64_t arity, int64_t* dims)
+{
+    // Computes the number of elements in a slice of an array.  We assume the 
+    // slice corresponds to the first arity-1 dimensions of the array.
+    // dims is of length arity, and gives the dimensions of the array in question.
+    // Basically, this is the product of all elements of dims except for the last one.
+
+    int64_t result = 1 ;
+    for (int64_t iDim = 0; iDim < arity-1; iDim++)
+    {
+        result *= dims[iDim] ;
+    }
+    return result ;
+}
 
 //=========================================================================
 void transform_lattice_3d(int64_t* targetDims, double* targetOrigin, 
@@ -344,11 +394,12 @@ void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
     for (size_t i = 0; i < 8; i++)
         for (size_t j = 0; j < 3; j++)
             {
-            double targerCornerElement = targetCorners[i][j] ;
-            if (targerCornerElement<targetOrigin[j])
-                targetOrigin[j] = targerCornerElement ;
-            else if (targerCornerElement>targetOriginPlusExtent[j])
-                targetOriginPlusExtent[j] = targerCornerElement ;
+            double targetCornerElement = targetCorners[i][j] ;
+            if (targetCornerElement<targetOrigin[j])
+                targetOrigin[j] = targetCornerElement ;
+            // Can't do else-if here b/c both are true when targetOrigin, targetOriginPlusExtent have initial vals (inf and -inf, respectively)
+            if (targetCornerElement>targetOriginPlusExtent[j])  
+                targetOriginPlusExtent[j] = targetCornerElement ;
             }
 
     // Take the difference of the bounding box targetCorners to get the extent
@@ -518,6 +569,46 @@ void float_from_double(float* y, double* x, int64_t n)
         y[i] = float(x[i]) ;
         }
     }
+
+void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64_t* psfDims, float threshold)
+{
+    // Figure out how many elements we're going to trim
+    //float threshold = 1e-10f ;
+    //int64_t nElementsToTrim[MAX_DATA_DIMS] ;
+    for (int64_t iDim = 0; iDim < 3; iDim++)
+    {
+        int64_t nElementsThisDim = psfDims[iDim] ;
+        int64_t indexOfFirstSuperthresholdSliceHere = indexOfFirstSuperthresholdSlice(psf, 3, psfDims, iDim, threshold) ;
+        if (indexOfFirstSuperthresholdSliceHere < 0)
+        {
+            // This means all slices are empty
+            nElementsToTrim[iDim] = 0 ;   // User is going to be sad later
+        }
+        else
+        {
+            int64_t putativeLowestIndexToKeep = indexOfFirstSuperthresholdSliceHere - 2 ;  // Add some padding
+            int64_t lowestIndexToKeep = (putativeLowestIndexToKeep >= 0) ?
+                                        putativeLowestIndexToKeep :
+                                        0 ;  // Limit to allowable range
+            int64_t nElementsToTrimAtLowEnd = lowestIndexToKeep ;  // Will be optimized away, never fear
+            int64_t indexOfLastSuperthresholdSliceHere = indexOfLastSuperthresholdSlice(psf, 3, psfDims, iDim, threshold) ;  // This can't return -1, because indexOfFirstSuperthresholdSlice() would have already done so if all slices were empty
+            int64_t putativeHighestIndexToKeep = indexOfLastSuperthresholdSliceHere + 2 ;  // Add some padding
+            int64_t highestIndexToKeep = (putativeHighestIndexToKeep < nElementsThisDim) ?
+                                         putativeHighestIndexToKeep :
+                                         (nElementsThisDim - 1) ;   // Limit to allowable range
+            int64_t nElementsToTrimAtHighEnd = (nElementsThisDim - 1) - highestIndexToKeep ;
+            int64_t nElementsToTrimThis = (nElementsToTrimAtLowEnd < nElementsToTrimAtHighEnd) ? nElementsToTrimAtLowEnd : nElementsToTrimAtHighEnd ;  // Have to be symmetric, so pick the smaller
+            /*
+            if ( 2*nElementsToTrimThis>psfDims[iDim] )
+            {
+                std::cerr << "Houston, we have a problem" << endl ;
+            }
+            */
+            nElementsToTrim[iDim] = nElementsToTrimThis ;
+
+        }
+    }
+}
 
 
 //=============================================================

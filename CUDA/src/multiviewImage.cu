@@ -798,25 +798,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     // Figure out how many elements we're going to trim
     float threshold = 1e-10f ;
     int64_t nElementsToTrim[MAX_DATA_DIMS] ;
-    for (int64_t iDim = 0; iDim < MAX_DATA_DIMS; iDim++)
-        {
-        int64_t indexOfFirstSuperthresholdSliceHere = indexOfFirstSuperthresholdSlice(psf, MAX_DATA_DIMS, psfDims, iDim, threshold) ;
-        if (indexOfFirstSuperthresholdSliceHere < 0)
-            {
-            // This means all slices are empty
-            nElementsToTrim[iDim] = 0 ;   // User is going to be sad later
-            }
-        else
-            {
-            //int64_t nElementsToTrimAtLowEnd = max(1, indexOfFirstSuperthresholdSliceHere-2) ;  // Add some padding, if possible
-            int64_t nElementsToTrimAtLowEnd = ((indexOfFirstSuperthresholdSliceHere-2) > 1) ? (indexOfFirstSuperthresholdSliceHere-2) : 1 ;  // Add some padding, if possible
-            int64_t indexOfLastSuperthresholdSliceHere = indexOfLastSuperthresholdSlice(psf, MAX_DATA_DIMS, psfDims, iDim, threshold) ;  // This can't return -1, because indexOfFirstSuperthresholdSlice() would have already done so if all slices were empty
-            //int64_t nElementsToTrimAtHighEnd = min(indexOfLastSuperthresholdSliceHere + 2, psfDims[iDim]) ;  // Add some padding, if possible
-            int64_t nElementsToTrimAtHighEnd = ((indexOfLastSuperthresholdSliceHere+2)>psfDims[iDim]) ? psfDims[iDim] : (indexOfLastSuperthresholdSliceHere+2) ;  // Add some padding, if possible
-            //nElementsToTrim[iDim] = min(nElementsToTrimAtLowEnd, nElementsToTrimAtHighEnd) ;  // Have to be symmetric, so pick the smaller
-            nElementsToTrim[iDim] = (nElementsToTrimAtLowEnd<nElementsToTrimAtHighEnd) ? nElementsToTrimAtLowEnd : nElementsToTrimAtHighEnd ;  // Have to be symmetric, so pick the smaller
-            }
-        }
+    determine_n_elements_to_trim_3d(nElementsToTrim, psf, psfDims, threshold) ;
 
     // Copy the data over to a smaller array
     int64_t trimmedPSFDims[MAX_DATA_DIMS] ;
@@ -830,7 +812,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     float* trimmedPSF = new float[trimmedPSFElementCount] ;
 
     // Now copy the data over
-    copySlice(trimmedPSF, trimmedPSFDims, nElementsToTrim, MAX_DATA_DIMS, MAX_DATA_DIMS, psf, psfDims) ;
+    copySlice(trimmedPSF, trimmedPSFDims, nElementsToTrim, MAX_DATA_DIMS, psf, psfDims) ;
 
     // Normalize the trimmedPSF
     normalize_in_place_3d(trimmedPSF, trimmedPSFDims) ;

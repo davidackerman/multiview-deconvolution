@@ -17,10 +17,10 @@ cmake_policy(SET CMP0054 OLD)
 #
 #add flags for the C++11 
 if(CMAKE_COMPILER_IS_GNUCXX) 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
-	LINK_DIRECTORIES("/lib64")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+    LINK_DIRECTORIES("/lib64")
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
 endif()
 
 
@@ -113,3 +113,7 @@ TARGET_LINK_LIBRARIES(multiview_deconvolution_LR_multiGPU_low_mem multiview_deco
 #executable for multiview deconvolution with very large datasets. Deconvolution is performed in blocks along z to fit in CPU and GPU memory
 ADD_EXECUTABLE(main_multiviewDeconvLR_multiGPU_blocksZ main_multiviewDeconvLR_multiGPU_blocksZ.cxx )
 TARGET_LINK_LIBRARIES(main_multiviewDeconvLR_multiGPU_blocksZ multiview_deconvolution_GPU)
+
+#executable for multiview deconvolution, but only does PSF affine transforms (for testing)
+ADD_EXECUTABLE(mvd_without_mvd mvd_without_mvd.cpp )
+TARGET_LINK_LIBRARIES(mvd_without_mvd multiview_deconvolution_GPU)
