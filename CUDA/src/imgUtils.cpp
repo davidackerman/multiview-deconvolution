@@ -143,10 +143,10 @@ int copySliceOld(float* target, int64_t* targetSize,
     }
 
 //=========================================================================
-int copySlice(float* target, int64_t* targetSize,
-              int64_t* nElementsToTrim,
-              int64_t arity, 
-              float* source, int64_t* sourceSize)
+int copy_slice(float* target, int64_t* targetSize,
+               int64_t* nElementsToTrim,
+               int64_t arity, 
+               float* source, int64_t* sourceSize)
 {
     // Copy the source array to the target array, trimming the given number of elements off each end of each dimension of the source array.
     // Arity is the dimensionality of both target and source. targetSize, sourceSize, and nElementsToTrim should all be of length arity.
@@ -169,7 +169,7 @@ int copySlice(float* target, int64_t* targetSize,
         {
             float* targetSlice = target + elementsPerTargetSlice*iTargetSlice ;
             float* sourceSlice = sourcePlusOffset + elementsPerSourceSlice*iTargetSlice ;
-            int err = copySlice(targetSlice, targetSize, nElementsToTrim, arity - 1, sourceSlice, sourceSize) ;
+            int err = copy_slice(targetSlice, targetSize, nElementsToTrim, arity - 1, sourceSlice, sourceSize) ;
             if (err) { return err ; }
         }
         return 0 ;
@@ -608,6 +608,39 @@ void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64
 
         }
     }
+}
+
+float *trim_psf_3d(int64_t* trimmed_psf_dims, float* psf, int64_t* psf_dims)
+{
+    // Note that on return, the value *trimmedPSFPtr is allocated on the heap via new, and will need to be deleted by the caller
+    // Trim near-zero elements on all sides, keeping the PSF centered
+
+    // Figure out how many elements we're going to trim
+    float threshold = 1e-10f ;
+    int64_t n_elements_to_trim[3] ;
+    determine_n_elements_to_trim_3d(n_elements_to_trim, psf, psf_dims, threshold) ;
+
+    // Calacualte the trimmed dims
+    for (int64_t i = 0; i < 3; ++i)
+        trimmed_psf_dims[i] = psf_dims[i] - 2 * n_elements_to_trim[i] ;
+
+    // Calculate the number of elements to allocate
+    int64_t trimmed_psf_element_count = element_count_from_dims_3d(trimmed_psf_dims) ;
+
+    // Allocate it
+    float* trimmed_psf = new float[trimmed_psf_element_count] ;
+
+    // Now copy the data over
+    copy_slice(trimmed_psf, trimmed_psf_dims, n_elements_to_trim, 3, psf, psf_dims) ;
+
+    // Eliminate any negative elements that might have resulted from cubic interpolation
+    pos_in_place_3d(trimmed_psf, trimmed_psf_dims) ;
+
+    // Normalize the trimmedPSF
+    normalize_in_place_3d(trimmed_psf, trimmed_psf_dims) ;
+
+    // Return the result, hopefully with copy elision
+    return trimmed_psf ;
 }
 
 

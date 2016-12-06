@@ -117,3 +117,7 @@ TARGET_LINK_LIBRARIES(main_multiviewDeconvLR_multiGPU_blocksZ multiview_deconvol
 #executable for multiview deconvolution, but only does PSF affine transforms (for testing)
 ADD_EXECUTABLE(mvd_without_mvd mvd_without_mvd.cpp )
 TARGET_LINK_LIBRARIES(mvd_without_mvd multiview_deconvolution_GPU)
+
+#executable for PSF trimming (for testing)
+ADD_EXECUTABLE(run_trim_psf run_trim_psf.cpp)
+TARGET_LINK_LIBRARIES(run_trim_psf multiview_deconvolution_GPU)

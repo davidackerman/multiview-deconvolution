@@ -26,10 +26,10 @@ int copySliceOld(float* target, int64_t* targetSize,
               int64_t* nElementsToTrim,
               int64_t arity, int64_t sliceArity,
               float* source, int64_t* sourceSize) ;
-int copySlice(float* target, int64_t* targetSize,
-              int64_t* nElementsToTrim,
-              int64_t arity,
-              float* source, int64_t* sourceSize) ;
+int copy_slice(float* target, int64_t* targetSize,
+               int64_t* nElementsToTrim,
+               int64_t arity,
+               float* source, int64_t* sourceSize) ;
 int64_t indexOfFirstSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
 int64_t indexOfLastSuperthresholdSlice(float *x, int64_t arity, int64_t* xDims, int64_t iDim, float threshold) ;
 bool isSliceSuperthreshold(float *x, int64_t arity, int64_t* xDims, int64_t iDim, int64_t iElement, float threshold) ;
@@ -62,5 +62,6 @@ void pos_in_place_3d(float *x, int64_t dims[3]) ;
 int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3]) ;
 void float_from_double(float* y, double* x, int64_t n) ;
 void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64_t* psfDims, float threshold) ;
+float* trim_psf_3d(int64_t* trimmed_psf_dims, float* psf, int64_t* psf_dims) ;
 
 #endif 

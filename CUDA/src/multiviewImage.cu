@@ -788,34 +788,9 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
 
     int64_t i_nonzero = find_first_nonzero_element_3d(psf, psfDims) ;  // this is just for debugging
 
-    // Eliminate any negative elements that might have resulted from cubic interpolation
-    pos_in_place_3d(psf, psfDims) ;
-
-    //
     // Trim near-zero elements on all sides, keeping the PSF centered
-    //
-
-    // Figure out how many elements we're going to trim
-    float threshold = 1e-10f ;
-    int64_t nElementsToTrim[MAX_DATA_DIMS] ;
-    determine_n_elements_to_trim_3d(nElementsToTrim, psf, psfDims, threshold) ;
-
-    // Copy the data over to a smaller array
     int64_t trimmedPSFDims[MAX_DATA_DIMS] ;
-    for (int64_t i=0; i<MAX_DATA_DIMS; ++i)
-        trimmedPSFDims[i] = psfDims[i] - 2 * nElementsToTrim[i] ;
-
-    // Calculate the number of elements to allocate
-    int64_t trimmedPSFElementCount = element_count_from_dims_3d(trimmedPSFDims) ;
-
-    // Allocate it
-    float* trimmedPSF = new float[trimmedPSFElementCount] ;
-
-    // Now copy the data over
-    copySlice(trimmedPSF, trimmedPSFDims, nElementsToTrim, MAX_DATA_DIMS, psf, psfDims) ;
-
-    // Normalize the trimmedPSF
-    normalize_in_place_3d(trimmedPSF, trimmedPSFDims) ;
+    float* trimmedPSF = trim_psf_3d(trimmedPSFDims, psf, psfDims) ;  // trimmedPSF allocated on heap via new operator.
      
     // Update image dimensions and pointer
     deallocateView_CPU(pos);
