@@ -2,6 +2,24 @@
 #include <stdbool.h>
 #include "image_interpolation_ml.h"
 
+#define EPS  1e-20
+#define EPSF 1e-12f
+
+/* power of integers */
+static __inline double pow2(double val) { return val*val; }
+static __inline double pow3(double val) { return val*val*val; }
+static __inline double pow4(double val) { return pow2(val)*pow2(val); }
+static __inline float pow2_float(float val) { return val*val; }
+static __inline float pow3_float(float val) { return val*val*val; }
+static __inline float pow4_float(float val) { return pow2_float(val)*pow2_float(val); }
+
+
+#ifdef __LCC__
+static __inline float floorfloat(float val) { return (float)floor((double)val); }
+#else
+static __inline float floorfloat(float val) { return floorf(val); }
+#endif
+
 /* Image and Volume interpolation 
  *
  * Function is written by D.Kroon University of Twente (June 2009)
@@ -25,7 +43,7 @@
 //}
 
 /* Get an pixel from an image, if outside image, black or nearest pixel */
-float getcolor_mindex3_float(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x, int64_t n_y, int64_t n_z, float *I) {
+float get_float_voxel_ml(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x, int64_t n_y, int64_t n_z, float *I) {
     return I[i_z*n_x*n_y+i_x*n_y+i_y];  // Assumes Matlab-style stack organization (column-major)
 }
 
@@ -835,7 +853,7 @@ float getcolor_mindex3_float(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x,
 //    return Ipixelxyz;
 //}
 
-float interpolate_3d_float_linear_black(float x, float y, float z, int64_t *dims, float *stack) {
+float interpolate_3d_float_linear_black_ml(float x, float y, float z, int64_t *dims, float *stack) {
     float result;
     /*  Linear interpolation variables */
     int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
@@ -864,36 +882,36 @@ float interpolate_3d_float_linear_black(float x, float y, float z, int64_t *dims
     if((xBas0>=0)&&(xBas0<n_x)) {
         if((yBas0>=0)&&(yBas0<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[0]=getcolor_mindex3_float(xBas0, yBas0, zBas0, n_x, n_y, n_z, stack);
+                color[0]=get_float_voxel_ml(xBas0, yBas0, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[1]=getcolor_mindex3_float(xBas0, yBas0, zBas1, n_x, n_y, n_z, stack);
+                color[1]=get_float_voxel_ml(xBas0, yBas0, zBas1, n_x, n_y, n_z, stack);
             }
         }
         if((yBas1>=0)&&(yBas1<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[2]=getcolor_mindex3_float(xBas0, yBas1, zBas0, n_x, n_y, n_z, stack);
+                color[2]=get_float_voxel_ml(xBas0, yBas1, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[3]=getcolor_mindex3_float(xBas0, yBas1, zBas1, n_x, n_y, n_z, stack);
+                color[3]=get_float_voxel_ml(xBas0, yBas1, zBas1, n_x, n_y, n_z, stack);
             }
         }
     }
     if((xBas1>=0)&&(xBas1<n_x))  {
         if((yBas0>=0)&&(yBas0<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[4]=getcolor_mindex3_float(xBas1, yBas0, zBas0, n_x, n_y, n_z, stack);
+                color[4]=get_float_voxel_ml(xBas1, yBas0, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[5]=getcolor_mindex3_float(xBas1, yBas0, zBas1, n_x, n_y, n_z, stack);
+                color[5]=get_float_voxel_ml(xBas1, yBas0, zBas1, n_x, n_y, n_z, stack);
             }
         }
         if((yBas1>=0)&&(yBas1<n_y)) {
             if((zBas0>=0)&&(zBas0<n_z)) {
-                color[6]=getcolor_mindex3_float(xBas1, yBas1, zBas0, n_x, n_y, n_z, stack);
+                color[6]=get_float_voxel_ml(xBas1, yBas1, zBas0, n_x, n_y, n_z, stack);
             }
             if((zBas1>=0)&&(zBas1<n_z)) {
-                color[7]=getcolor_mindex3_float(xBas1, yBas1, zBas1, n_x, n_y, n_z, stack);
+                color[7]=get_float_voxel_ml(xBas1, yBas1, zBas1, n_x, n_y, n_z, stack);
             }
         }
     }
@@ -912,7 +930,7 @@ float interpolate_3d_float_linear_black(float x, float y, float z, int64_t *dims
     return result;
 }
 
-float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
+float interpolate_3d_float_linear_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     float Iout;
     /*  Linear interpolation variables */
 	int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
@@ -943,14 +961,14 @@ float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, i
     if(zBas1>(n_z-1)) { zBas1=n_z-1; if(zBas0>(n_z-1)) { zBas0=n_z-1; }}
     
     /*  Get intensities */
-    color[0]=getcolor_mindex3_float(xBas0, yBas0, zBas0, n_x, n_y, n_z, Iin);
-    color[1]=getcolor_mindex3_float(xBas0, yBas0, zBas1, n_x, n_y, n_z, Iin);
-    color[2]=getcolor_mindex3_float(xBas0, yBas1, zBas0, n_x, n_y, n_z, Iin);
-    color[3]=getcolor_mindex3_float(xBas0, yBas1, zBas1, n_x, n_y, n_z, Iin);
-    color[4]=getcolor_mindex3_float(xBas1, yBas0, zBas0, n_x, n_y, n_z, Iin);
-    color[5]=getcolor_mindex3_float(xBas1, yBas0, zBas1, n_x, n_y, n_z, Iin);
-    color[6]=getcolor_mindex3_float(xBas1, yBas1, zBas0, n_x, n_y, n_z, Iin);
-    color[7]=getcolor_mindex3_float(xBas1, yBas1, zBas1, n_x, n_y, n_z, Iin);
+    color[0]=get_float_voxel_ml(xBas0, yBas0, zBas0, n_x, n_y, n_z, Iin);
+    color[1]=get_float_voxel_ml(xBas0, yBas0, zBas1, n_x, n_y, n_z, Iin);
+    color[2]=get_float_voxel_ml(xBas0, yBas1, zBas0, n_x, n_y, n_z, Iin);
+    color[3]=get_float_voxel_ml(xBas0, yBas1, zBas1, n_x, n_y, n_z, Iin);
+    color[4]=get_float_voxel_ml(xBas1, yBas0, zBas0, n_x, n_y, n_z, Iin);
+    color[5]=get_float_voxel_ml(xBas1, yBas0, zBas1, n_x, n_y, n_z, Iin);
+    color[6]=get_float_voxel_ml(xBas1, yBas1, zBas0, n_x, n_y, n_z, Iin);
+    color[7]=get_float_voxel_ml(xBas1, yBas1, zBas1, n_x, n_y, n_z, Iin);
     
     /* Linear interpolation constants (percentages) */
     xCom=Tlocalx-fTlocalx;  yCom=Tlocaly-fTlocaly;   zCom=Tlocalz-fTlocalz;
@@ -966,7 +984,7 @@ float interpolate_3d_float_linear(float Tlocalx, float Tlocaly, float Tlocalz, i
     return Iout;
 }
 
-float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
+float interpolate_3d_float_cubic_black_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     /* Floor of coordinate */
     float fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
@@ -1030,16 +1048,16 @@ float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tloca
                 Ipixelx=0;
                 if((yn[i]>=0)&&(yn[i]<n_y)) {
                     if((xn[0]>=0)&&(xn[0]<n_x)) {
-                        Ipixelx+=vector_qx[0]*getcolor_mindex3_float(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
                     }
                     if((xn[1]>=0)&&(xn[1]<n_x)) {
-                        Ipixelx+=vector_qx[1]*getcolor_mindex3_float(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
                     }
                     if((xn[2]>=0)&&(xn[2]<n_x)) {
-                        Ipixelx+=vector_qx[2]*getcolor_mindex3_float(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
                     }
                     if((xn[3]>=0)&&(xn[3]<n_x)) {
-                        Ipixelx+=vector_qx[3]*getcolor_mindex3_float(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
                     }
                 }
                 Ipixelxy += vector_qy[i]*Ipixelx;
@@ -1049,7 +1067,7 @@ float interpolate_3d_float_cubic_black(float Tlocalx, float Tlocaly, float Tloca
     }
     return Ipixelxyz;
 }
-float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
+float interpolate_3d_float_cubic_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
     /* Floor of coordinate */
     float fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
@@ -1127,10 +1145,10 @@ float interpolate_3d_float_cubic(float Tlocalx, float Tlocaly, float Tlocalz, in
         Ipixelxy=0;
         for(i=0; i<4; i++) {
             Ipixelx=0;
-            Ipixelx+=vector_qx[0]*getcolor_mindex3_float(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[1]*getcolor_mindex3_float(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[2]*getcolor_mindex3_float(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[3]*getcolor_mindex3_float(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
+            Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
+            Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
+            Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
+            Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
             Ipixelxy+= vector_qy[i]*Ipixelx;
         }
         Ipixelxyz+= vector_qz[j]*Ipixelxy;
@@ -1177,15 +1195,15 @@ double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz
 }
 */
 
-float interpolate_3d_float_gray(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_background_black)  {
+float interpolate_3d_float_gray_ml(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_background_black)  {
 	float result;
 	if (is_cubic) {
-		if (is_background_black) { result = interpolate_3d_float_cubic_black(x, y, z, dims, stack); }
-		else { result = interpolate_3d_float_cubic(x, y, z, dims, stack); }
+		if (is_background_black) { result = interpolate_3d_float_cubic_black_ml(x, y, z, dims, stack); }
+        else { result = interpolate_3d_float_cubic_ml(x, y, z, dims, stack); }
 	}
 	else {
-		if (is_background_black) { result = interpolate_3d_float_linear_black(x, y, z, dims, stack); }
-		else { result = interpolate_3d_float_linear(x, y, z, dims, stack); }
+        if (is_background_black) { result = interpolate_3d_float_linear_black_ml(x, y, z, dims, stack); }
+        else { result = interpolate_3d_float_linear_ml(x, y, z, dims, stack); }
 	}
 	return result;
 }

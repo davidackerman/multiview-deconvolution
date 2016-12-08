@@ -16,7 +16,7 @@
 
 #define AFFINE_3D_MATRIX_SIZE 16
 
-static __inline int64_t mindex3(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x, int64_t n_y) { return i_z*n_x*n_y + i_x*n_y + i_y ; }  ;
+static __inline int64_t mindex3_ml(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x, int64_t n_y) { return i_z*n_x*n_y + i_x*n_y + i_y ; }  ;
 
 bool is_affine_3d_matrix(const float A[AFFINE_3D_MATRIX_SIZE])
 {
@@ -164,9 +164,9 @@ voidthread transform_subvolume(void **args) {
 				float i_y_in = (y_in - input_origin[1])/input_spacing[1] - 0.5f ;  // NB: Not necessarily integral.
 				float i_z_in = (z_in - input_origin[2])/input_spacing[2] - 0.5f ;  // NB: Not necessarily integral.
 
-				int64_t i_out = mindex3(i_x_out, i_y_out, i_z_out, output_dims[1], output_dims[0]);
+				int64_t i_out = mindex3_ml(i_x_out, i_y_out, i_z_out, output_dims[1], output_dims[0]);
 
-				output_stack[i_out] = interpolate_3d_float_gray(i_x_in, i_y_in, i_z_in, input_dims, input_stack, is_cubic, is_background_black);
+				output_stack[i_out] = interpolate_3d_float_gray_ml(i_x_in, i_y_in, i_z_in, input_dims, input_stack, is_cubic, is_background_black);
 			}
 		}
 	}
