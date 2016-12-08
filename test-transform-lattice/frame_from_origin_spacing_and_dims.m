@@ -1,0 +1,9 @@
+function frame = frame_from_origin_spacing_and_dims(origin, spacing, stack_dims)
+    stack_dims = double(stack_dims) ;  % stack_dims may be uint64 or some darn thing
+    stack_size_xyz = [stack_dims(2) stack_dims(1) stack_dims(3)] ;
+    upper_corner = origin + spacing.*stack_size_xyz ;
+    frame = imref3d(stack_dims, ...
+                    [origin(1) upper_corner(1)], ...
+                    [origin(2) upper_corner(2)], ...
+                    [origin(3) upper_corner(3)]) ;
+end

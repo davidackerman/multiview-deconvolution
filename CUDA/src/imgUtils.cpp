@@ -301,7 +301,7 @@ int64_t elementsPerSlice(int64_t arity, int64_t* dims)
 
 //=========================================================================
 void transform_lattice_3d(int64_t* targetDims, double* targetOrigin, 
-                          float* A,
+                          double* A,
                           int64_t* sourceDims, double* sourceOrigin, double* sourceSpacing,
                           double * targetSpacing)
     {
@@ -345,7 +345,7 @@ void transform_lattice_3d(int64_t* targetDims, double* targetOrigin,
 
 //=========================================================================
 void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
-                         float* A,
+                         double* A,
                          double* sourceOrigin, double* sourceExtent)
     {
     // Given a cuboid in a source space, computes that cuboid that just 
@@ -354,14 +354,6 @@ void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
     // A should be of length 16, representing a 4x4 affine transform array.  It is stored row-major, assuming y = A*x is 
     // used for the transform, with y and x col vectors.  Or, equivalently, it can be viewed as being stored col-major, assuming 
     // y = x*A is used for the transform, with y and x row vectors.  Taking the first view, the last row should be 0 0 0 1.
-
-    /*
-    // Do the matrix multiply, treating the vectors as col vectors, and A as row-major
-    double sourceOriginImage[3] ;
-    double sourceExtentImage[3] ;
-    affine_transform_3d(sourceOriginImage, A, sourceOrigin) ;
-    affine_transform_3d(sourceExtentImage, A, sourceExtent) ;
-    */
 
     // Generate all the corners of the image in the target space
     double sourceCorner[3] ;
@@ -379,7 +371,7 @@ void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
                 keep[2] = double(k) ;
                 elementwise_product_3d(sourceCorner, keep, sourceExtent) ;
                 sum_in_place_3d(sourceCorner, sourceOrigin) ;
-                affine_transform_3d(targetCorners[n], A, sourceCorner) ;
+                affine_transform_3d(targetCorners[n], sourceCorner, A) ;
                 ++n ;
                 }
             }
@@ -451,19 +443,19 @@ void lattice_from_cuboid_3d(int64_t* dims, double* origin,
      }
 */
 
-void affine_transform_3d(double y[3], float T[16],  double x[3])
+void affine_transform_3d(double y[3], double x[3], double T[16])
     {
-    // We assume T represents a 4x4 affine transform matrix stored row-major.
-    // I.e. T is of the form [ A b ]
-    //                       [ 1 0 ] ,
-    // where A is 3x3, and b is 3x1.
-    // This does y = A*x + b , with y and x treated as col vectors.
+    // We assume T represents a row-form 4x4 affine transform matrix stored col-major.
+    // I.e. T is of the form [ A 1 ]
+    //                       [ b 0 ] ,
+    // where A is 3x3, and b is 1x3.
+    // This does y = x*A + b , with y and x treated as row vectors.
     for (size_t i = 0; i < 3; i++)
         {
         double yi = 0.0 ;
         for (size_t j = 0; j < 3; j++)
-            yi += double(T[4 * i + j]) * x[j] ;
-        yi += double(T[4 * i + 3]) ;
+            yi += T[4 * i + j] * x[j] ;
+        yi += T[4 * i + 3] ;
         y[i] = yi ;
         }
     }
@@ -495,6 +487,7 @@ void elementwise_quotient_3d(double* z, double* x, double* y)
 
 void dims_from_extent_with_unit_spacing_3d(int64_t* dims, double* extent)
     {
+    // extent is in order x, y, z
     // dims are in order n_y, n_x, n_z
     dims[0] = int64_t(ceil(extent[1])) ;
     dims[1] = int64_t(ceil(extent[0])) ;
@@ -620,7 +613,7 @@ float *trim_psf_3d(int64_t* trimmed_psf_dims, float* psf, int64_t* psf_dims)
     int64_t n_elements_to_trim[3] ;
     determine_n_elements_to_trim_3d(n_elements_to_trim, psf, psf_dims, threshold) ;
 
-    // Calacualte the trimmed dims
+    // Calculate the trimmed dims
     for (int64_t i = 0; i < 3; ++i)
         trimmed_psf_dims[i] = psf_dims[i] - 2 * n_elements_to_trim[i] ;
 

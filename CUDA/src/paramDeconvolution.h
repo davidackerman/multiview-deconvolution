@@ -30,6 +30,7 @@ struct paramDeconvolution
 	std::vector<std::string> fileImg;
 	std::vector<std::string> filePSF;
 	std::vector< std::vector<float> > Acell;//to store affine transformations for each view
+    std::vector< std::vector<double> > AcellAsDouble;//to store affine transformations for each view, as doubles
 
 	int verbose;
 

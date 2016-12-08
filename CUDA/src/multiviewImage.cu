@@ -728,7 +728,7 @@ void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_
 
 //=========================================================================
 template<class imgType>
-void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, double A[AFFINE_3D_MATRIX_SIZE], int interpMode)
     {
     cout << "ERROR: TODO: multiviewImage<imgType>::apply_affine_transformation_psf: not implemented for types other than float" << endl;
     exit(3);
@@ -736,7 +736,7 @@ void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, float A[A
 
 //=========================================================================
 template<>
-void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFFINE_3D_MATRIX_SIZE], int interpMode)
+void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AFFINE_3D_MATRIX_SIZE], int interpMode)
     {
     // If pos is out-of-range, return
     if (imgVec_CPU.size() < pos)
@@ -760,13 +760,17 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
                          rawPSFDims, rawPSFOrigin, rawPSFSpacing,
                          psfSpacing) ;
 
+    cout << "Origin of transformed PSF (xyz):  " << psfOrigin[0] << "  " << psfOrigin[1] << "  " << psfOrigin[2] << endl ;
+
     // Determine the number of elements needed in the output array psf
     int64_t psfElementCount = element_count_from_dims_3d(psfDims) ;
 
     //allocate memory for transformed image
     float* psf = new float[psfElementCount] ;
 
-    // Make float versions of origins and spacing
+    // Make float versions of origins and spacing, and transform
+    float AAsFloat[16] ;
+    float_from_double(AAsFloat, A, 16) ;
     float rawPSFOriginAsFloat[3] ;
     float_from_double(rawPSFOriginAsFloat, rawPSFOrigin, 3) ;
     float rawPSFSpacingAsFloat[3] ;
@@ -783,8 +787,17 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, float A[AFF
     bool is_cubic = (interpMode & 2) ; // bit 1 indicates whether cubic interpolation should be used (as opposed to linear)
     imwarp_flexible(rawPSF, rawPSFDims, rawPSFOriginAsFloat, rawPSFSpacingAsFloat,
                     psf, psfDims, psfOriginAsFloat, psfSpacingAsFloat,
-                    A,
+                    AAsFloat,
                     is_cubic, is_background_black) ;
+
+    // Print the size of the transformed PSF
+    cout << "Size of transformed (but not trimmed) PSF:  " << psfDims[0] << "  " << psfDims[1] << "  " << psfDims[2] << endl ;
+
+    // Output the transformed but-not-yet trimmed image 
+    uint32_t output_yxzct[KLB_DATA_DIMS] = { (uint32_t)psfDims[0], (uint32_t)psfDims[1], (uint32_t)psfDims[2], 1, 1 } ;
+    char output_stack_file_name[256] ;
+    sprintf(output_stack_file_name, "untrimmed_PSF_%d.klb", pos) ;
+    writeKLBstack(psf, output_stack_file_name, output_yxzct, KLB_DATA_TYPE::FLOAT32_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
 
     int64_t i_nonzero = find_first_nonzero_element_3d(psf, psfDims) ;  // this is just for debugging
 

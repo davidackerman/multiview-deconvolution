@@ -88,14 +88,19 @@ multiGPUblockController::multiGPUblockController(string filenameXML)
 		assert(aux != NULL);
 		paramDec.filePSF.push_back(string(aux));
 
-
-		vector<float> vv;
+        vector<double> vv_as_double;
+        //vector<float> vv;
 		aux = node.getAttribute("A");
 		assert(aux != NULL);
-		parseString<float>(string(aux), vv);
-		paramDec.Acell.push_back(vv);
-		vv.clear();				
-
+		//parseString<float>(string(aux), vv);
+		//paramDec.Acell.push_back(vv);
+        //vv.clear();
+        parseString<double>(string(aux), vv_as_double) ;  // Read in as vector of doubles
+        paramDec.AcellAsDouble.push_back(vv_as_double);  // Push onto AcellAsDouble
+        vector<float> vv(vv_as_double.begin(), vv_as_double.end()) ;  // Convert vector of double to vector of floats
+        paramDec.Acell.push_back(vv);  // Push vector of floats onto Acell
+        vv_as_double.clear();
+        vv.clear();
 	}
 
 	//read deconvolution parameters

@@ -121,3 +121,7 @@ TARGET_LINK_LIBRARIES(mvd_without_mvd multiview_deconvolution_GPU)
 #executable for PSF trimming (for testing)
 ADD_EXECUTABLE(run_trim_psf run_trim_psf.cpp)
 TARGET_LINK_LIBRARIES(run_trim_psf multiview_deconvolution_GPU)
+
+#executable for transforming sampling lattice (for testing)
+ADD_EXECUTABLE(run_transform_lattice run_transform_lattice.cpp)
+TARGET_LINK_LIBRARIES(run_transform_lattice multiview_deconvolution_GPU)

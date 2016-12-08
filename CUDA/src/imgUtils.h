@@ -39,15 +39,15 @@ int64_t elementsPerSliceOld(int64_t arity, int64_t* size, int64_t sliceArity) ;
 int64_t elementsPerSlice(int64_t arity, int64_t* size) ;
 
 void transform_lattice_3d(int64_t* targetCount, double* targetOrigin,
-                          float* A,
+                          double* A,
                           int64_t* sourceCount, double* sourceOrigin, double* sourceSpacing,
                           double * targetSpacing) ;
 void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
-                         float* A,
+                         double* A,
                          double* sourceOrigin, double* sourceExtent) ;
 void lattice_from_cuboid_3d(int64_t* count, double* origin,
                             double* ideal_origin, double* ideal_extent, double *spacing) ;
-void affine_transform_3d(double* y, float* T, double* x) ;
+void affine_transform_3d(double* y, double* x, double* T) ;
 void extent_from_dims_and_spacing_3d(double* extent, int64_t* dims, double* spacing) ;
 void elementwise_product_3d(double* z, double* x, double* y) ;
 void scalar_product_3d(double* y, double a, double* x) ;
