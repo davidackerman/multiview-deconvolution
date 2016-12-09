@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <chrono>
 #include <string>
+#include <memory>
 #include <math.h>
 #include <stdbool.h>
 #include "klb_Cwrapper.h"
@@ -12,6 +13,28 @@
 
 using namespace std;
 typedef std::chrono::high_resolution_clock Clock;
+
+template<typename T>
+unique_ptr<T> read_col_major_matrix(const T* dummy, int64_t n_rows, int64_t n_cols, const string & file_name)
+{
+    ifstream input_file(file_name.c_str(), ios::binary);
+    if (!input_file.is_open())
+    {
+        cerr << "ERROR: opening file " << file_name << endl;
+        throw std::runtime_error("Error opening file") ;
+    }
+    int64_t n_els = n_rows*n_cols ;
+    unique_ptr<T> matrix(new T[n_els]) ;
+    T* raw_matrix(matrix.get()) ;
+    input_file.read((char*)(raw_matrix), n_els*sizeof(T)) ;
+    input_file.close();
+
+    return matrix ;
+}
+
+template unique_ptr<double> read_col_major_matrix(const double* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
+template unique_ptr<float> read_col_major_matrix(const float* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
+template unique_ptr<int64_t> read_col_major_matrix(const int64_t* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
 
 int read_3d_float_klb_stack(int64_t* dims, float** stack_ptr, const string & file_name)
 {
@@ -76,100 +99,30 @@ int main(int argc, const char** argv)
     }
 
     // Read the input origin
-    int64_t input_origin_dims[3] ;
-    float* input_origin ;
-    err = read_3d_float_klb_stack(input_origin_dims, &input_origin, input_origin_file_name) ;
-    if (err)
-    {
-        cout << "ERROR: There was a problem reading the input origin" << endl;
-        return -2;
-    }
-    if ( !(input_origin_dims[0] == 1 && input_origin_dims[1] == 3 && input_origin_dims[2] == 1) )
-    {
-        cout << "ERROR: The input origin array is the wrong size" << endl;
-        return -3;
-    }
+    unique_ptr<double> input_origin(read_col_major_matrix((double*)(0), 1, 3, input_origin_file_name)) ;
 
     // Read the input spacing
-    int64_t input_spacing_dims[3] ;
-    float* input_spacing ;
-    err = read_3d_float_klb_stack(input_spacing_dims, &input_spacing, input_spacing_file_name) ;
-    if (err)
-    {
-        cout << "ERROR: There was a problem reading the input spacing" << endl;
-        return -3;
-    }
-    if (!(input_spacing_dims[0] == 1 && input_spacing_dims[1] == 3 && input_spacing_dims[2] == 1))
-    {
-        cout << "ERROR: The input spacing array is the wrong size" << endl;
-        return -4;
-    }
+    unique_ptr<double> input_spacing(read_col_major_matrix((double*)(0), 1, 3, input_spacing_file_name)) ;
 
     // Read the transform matrix (which should be row form, i.e. the last col should be [0 0 0 1]', 
     // and the translation should be in the last row).  We assume this is stored col-major, which is what
     // imwarp_flexible() wants.
-    int64_t T_in_row_form_dims[3] ;
-    float* T_in_row_form ;
-    err = read_3d_float_klb_stack(T_in_row_form_dims, &T_in_row_form, transform_file_name) ;
-    if (err)
-    {
-        cout << "ERROR: There was a problem reading the transform matrix" << endl;
-        return -5;
-    }
-    if (!(T_in_row_form_dims[0] == 4 && T_in_row_form_dims[1] == 4 && T_in_row_form_dims[2] == 1))
-    {
-        cout << "ERROR: The transform array is the wrong size" << endl;
-        return -6;
-    }
+    unique_ptr<double> T_in_row_form(read_col_major_matrix((double*)(0), 4, 4, transform_file_name)) ;
 
     // Read the output origin
-    int64_t output_origin_dims[3] ;
-    float* output_origin ;
-    err = read_3d_float_klb_stack(output_origin_dims, &output_origin, output_origin_file_name) ;
-    if (err)
-    {
-        cout << "ERROR: There was a problem reading the output origin" << endl;
-        return -7;
-    }
-    if (!(output_origin_dims[0] == 1 && output_origin_dims[1] == 3 && output_origin_dims[2] == 1))
-    {
-        cout << "ERROR: The output origin array is the wrong size" << endl;
-        return -8;
-    }
+    unique_ptr<double> output_origin(read_col_major_matrix((double*)(0), 1, 3, output_origin_file_name)) ;
 
     // Read the output spacing
-    int64_t output_spacing_dims[3] ;
-    float* output_spacing ;
-    err = read_3d_float_klb_stack(output_spacing_dims, &output_spacing, output_spacing_file_name) ;
-    if (err)
-    {
-        cout << "ERROR: There was a problem reading the output spacing" << endl;
-        return -9;
-    }
-    if (!(output_spacing_dims[0] == 1 && output_spacing_dims[1] == 3 && output_spacing_dims[2] == 1))
-    {
-        cout << "ERROR: The output spacing array is the wrong size" << endl;
-        return -10;
-    }
+    unique_ptr<double> output_spacing(read_col_major_matrix((double*)(0), 1, 3, output_spacing_file_name)) ;
 
     // Read the output dims
 	// Open the file that holds the output dimensions, which should be in the order n_y, n_x, n_z
 	cout << "Loading output dimensions..." << endl;
-	int64_t output_dims[3] ;
-	ifstream f_out_dims(output_dimensions_file_name.c_str());
-	if (!f_out_dims.is_open())
-	{
-		cout << "ERROR: opening file with output dimensions " << output_dimensions_file_name << endl;
-		return 4;
-	}
-	for (int i = 0; i < 3; i++)  // row index
-	{
-		f_out_dims >> output_dims[i] ;
-	}
-	f_out_dims.close();
-    
+    unique_ptr<int64_t> output_dims(read_col_major_matrix((int64_t*)(0), 1, 3, output_dimensions_file_name)) ;
+    int64_t* raw_output_dims = output_dims.get() ;
+
 	// Check that the output dims are small enough to fit in a KLB file
-	if ( output_dims[0]>UINT32_MAX || output_dims[1]>UINT32_MAX || output_dims[2]>UINT32_MAX )
+    if (raw_output_dims[0]>UINT32_MAX || raw_output_dims[1]>UINT32_MAX || raw_output_dims[2]>UINT32_MAX)
 	{
 		cout << "ERROR: requested output dimensions are too large for KLB file" << endl;
 		return 5 ;
@@ -177,7 +130,7 @@ int main(int argc, const char** argv)
 
     // Allocate memory for output stack
 	cout << "Applying affine transformation..." << endl;
-	size_t n_output_elements = (size_t) output_dims[0] * output_dims[1] * output_dims[2] ;
+    size_t n_output_elements = (size_t)(raw_output_dims[0] * raw_output_dims[1] * raw_output_dims[2]) ;
 	float* output_stack = new float[n_output_elements] ;
 
 	// Call imwarp_flexible(), which does everything on the CPU
@@ -185,26 +138,27 @@ int main(int argc, const char** argv)
 	bool is_cubic = true ;
 	bool is_background_black = true ;
 	auto t1 = Clock::now();
-	imwarp_flexible(input_stack, input_dims, input_origin, input_spacing,
-		            output_stack, output_dims, output_origin, output_spacing,
-					T_in_row_form, 
-					is_cubic, is_background_black) ;
+    imwarp_flexible(
+        input_stack, input_dims, input_origin.get(), input_spacing.get(),
+        output_stack, output_dims.get(), output_origin.get(), output_spacing.get(),
+        T_in_row_form.get(),
+		is_cubic, is_background_black) ;
 	auto t2 = Clock::now() ;
     std::cout << "Imwarp fast in CPU with " << get_number_of_cores() << " threads  took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl ;
 
 	// Write out solution
 	cout << "Writing out solution..." << endl;
 	//string filenameOut(outputFileName); 
-	uint32_t output_yxzct[KLB_DATA_DIMS] = { (uint32_t)output_dims[0], (uint32_t)output_dims[1], (uint32_t)output_dims[2], 1, 1 } ;
+    uint32_t output_yxzct[KLB_DATA_DIMS] = { (uint32_t)raw_output_dims[0], (uint32_t)raw_output_dims[1], (uint32_t)raw_output_dims[2], 1, 1 } ;
 	writeKLBstack(output_stack, output_stack_file_name.c_str(), output_yxzct, KLB_DATA_TYPE::FLOAT32_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
 
 	// Release memory
 	free(input_stack);
-    free(input_origin);
-    free(input_spacing);
-    free(T_in_row_form);
-    free(output_origin);
-    free(output_spacing);
+    //free(input_origin);
+    //free(input_spacing);
+    //free(T_in_row_form);
+    //free(output_origin);
+    //free(output_spacing);
 
 	// Read the output stack back in, to make sure we can
 	cout << "Reading output file back in, as sanity check..." ;

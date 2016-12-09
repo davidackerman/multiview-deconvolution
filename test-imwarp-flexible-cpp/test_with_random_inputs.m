@@ -39,33 +39,33 @@ for i_trial = 1:n_trials ,
     
     % Convert stuff to desired types
     input_stack_single = single(input_stack) ;
-    input_origin_single = single(input_origin) ;
-    input_spacing_single = single(input_spacing) ;
-    T_in_row_form_single = single(T_in_row_form) ;
-    output_origin_single = single(output_origin) ;
-    output_spacing_single = single(output_spacing) ;
-    output_dims_uint64 = uint64(output_dims) ;
+    %input_origin_single = single(input_origin) ;
+    %input_spacing_single = single(input_spacing) ;
+    %T_in_row_form_single = single(T_in_row_form) ;
+    %output_origin_single = single(output_origin) ;
+    %output_spacing_single = single(output_spacing) ;
+    output_dims_int64 = int64(output_dims) ;
     
     % Make sure all the imwarp_flexible inputs are single
     assert(isa(input_stack_single, 'single')) ;   
-    assert(isa(input_origin_single, 'single')) ;   
-    assert(isa(input_spacing_single, 'single')) ;   
-    assert(isa(T_in_row_form_single, 'single')) ;   
-    assert(isa(output_origin_single, 'single')) ;   
-    assert(isa(output_spacing_single, 'single')) ;   
-    assert(isa(output_dims_uint64, 'uint64')) ;   
+    assert(isa(input_origin, 'double')) ;   
+    assert(isa(input_spacing, 'double')) ;   
+    assert(isa(T_in_row_form, 'double')) ;   
+    assert(isa(output_origin, 'double')) ;   
+    assert(isa(output_spacing, 'double')) ;   
+    assert(isa(output_dims, 'double')) ;   
     
     % Compute the output stack in Matlab
     output_stack_matlab = ...
-        run_matlab_imwarp_flexible(input_stack_single, input_origin_single, input_spacing_single, ...
-                                   T_in_row_form_single, ...
-                                   output_origin_single, output_spacing_single, output_dims_uint64) ;
+        run_matlab_imwarp_flexible(input_stack_single, input_origin, input_spacing, ...
+                                   T_in_row_form, ...
+                                   output_origin, output_spacing, output_dims) ;
     
     % Compute the output stack in C++ code
     output_stack_cpp = ...
-        run_cpp_imwarp_flexible(input_stack_single, input_origin_single, input_spacing_single, ...
-                                T_in_row_form_single, ...
-                                output_origin_single, output_spacing_single, output_dims_uint64) ;
+        run_cpp_imwarp_flexible(input_stack_single, input_origin, input_spacing, ...
+                                T_in_row_form, ...
+                                output_origin, output_spacing, output_dims) ;
     %output_stack_cpp = zeros(size(output_stack_cpp),'single') ;
     
     % Compare them

@@ -97,6 +97,6 @@
 //double interpolate_2d_double_gray(double Tlocalx, double Tlocaly, int *Isize, double *Iin,int cubic,int black);
 //void interpolate_2d_double_color(double *Ipixel, double Tlocalx, double Tlocaly, int *Isize, double *Iin, int cubic, int black);
 //double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz, int *Isize, double *Iin,int cubic,int black);
-float interpolate_3d_float_gray_ml(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_black);
+float interpolate_3d_float_gray_ml(double x, double y, double z, int64_t *dims, float *stack, bool is_cubic, bool is_black);
 
 #endif

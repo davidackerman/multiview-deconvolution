@@ -768,26 +768,26 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AF
     //allocate memory for transformed image
     float* psf = new float[psfElementCount] ;
 
-    // Make float versions of origins and spacing, and transform
-    float AAsFloat[16] ;
-    float_from_double(AAsFloat, A, 16) ;
-    float rawPSFOriginAsFloat[3] ;
-    float_from_double(rawPSFOriginAsFloat, rawPSFOrigin, 3) ;
-    float rawPSFSpacingAsFloat[3] ;
-    float_from_double(rawPSFSpacingAsFloat, rawPSFSpacing, 3) ;
-    float psfOriginAsFloat[3] ;
-    float_from_double(psfOriginAsFloat, psfOrigin, 3) ;
-    float psfSpacingAsFloat[3] ;
-    float_from_double(psfSpacingAsFloat, psfSpacing, 3) ;
+    //// Make float versions of origins and spacing, and transform
+    //float AAsFloat[16] ;
+    //float_from_double(AAsFloat, A, 16) ;
+    //float rawPSFOriginAsFloat[3] ;
+    //float_from_double(rawPSFOriginAsFloat, rawPSFOrigin, 3) ;
+    //float rawPSFSpacingAsFloat[3] ;
+    //float_from_double(rawPSFSpacingAsFloat, rawPSFSpacing, 3) ;
+    //float psfOriginAsFloat[3] ;
+    //float_from_double(psfOriginAsFloat, psfOrigin, 3) ;
+    //float psfSpacingAsFloat[3] ;
+    //float_from_double(psfSpacingAsFloat, psfSpacing, 3) ;
 
     //perform transformation
     //imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
     float* rawPSF = getPointer_CPU(pos) ;
     bool is_background_black = (interpMode & 1) ;  // bit 0 indicates whether background should be treated as black or extrapolated
     bool is_cubic = (interpMode & 2) ; // bit 1 indicates whether cubic interpolation should be used (as opposed to linear)
-    imwarp_flexible(rawPSF, rawPSFDims, rawPSFOriginAsFloat, rawPSFSpacingAsFloat,
-                    psf, psfDims, psfOriginAsFloat, psfSpacingAsFloat,
-                    AAsFloat,
+    imwarp_flexible(rawPSF, rawPSFDims, rawPSFOrigin, rawPSFSpacing,
+                    psf, psfDims, psfOrigin, psfSpacing,
+                    A,
                     is_cubic, is_background_black) ;
 
     // Print the size of the transformed PSF

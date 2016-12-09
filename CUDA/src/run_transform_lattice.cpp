@@ -42,6 +42,10 @@ unique_ptr<T> read_col_major_matrix(const T* dummy, int64_t n_rows, int64_t n_co
     return matrix ;
 }
 
+template unique_ptr<double> read_col_major_matrix(const double* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
+template unique_ptr<float> read_col_major_matrix(const float* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
+template unique_ptr<int64_t> read_col_major_matrix(const int64_t* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
+
 template<typename T>
 void write_col_major_matrix(const string & file_name, const unique_ptr<T> & matrix, int64_t n_rows, int64_t n_cols)
 {
@@ -65,10 +69,6 @@ void write_col_major_matrix(const string & file_name, const unique_ptr<T> & matr
     //}
     output_file.close();
 }
-
-template unique_ptr<double> read_col_major_matrix(const double* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
-template unique_ptr<float> read_col_major_matrix(const float* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
-template unique_ptr<int64_t> read_col_major_matrix(const int64_t* dummy, int64_t n_rows, int64_t n_cols, const string & file_name) ;
 
 template void write_col_major_matrix(const string & file_name, const unique_ptr<int64_t> & matrix, int64_t n_rows, int64_t n_cols) ;
 template void write_col_major_matrix(const string & file_name, const unique_ptr<double> & matrix, int64_t n_rows, int64_t n_cols) ;

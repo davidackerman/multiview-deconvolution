@@ -853,22 +853,22 @@ float get_float_voxel_ml(int64_t i_x, int64_t i_y, int64_t i_z, int64_t n_x, int
 //    return Ipixelxyz;
 //}
 
-float interpolate_3d_float_linear_black_ml(float x, float y, float z, int64_t *dims, float *stack) {
-    float result;
+float interpolate_3d_float_linear_black_ml(double x, double y, double z, int64_t *dims, float *stack) {
+    double result;
     /*  Linear interpolation variables */
     int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
-    float perc[8];
-    float xCom, yCom, zCom;
-    float xComi, yComi, zComi;
-    float color[8]={0, 0, 0, 0, 0, 0, 0, 0};
-    float x_floor, y_floor, z_floor;
+    double perc[8];
+    double xCom, yCom, zCom;
+    double xComi, yComi, zComi;
+    double color[8]={0, 0, 0, 0, 0, 0, 0, 0};
+    double x_floor, y_floor, z_floor;
     
 	// Stack dimensions
 	int64_t n_x = dims[1];
 	int64_t n_y = dims[0];
 	int64_t n_z = dims[2];
 
-    x_floor=floorfloat(x); y_floor=floorfloat(y); z_floor=floorfloat(z);
+    x_floor=floor(x); y_floor=floor(y); z_floor=floor(z);
     
     /* Determine the coordinates of the pixel(s) which will be come the current pixel */
     /* (using linear interpolation) */
@@ -927,25 +927,25 @@ float interpolate_3d_float_linear_black_ml(float x, float y, float z, int64_t *d
     
     /* Set the current pixel value */
     result =color[0]*perc[0]+color[1]*perc[1]+color[2]*perc[2]+color[3]*perc[3]+color[4]*perc[4]+color[5]*perc[5]+color[6]*perc[6]+color[7]*perc[7];
-    return result;
+    return (float) result ;
 }
 
-float interpolate_3d_float_linear_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
-    float Iout;
+float interpolate_3d_float_linear_ml(double x, double y, double z, int64_t *dims, float *stack) {
+    double Iout;
     /*  Linear interpolation variables */
 	int64_t xBas0, xBas1, yBas0, yBas1, zBas0, zBas1;
-    float perc[8];
-    float xCom, yCom, zCom;
-    float xComi, yComi, zComi;
-    float color[8]={0, 0, 0, 0, 0, 0, 0, 0};
-    float fTlocalx, fTlocaly, fTlocalz;
+    double perc[8];
+    double xCom, yCom, zCom;
+    double xComi, yComi, zComi;
+    double color[8]={0, 0, 0, 0, 0, 0, 0, 0};
+    double fTlocalx, fTlocaly, fTlocalz;
     
 	// Stack dimensions
-	int64_t n_x = Isize[1];
-	int64_t n_y = Isize[0];
-	int64_t n_z = Isize[2];
+	int64_t n_x = dims[1];
+	int64_t n_y = dims[0];
+	int64_t n_z = dims[2];
 
-	fTlocalx = floorfloat(Tlocalx); fTlocaly = floorfloat(Tlocaly); fTlocalz = floorfloat(Tlocalz);
+	fTlocalx = floor(x); fTlocaly = floor(y); fTlocalz = floor(z);
     
     /* Determine the coordinates of the pixel(s) which will be come the current pixel */
     /* (using linear interpolation) */
@@ -961,17 +961,17 @@ float interpolate_3d_float_linear_ml(float Tlocalx, float Tlocaly, float Tlocalz
     if(zBas1>(n_z-1)) { zBas1=n_z-1; if(zBas0>(n_z-1)) { zBas0=n_z-1; }}
     
     /*  Get intensities */
-    color[0]=get_float_voxel_ml(xBas0, yBas0, zBas0, n_x, n_y, n_z, Iin);
-    color[1]=get_float_voxel_ml(xBas0, yBas0, zBas1, n_x, n_y, n_z, Iin);
-    color[2]=get_float_voxel_ml(xBas0, yBas1, zBas0, n_x, n_y, n_z, Iin);
-    color[3]=get_float_voxel_ml(xBas0, yBas1, zBas1, n_x, n_y, n_z, Iin);
-    color[4]=get_float_voxel_ml(xBas1, yBas0, zBas0, n_x, n_y, n_z, Iin);
-    color[5]=get_float_voxel_ml(xBas1, yBas0, zBas1, n_x, n_y, n_z, Iin);
-    color[6]=get_float_voxel_ml(xBas1, yBas1, zBas0, n_x, n_y, n_z, Iin);
-    color[7]=get_float_voxel_ml(xBas1, yBas1, zBas1, n_x, n_y, n_z, Iin);
+    color[0]=get_float_voxel_ml(xBas0, yBas0, zBas0, n_x, n_y, n_z, stack);
+    color[1]=get_float_voxel_ml(xBas0, yBas0, zBas1, n_x, n_y, n_z, stack);
+    color[2]=get_float_voxel_ml(xBas0, yBas1, zBas0, n_x, n_y, n_z, stack);
+    color[3]=get_float_voxel_ml(xBas0, yBas1, zBas1, n_x, n_y, n_z, stack);
+    color[4]=get_float_voxel_ml(xBas1, yBas0, zBas0, n_x, n_y, n_z, stack);
+    color[5]=get_float_voxel_ml(xBas1, yBas0, zBas1, n_x, n_y, n_z, stack);
+    color[6]=get_float_voxel_ml(xBas1, yBas1, zBas0, n_x, n_y, n_z, stack);
+    color[7]=get_float_voxel_ml(xBas1, yBas1, zBas1, n_x, n_y, n_z, stack);
     
     /* Linear interpolation constants (percentages) */
-    xCom=Tlocalx-fTlocalx;  yCom=Tlocaly-fTlocaly;   zCom=Tlocalz-fTlocalz;
+    xCom=x-fTlocalx;  yCom=y-fTlocaly;   zCom=z-fTlocalz;
     
     xComi=(1-xCom); yComi=(1-yCom); zComi=(1-zCom);
     perc[0]=xComi * yComi; perc[1]=perc[0] * zCom; perc[0]=perc[0] * zComi;
@@ -981,40 +981,40 @@ float interpolate_3d_float_linear_ml(float Tlocalx, float Tlocaly, float Tlocalz
     
     /* Set the current pixel value */
     Iout =color[0]*perc[0]+color[1]*perc[1]+color[2]*perc[2]+color[3]*perc[3]+color[4]*perc[4]+color[5]*perc[5]+color[6]*perc[6]+color[7]*perc[7];
-    return Iout;
+    return (float) Iout ;
 }
 
-float interpolate_3d_float_cubic_black_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
+float interpolate_3d_float_cubic_black_ml(double x, double y, double z, int64_t *dims, float *stack) {
     /* Floor of coordinate */
-    float fTlocalx, fTlocaly, fTlocalz;
+    double fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
     int64_t xBas0, yBas0, zBas0;
     /* The location in between the pixels 0..1 */
-    float tx, ty, tz;
+    double tx, ty, tz;
     /* Neighbor loccations */
     int64_t xn[4], yn[4], zn[4];
     
     /* The vectors */
-    float vector_tx[4], vector_ty[4], vector_tz[4];
-    float vector_qx[4], vector_qy[4], vector_qz[4];
+    double vector_tx[4], vector_ty[4], vector_tz[4];
+    double vector_qx[4], vector_qy[4], vector_qz[4];
     /* Interpolated Intensity; */
-    float Ipixelx=0, Ipixelxy=0, Ipixelxyz=0;
+    double Ipixelx=0, Ipixelxy=0, Ipixelxyz=0;
     /* Loop variable */
     int i, j;
     /* constant 0.5; */
-    const float con=0.5;
+    const double con=0.5;
     
 	// Stack dimensions
-	int64_t n_x = Isize[1] ;
-	int64_t n_y = Isize[0];
-	int64_t n_z = Isize[2];
+	int64_t n_x = dims[1] ;
+	int64_t n_y = dims[0];
+	int64_t n_z = dims[2];
 
     /* Determine of the zero neighbor */
-    fTlocalx=floorfloat(Tlocalx); fTlocaly=floorfloat(Tlocaly); fTlocalz=floorfloat(Tlocalz);
+    fTlocalx=floor(x); fTlocaly=floor(y); fTlocalz=floor(z);
     xBas0=(int64_t) fTlocalx; yBas0=(int64_t) fTlocaly; zBas0=(int64_t) fTlocalz;
     
     /* Determine the location in between the pixels 0..1 */
-    tx=Tlocalx-fTlocalx; ty=Tlocaly-fTlocaly; tz=Tlocalz-fTlocalz;
+    tx=x-fTlocalx; ty=y-fTlocaly; tz=z-fTlocalz;
     
     /* Determine the t vectors */
     vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2_float(tx); vector_tx[3]= con*pow3_float(tx);
@@ -1022,18 +1022,18 @@ float interpolate_3d_float_cubic_black_ml(float Tlocalx, float Tlocaly, float Tl
     vector_tz[0]= con; vector_tz[1]= con*tz; vector_tz[2]= con*pow2_float(tz); vector_tz[3]= con*pow3_float(tz);
     
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */
-    vector_qx[0]= (float)-1.0*vector_tx[1]+(float)2.0*vector_tx[2]-(float)1.0*vector_tx[3];
-    vector_qx[1]= (float)2.0*vector_tx[0]-(float)5.0*vector_tx[2]+(float)3.0*vector_tx[3];
-    vector_qx[2]= (float)1.0*vector_tx[1]+(float)4.0*vector_tx[2]-(float)3.0*vector_tx[3];
-    vector_qx[3]= (float)-1.0*vector_tx[2]+(float)1.0*vector_tx[3];
-    vector_qy[0]= -(float)1.0*vector_ty[1]+(float)2.0*vector_ty[2]-(float)1.0*vector_ty[3];
-    vector_qy[1]= (float)2.0*vector_ty[0]-(float)5.0*vector_ty[2]+(float)3.0*vector_ty[3];
-    vector_qy[2]= (float)1.0*vector_ty[1]+(float)4.0*vector_ty[2]-(float)3.0*vector_ty[3];
-    vector_qy[3]= -(float)1.0*vector_ty[2]+(float)1.0*vector_ty[3];
-    vector_qz[0]= -(float)1.0*vector_tz[1]+(float)2.0*vector_tz[2]-(float)1.0*vector_tz[3];
-    vector_qz[1]= (float)2.0*vector_tz[0]-(float)5.0*vector_tz[2]+(float)3.0*vector_tz[3];
-    vector_qz[2]= (float)1.0*vector_tz[1]+(float)4.0*vector_tz[2]-(float)3.0*vector_tz[3];
-    vector_qz[3]= -(float)1.0*vector_tz[2]+(float)1.0*vector_tz[3];
+    vector_qx[0]= (double)-1.0*vector_tx[1]+(double)2.0*vector_tx[2]-(double)1.0*vector_tx[3];
+    vector_qx[1]= (double)2.0*vector_tx[0]-(double)5.0*vector_tx[2]+(double)3.0*vector_tx[3];
+    vector_qx[2]= (double)1.0*vector_tx[1]+(double)4.0*vector_tx[2]-(double)3.0*vector_tx[3];
+    vector_qx[3]= (double)-1.0*vector_tx[2]+(double)1.0*vector_tx[3];
+    vector_qy[0]= -(double)1.0*vector_ty[1]+(double)2.0*vector_ty[2]-(double)1.0*vector_ty[3];
+    vector_qy[1]= (double)2.0*vector_ty[0]-(double)5.0*vector_ty[2]+(double)3.0*vector_ty[3];
+    vector_qy[2]= (double)1.0*vector_ty[1]+(double)4.0*vector_ty[2]-(double)3.0*vector_ty[3];
+    vector_qy[3]= -(double)1.0*vector_ty[2]+(double)1.0*vector_ty[3];
+    vector_qz[0]= -(double)1.0*vector_tz[1]+(double)2.0*vector_tz[2]-(double)1.0*vector_tz[3];
+    vector_qz[1]= (double)2.0*vector_tz[0]-(double)5.0*vector_tz[2]+(double)3.0*vector_tz[3];
+    vector_qz[2]= (double)1.0*vector_tz[1]+(double)4.0*vector_tz[2]-(double)3.0*vector_tz[3];
+    vector_qz[3]= -(double)1.0*vector_tz[2]+(double)1.0*vector_tz[3];
     
     /* Determine 1D neighbour coordinates */
     xn[0]=xBas0-1; xn[1]=xBas0; xn[2]=xBas0+1; xn[3]=xBas0+2;
@@ -1048,16 +1048,16 @@ float interpolate_3d_float_cubic_black_ml(float Tlocalx, float Tlocaly, float Tl
                 Ipixelx=0;
                 if((yn[i]>=0)&&(yn[i]<n_y)) {
                     if((xn[0]>=0)&&(xn[0]<n_x)) {
-                        Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, stack);
                     }
                     if((xn[1]>=0)&&(xn[1]<n_x)) {
-                        Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, stack);
                     }
                     if((xn[2]>=0)&&(xn[2]<n_x)) {
-                        Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, stack);
                     }
                     if((xn[3]>=0)&&(xn[3]<n_x)) {
-                        Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
+                        Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, stack);
                     }
                 }
                 Ipixelxy += vector_qy[i]*Ipixelx;
@@ -1065,42 +1065,42 @@ float interpolate_3d_float_cubic_black_ml(float Tlocalx, float Tlocaly, float Tl
             Ipixelxyz += vector_qz[j]*Ipixelxy;
         }
     }
-    return Ipixelxyz;
+    return (float)Ipixelxyz ;
 }
-float interpolate_3d_float_cubic_ml(float Tlocalx, float Tlocaly, float Tlocalz, int64_t *Isize, float *Iin) {
+float interpolate_3d_float_cubic_ml(double x, double y, double z, int64_t *dims, float *stack) {
     /* Floor of coordinate */
-    float fTlocalx, fTlocaly, fTlocalz;
+    double fTlocalx, fTlocaly, fTlocalz;
     /* Zero neighbor */
     int64_t xBas0, yBas0, zBas0;
     /* The location in between the pixels 0..1 */
-    float tx, ty, tz;
+    double tx, ty, tz;
     /* Neighbor loccations */
     int64_t xn[4], yn[4], zn[4];
     
     /* The vectors */
-    float vector_tx[4], vector_ty[4], vector_tz[4];
-    float vector_qx[4], vector_qy[4], vector_qz[4];
+    double vector_tx[4], vector_ty[4], vector_tz[4];
+    double vector_qx[4], vector_qy[4], vector_qz[4];
     
     /* Interpolated Intensity; */
-    float Ipixelx=0, Ipixelxy=0, Ipixelxyz=0;
+    double Ipixelx=0, Ipixelxy=0, Ipixelxyz=0;
     /* Temporary value boundary */
     int64_t b;
     /* Loop variable */
     int i, j;
     /* const 0.5; */
-    const float con=0.5;
+    const double con=0.5;
     
 	// Stack dimensions
-	int64_t n_x = Isize[1];
-	int64_t n_y = Isize[0];
-	int64_t n_z = Isize[2];
+	int64_t n_x = dims[1];
+	int64_t n_y = dims[0];
+	int64_t n_z = dims[2];
 
 	/* Determine of the zero neighbor */
-    fTlocalx = floorfloat(Tlocalx); fTlocaly = floorfloat(Tlocaly); fTlocalz = floorfloat(Tlocalz);
+    fTlocalx = floor(x); fTlocaly = floor(y); fTlocalz = floor(z);
 	xBas0 = (int64_t)fTlocalx; yBas0 = (int64_t)fTlocaly; zBas0 = (int64_t)fTlocalz;
     
     /* Determine the location in between the pixels 0..1 */
-    tx=Tlocalx-fTlocalx; ty=Tlocaly-fTlocaly; tz=Tlocalz-fTlocalz;
+    tx=x-fTlocalx; ty=y-fTlocaly; tz=z-fTlocalz;
     
     /* Determine the t vectors */
     vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2_float(tx); vector_tx[3]= con*pow3_float(tx);
@@ -1109,18 +1109,18 @@ float interpolate_3d_float_cubic_ml(float Tlocalx, float Tlocaly, float Tlocalz,
     
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */
-    vector_qx[0]= (float)-1.0*vector_tx[1]+(float)2.0*vector_tx[2]-(float)1.0*vector_tx[3];
-    vector_qx[1]= (float)2.0*vector_tx[0]-(float)5.0*vector_tx[2]+(float)3.0*vector_tx[3];
-    vector_qx[2]= (float)1.0*vector_tx[1]+(float)4.0*vector_tx[2]-(float)3.0*vector_tx[3];
-    vector_qx[3]= (float)-1.0*vector_tx[2]+(float)1.0*vector_tx[3];
-    vector_qy[0]= -(float)1.0*vector_ty[1]+(float)2.0*vector_ty[2]-(float)1.0*vector_ty[3];
-    vector_qy[1]= (float)2.0*vector_ty[0]-(float)5.0*vector_ty[2]+(float)3.0*vector_ty[3];
-    vector_qy[2]= (float)1.0*vector_ty[1]+(float)4.0*vector_ty[2]-(float)3.0*vector_ty[3];
-    vector_qy[3]= -(float)1.0*vector_ty[2]+(float)1.0*vector_ty[3];
-    vector_qz[0]= -(float)1.0*vector_tz[1]+(float)2.0*vector_tz[2]-(float)1.0*vector_tz[3];
-    vector_qz[1]= (float)2.0*vector_tz[0]-(float)5.0*vector_tz[2]+(float)3.0*vector_tz[3];
-    vector_qz[2]= (float)1.0*vector_tz[1]+(float)4.0*vector_tz[2]-(float)3.0*vector_tz[3];
-    vector_qz[3]= -(float)1.0*vector_tz[2]+(float)1.0*vector_tz[3];
+    vector_qx[0]= (double)-1.0*vector_tx[1]+(double)2.0*vector_tx[2]-(double)1.0*vector_tx[3];
+    vector_qx[1]= (double)2.0*vector_tx[0]-(double)5.0*vector_tx[2]+(double)3.0*vector_tx[3];
+    vector_qx[2]= (double)1.0*vector_tx[1]+(double)4.0*vector_tx[2]-(double)3.0*vector_tx[3];
+    vector_qx[3]= (double)-1.0*vector_tx[2]+(double)1.0*vector_tx[3];
+    vector_qy[0]= -(double)1.0*vector_ty[1]+(double)2.0*vector_ty[2]-(double)1.0*vector_ty[3];
+    vector_qy[1]= (double)2.0*vector_ty[0]-(double)5.0*vector_ty[2]+(double)3.0*vector_ty[3];
+    vector_qy[2]= (double)1.0*vector_ty[1]+(double)4.0*vector_ty[2]-(double)3.0*vector_ty[3];
+    vector_qy[3]= -(double)1.0*vector_ty[2]+(double)1.0*vector_ty[3];
+    vector_qz[0]= -(double)1.0*vector_tz[1]+(double)2.0*vector_tz[2]-(double)1.0*vector_tz[3];
+    vector_qz[1]= (double)2.0*vector_tz[0]-(double)5.0*vector_tz[2]+(double)3.0*vector_tz[3];
+    vector_qz[2]= (double)1.0*vector_tz[1]+(double)4.0*vector_tz[2]-(double)3.0*vector_tz[3];
+    vector_qz[3]= -(double)1.0*vector_tz[2]+(double)1.0*vector_tz[3];
     
     /* Determine 1D neighbour coordinates */
     xn[0]=xBas0-1; xn[1]=xBas0; xn[2]=xBas0+1; xn[3]=xBas0+2;
@@ -1145,15 +1145,15 @@ float interpolate_3d_float_cubic_ml(float Tlocalx, float Tlocaly, float Tlocalz,
         Ipixelxy=0;
         for(i=0; i<4; i++) {
             Ipixelx=0;
-            Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, Iin);
-            Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, Iin);
+            Ipixelx+=vector_qx[0]*get_float_voxel_ml(xn[0], yn[i], zn[j], n_x, n_y, n_z, stack);
+            Ipixelx+=vector_qx[1]*get_float_voxel_ml(xn[1], yn[i], zn[j], n_x, n_y, n_z, stack);
+            Ipixelx+=vector_qx[2]*get_float_voxel_ml(xn[2], yn[i], zn[j], n_x, n_y, n_z, stack);
+            Ipixelx+=vector_qx[3]*get_float_voxel_ml(xn[3], yn[i], zn[j], n_x, n_y, n_z, stack);
             Ipixelxy+= vector_qy[i]*Ipixelx;
         }
         Ipixelxyz+= vector_qz[j]*Ipixelxy;
     }
-    return Ipixelxyz;
+    return (float)Ipixelxyz ;
 }
 
 /*
@@ -1195,7 +1195,7 @@ double interpolate_3d_double_gray(double Tlocalx, double Tlocaly, double Tlocalz
 }
 */
 
-float interpolate_3d_float_gray_ml(float x, float y, float z, int64_t *dims, float *stack, bool is_cubic, bool is_background_black)  {
+float interpolate_3d_float_gray_ml(double x, double y, double z, int64_t *dims, float *stack, bool is_cubic, bool is_background_black)  {
 	float result;
 	if (is_cubic) {
 		if (is_background_black) { result = interpolate_3d_float_cubic_black_ml(x, y, z, dims, stack); }
