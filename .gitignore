@@ -19,3 +19,16 @@ test-mvd-without-mvd/test.smv.xml_debug_psf_2.klb
 test-mvd-without-mvd/untrimmed_PSF_0.klb
 test-mvd-without-mvd/untrimmed_PSF_1.klb
 test-mvd-without-mvd/untrimmed_PSF_2.klb
+test-imwarp-flexible-cpp/T_in_row_form.raw
+test-imwarp-flexible-cpp/input_origin.raw
+test-imwarp-flexible-cpp/input_spacing.raw
+test-imwarp-flexible-cpp/input_stack.klb
+test-imwarp-flexible-cpp/output.klb
+test-imwarp-flexible-cpp/output_dims.raw
+test-imwarp-flexible-cpp/output_origin.raw
+test-imwarp-flexible-cpp/output_spacing.raw
+test-mvd-without-mvd/random-raw-psf.klb
+test-mvd-without-mvd/random-test-new-style.smv.xml
+test-mvd-without-mvd/random-test-new-style.smv.xml_debug_psf_0.klb
+test-mvd-without-mvd/random-test-new-style.smv.xml_debug_psf_1.klb
+test-mvd-without-mvd/random-test-new-style.smv.xml_debug_psf_2.klb

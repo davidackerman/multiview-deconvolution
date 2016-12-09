@@ -264,7 +264,8 @@ int multiGPUblockController::findBestBlockPartitionDimension()
 	}
 
 	dimBlockParition = 0;
-	padBlockPartition = 4294967295;
+    //cout << "Just set dimBlockParition to " << dimBlockParition << " in multiGPUblockController::findBestBlockPartitionDimension()" << endl ;
+    padBlockPartition = 4294967295;
 
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 	{
@@ -272,7 +273,8 @@ int multiGPUblockController::findBestBlockPartitionDimension()
 		{
 			padBlockPartition = maxDims[ii];
 			dimBlockParition = ii;
-		}
+            //cout << "Just set dimBlockParition to " << dimBlockParition << " in multiGPUblockController::findBestBlockPartitionDimension()" << endl ;
+            }
 	}
 
 	return 0;
@@ -280,7 +282,9 @@ int multiGPUblockController::findBestBlockPartitionDimension()
 //========================================================
 int multiGPUblockController::findBestBlockPartitionDimension_inMem()
 {
-	string filename;
+	//string filename;
+
+    // For each dimension, find the largest value attained across all views, store in maxDims
 	uint32_t maxDims[MAX_DATA_DIMS];
 	memset(maxDims, 0, sizeof(uint32_t)* MAX_DATA_DIMS);
 	for (int ii = 0; ii < paramDec.Nviews; ii++)
@@ -294,8 +298,10 @@ int multiGPUblockController::findBestBlockPartitionDimension_inMem()
 		}
 	}
 
+    // Determine the largest dimension across all views (dimBlockParition), and how large it is (padBlockPartition)
 	dimBlockParition = 0;
-	padBlockPartition = 4294967295;
+    //cout << "Just set dimBlockParition to " << dimBlockParition << " in multiGPUblockController::findBestBlockPartitionDimension_inMem()" << endl ;
+    padBlockPartition = 4294967295;  // = 2^32-1, largest val this var can hold
 
 	for (int ii = 0; ii < MAX_DATA_DIMS; ii++)
 	{
@@ -303,7 +309,8 @@ int multiGPUblockController::findBestBlockPartitionDimension_inMem()
 		{
 			padBlockPartition = maxDims[ii];
 			dimBlockParition = ii;
-		}
+            //cout << "Just set dimBlockParition to " << dimBlockParition << " in multiGPUblockController::findBestBlockPartitionDimension_inMem()" << endl ;
+            }
 	}
 
 	return 0;
