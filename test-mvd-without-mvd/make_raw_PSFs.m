@@ -4,6 +4,7 @@
 % Write out a raw PSF for each view
 n_views = length(Ts) ;
 raw_psf_file_names = cell(1, n_views) ;
+raw_psfs = cell(1, n_views) ;
 for i_view = 1:n_views ,
     % Load the transformed, trimmed PSF
     desired_trimmed_transformed_psf_file_name = sprintf('psf-view-%d.klb', i_view-1) ;
@@ -12,6 +13,7 @@ for i_view = 1:n_views ,
     % Compute the raw transform for the current view
     T = Ts{i_view} ;
     raw_PSF = untransform_psf(desired_trimmed_transformed_PSF, T) ;
+    raw_psfs{i_view} = raw_PSF ;
     
     % Save the untransformed PSF to a .klb file
     raw_psf_file_name = sprintf('raw-psf-view-%d.klb', i_view-1) ;
@@ -30,3 +32,6 @@ deconvolution_parameters = struct('blockZsize', {-1}, ...
                                   'verbose', {1}, ...
                                   'isPSFAlreadyTransformed', {0} ) ;
 save_smv_xml(output_smv_xml_file_name, stack_file_names, raw_psf_file_names, Ts, deconvolution_parameters) ;
+
+% Because of the way we constructed them, we know that all the raw PSFs are
+% identical.
