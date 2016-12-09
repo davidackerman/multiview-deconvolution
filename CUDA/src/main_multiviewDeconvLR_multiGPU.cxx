@@ -15,6 +15,8 @@
 #include <chrono>
 #include <math.h>  
 #include <algorithm>
+#include <sstream>
+#include <iomanip>  
 #include "multiGPUblockController.h"
 
 
@@ -30,11 +32,19 @@ int main(int argc, const char** argv)
 	//main inputs
 	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv_bin4/regDeconvParam.xml");
 	int maxNumberGPU = -1;//default value
+    bool wasOutputFileNameGiven = false ;
+    string outputFileName("") ;
 
 	if (argc > 1)
 		filenameXML = string(argv[1]);
 	if (argc > 2)
 		maxNumberGPU = atoi(argv[2]);
+    if (argc > 3)
+    {
+        outputFileName = string(argv[3]);
+        wasOutputFileNameGiven = true ;
+    }
+
 
 	//--------------------------------------------------------
 	//main object to control the deconvolution process
@@ -170,15 +180,29 @@ int main(int argc, const char** argv)
     master.full_weights_mem.clear();
 
 	//write result
-    char fileoutName[256] = { 0 };
-	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
+    if (!wasOutputFileNameGiven)
+    {
+        //char fileoutName[256] = { 0 };
+        //sprintf(
+        //    fileoutName, 
+        //    "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", 
+        //    master.paramDec.fileImg[0].c_str(), 
+        //    master.paramDec.outputFilePrefix.c_str(), 
+        //    master.paramDec.numIters, 
+        //    (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
+        //outputFileName = fileoutName ;
+        int lambdaAsInt(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)) ;
+        stringstream lambdaAsStringStream;
+        lambdaAsStringStream << setw(6) << setfill('0') << lambdaAsInt ;
+        outputFileName = master.paramDec.fileImg[0] + "_dec_LR_multiGPU_" + master.paramDec.outputFilePrefix + "_iter" + to_string(master.paramDec.numIters) + "_lambdaTV" + lambdaAsStringStream.str() + ".klb" ;
+    }
 	t1 = Clock::now();
-	cout << "Writing result to "<<string(fileoutName) << endl;
+    cout << "Writing result to " << outputFileName << endl;
 	
 	if ( master.paramDec.saveAsUINT16 )
-		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");	
+        err = master.writeDeconvoutionResult_uint16(outputFileName);
 	else
-		err = master.writeDeconvolutionResult_float(string(fileoutName) + ".klb");
+        err = master.writeDeconvolutionResult_float(outputFileName);
 	
 	
 	if (err > 0)
