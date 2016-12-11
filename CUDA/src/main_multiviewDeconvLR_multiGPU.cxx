@@ -116,19 +116,6 @@ int main(int argc, const char** argv)
 	//apply transformation
 	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
     {
-        //if (master.paramDec.isPSFAlreadyTransformed)
-        //{
-        //    cout << "PSF is already transformed, so not transforming further " << endl;
-        //}
-        //else
-        //{
-        //    t1 = Clock::now();
-        //    cout << "Applying affine transformation to PSF " << endl;
-        //    master.full_psf_mem.apply_affine_transformation_psf(ii, &(master.paramDec.AcellAsDouble[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
-        //    t2 = Clock::now();
-        //    std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
-        //}
-
         t1 = Clock::now();
 		cout << "Applying affine transformation to view " << ii << endl;
 		master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0

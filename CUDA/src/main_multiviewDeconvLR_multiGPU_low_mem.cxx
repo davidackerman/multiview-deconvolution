@@ -11,6 +11,8 @@
 */
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>  
 #include <string>
 #include <chrono>
 #include <cstdio>
@@ -33,11 +35,18 @@ int main(int argc, const char** argv)
 	//main inputs
 	string filenameXML("C:/Users/Fernando/matlabProjects/deconvolution/CUDA/test/data/reg_deconv/regDeconvParam.xml");
 	int maxNumberGPU = -1;//default value
+    bool wasOutputFileNameGiven = false ;
+    string outputFileName("") ;
 
 	if (argc > 1)
 		filenameXML = string(argv[1]);
 	if (argc > 2)
 		maxNumberGPU = atoi(argv[2]);
+    if (argc > 3)
+    {
+        outputFileName = string(argv[3]);
+        wasOutputFileNameGiven = true ;
+    }
 
 	//--------------------------------------------------------
 	//main object to control the deconvolution process
@@ -62,6 +71,21 @@ int main(int argc, const char** argv)
 		std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 	}
 
+    // Do affine transform of PSFs, if needed.  We do this now because things like master.findBestBlockPartitionDimension_inMem()
+    // assume that the PSFs are already transformed
+    for (int ii = 0; ii < master.paramDec.Nviews; ii++)
+    {
+        if (master.paramDec.isPSFAlreadyTransformed)
+        {
+            cout << "PSF is already transformed, so not transforming further " << endl;
+        }
+        else
+        {
+            cout << "Applying affine transformation to PSF " << endl;
+            master.full_psf_mem.apply_affine_transformation_psf(ii, &(master.paramDec.AcellAsDouble[ii][0]), 3);  
+              // 3 as third argument means cubic interpolation, with points outside the stack assumed to be zero
+        }
+    }
 
 	t1 = Clock::now();
 	cout << "Calculating constrast weights for each view in GPU" << endl;
@@ -71,7 +95,7 @@ int main(int argc, const char** argv)
 	
 	int64_t dimsOut[3];
 	const int refView = 0;
-	cout << "We assume first view is the reference. So its affine transformation is just a scalign in Z" << endl;
+	cout << "We assume first view is the reference. So its affine transformation is just a scaling in Z" << endl;
 	//set parameters	
 	dimsOut[0] = master.full_img_mem.dimsImgVec[refView].dims[0];
 	dimsOut[1] = master.full_img_mem.dimsImgVec[refView].dims[1];
@@ -134,13 +158,14 @@ int main(int argc, const char** argv)
 
 	if (master.paramDec.verbose > 0)
 	{
-		cout << "Saving transformed images and weights for all views in file " << filenameXML <<"*"<<endl;
+		cout << "Saving transformed images and PSFs for all views in file " << filenameXML <<"*"<<endl;
 		for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 		{
-			char buffer[256];
-			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
-			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);			
-		}
+            string debugStackFileName = filenameXML + "_debug_img_" + to_string(ii) + ".klb" ;
+            master.full_img_mem.writeImage_uint16(debugStackFileName, ii, 4096.0f);
+            string debugPSFFileName = filenameXML + "_debug_psf_" + to_string(ii) + ".klb" ;
+            master.full_psf_mem.writeImage(debugPSFFileName, ii);
+        }
 	}
 
 	//precalculate number of planes per GPU we can do (including padding to avoid border effect)
@@ -157,14 +182,29 @@ int main(int argc, const char** argv)
 	
 
 	//write result
-	char fileoutName[256];
-	sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
+    if (!wasOutputFileNameGiven)
+    {
+        int lambdaAsInt(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)) ;
+        stringstream lambdaAsStringStream;
+        lambdaAsStringStream << setw(6) << setfill('0') << lambdaAsInt ;
+        outputFileName = 
+            master.paramDec.fileImg[0] + 
+            "_dec_LR_multiGPU_" + 
+            master.paramDec.outputFilePrefix + 
+            "_iter" + 
+            to_string(master.paramDec.numIters) + 
+            "_lambdaTV" + 
+            lambdaAsStringStream.str() + 
+            ".klb" ;
+    }
+	//char fileoutName[256];
+	//sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
-	cout << "Writing result to "<<string(fileoutName) << endl;
+    cout << "Writing result to " << outputFileName << endl;
 	if (master.paramDec.saveAsUINT16)
-		err = master.writeDeconvoutionResult_uint16(string(fileoutName) + ".klb");
+        err = master.writeDeconvoutionResult_uint16(outputFileName);
 	else
-		err = master.writeDeconvolutionResult_float(string(fileoutName) + ".klb");
+        err = master.writeDeconvolutionResult_float(outputFileName);
 
 	if (err > 0)
 	{
