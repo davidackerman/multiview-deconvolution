@@ -307,27 +307,31 @@ void transform_lattice_3d(int64_t* targetDims, double* targetOrigin,
     {
     // Given an affine transform and a source lattice, computes a target lattice with the same 
     // spacing as the source lattice, that is designed to just include the image of the source 
-    // lattice after it is transformed by A.  A "lattice" is defined by an axis-aligned cuboid in 
-    // space combined with a number of voxels in each dimension.  The corner of the cuboid closest to the
-    // origin is the same point as the corner of the first voxel closest to the origin.  Similarly, the 
-    // corner of the cuboid farthest from the origin is the same point as the corner of the last voxel 
-    // farthest from the origin.  I.e. there is no voxel center at the corner of the cuboid.
+    // lattice after it is transformed by A.  A "lattice" is a set of regularly spaced points.  
+    // Note that in the source lattive, the sample closest to the 
+    // origin is at the point sourceOrigin + 0.5*sourceSpacing, *not* at sourceOrigin.  
+    // Similarly for the target lattice.
+    // 
+    // This function is designed to compute the same target lattice as Matlab does when you call imwarp()
+    // without specifying an explicit OutputView.
+    //
     //
     // Inputs:
     //   A is the transform matrix, serialized into an 1D array.  It should of size
-    //     4^2==16.  It is stored row-major, assuming y = A*x is used for the transform, with y and x col 
-    //     vectors.  Or, equivalently, it can be viewed as being stored col-major, assuming y = x*A is 
-    //     used for the transform, with y and x row vectors.  Taking the first view, the last row should 
-    //     be 0 0 0 1.
-    //   sourceDims is the size of the source lattice in each dimension.
-    //   sourceOrigin is the location of the "lowermost" corner of the cuboid associated with the lattice.
-    //   sourceSpacing is the spacing between voxels in each dimension.  
-    //     The "uppermost" corner of the source cuboid is located at sourceOrigin+sourceSize.*sourceSpacing.
-    //   targetSpacing is the desired spacing between voxels in the output lattice.
+    //     4^2==16.  It is stored col-major, assuming y = x*A is used for the transform, with y and x row 
+    //     vectors.  Thus last col should be 0 0 0 1, and the last row should hold the translation.
+    //   sourceDims is the size of the source lattice in each dimension, in order yxz.  (*Not* xyz.)
+    //   sourceOrigin gives the position of the source lattice in the source space.  
+    //     In particular, the lattice point closest to the origin is at
+    //     sourceOrigin + 0.5*sourceSpacing.  sourceOrigin is in order xyz.
+    //   sourceSpacing is the spacing between samples in each dimension, in order xyz.
+    //   targetSpacing is the desired spacing between voxels in the output lattice, in order xyz.
     //
     // Outputs:
-    //   targetDims is the size of the target lattice in each dimension.
-    //   targetOrigin is the location of the "lowermost" corner of the cuboid associated with the lattice.
+    //   targetDims is the size of the target lattice in each dimension, in order yxz.  (*Not* xyz.)
+    //   targetOrigin is the location of the target lattice in the target space.  In particular,
+    //     the lattice point closest to the origin is at
+    //     targetOrigin + 0.5*targetSpacing.  targetSpacing is in order xyz.
 
     double sourceExtent[3] ;
     extent_from_dims_and_spacing_3d(sourceExtent, sourceDims, sourceSpacing) ;
@@ -351,9 +355,9 @@ void transform_cuboid_3d(double* targetOrigin, double* targetExtent,
     // Given a cuboid in a source space, computes that cuboid that just 
     // contains the image of it in a target space, after the source cuboid goes through the affine transform defined by A.
     // targetOrigin and targetExtent are outputs, and should be preallocated to length 3 by the caller.
-    // A should be of length 16, representing a 4x4 affine transform array.  It is stored row-major, assuming y = A*x is 
-    // used for the transform, with y and x col vectors.  Or, equivalently, it can be viewed as being stored col-major, assuming 
-    // y = x*A is used for the transform, with y and x row vectors.  Taking the first view, the last row should be 0 0 0 1.
+    // A should be of length 16, representing a 4x4 affine transform array.  It is stored col-major, assuming y = x*A is 
+    // used for the transform, with y and x row vectors.  
+    // targetOrigin, targetExtent, sourceOrigin, and sourceExtent are all three-vectors, in the order xyz.
 
     // Generate all the corners of the image in the target space
     double sourceCorner[3] ;
@@ -406,7 +410,8 @@ void lattice_from_cuboid_3d(int64_t* dims, double* origin,
     // centered on the original, with extent an integer multiple of spacing (in each dimension).
     // The resulting bounding box, along with the integer multiple in each dimension, comprise a 
     // "lattice": a set of regularly spaced points in Cartesian space for which voxel data might 
-    // be determined.
+    // be determined.  All args are arrays of length 3.  Dims is in order yxz, all others are in 
+    // order xyz.
 
     double ideal_count[3] ;
     elementwise_quotient_3d(ideal_count, ideal_extent, spacing) ;
@@ -462,6 +467,8 @@ void affine_transform_3d(double y[3], double x[3], double T[16])
 
 void extent_from_dims_and_spacing_3d(double* extent, int64_t* dims, double* spacing)
     {
+    // Given 3D dimensions (in order yxz), and spacing between samples (in order xyz), 
+    // computes the size of the cuboid covered by the implied lattice, in order xyz.
     extent[0] = double(dims[1]) * spacing[0] ;  // dims are in order n_y, n_x, n_z
     extent[1] = double(dims[0]) * spacing[1] ;
     extent[2] = double(dims[2]) * spacing[2] ;
@@ -522,6 +529,7 @@ int64_t element_count_from_dims_3d(int64_t* dims)
 
 float normalize_in_place_3d(float* x, int64_t* dims)
     {
+    // Normalizes the given stack x so that on return its elements sum to unity.
     float sum = 0.0f ;
     size_t n = size_t(element_count_from_dims_3d(dims)) ;
     for (size_t i = 0; i < n; ++i)
@@ -533,6 +541,9 @@ float normalize_in_place_3d(float* x, int64_t* dims)
 
 void pos_in_place_3d(float *x, int64_t dims[3])
     {
+    // Compute the elementwise pos() function on the elements of the stack x.  
+    // pos(x) is equal to zero if x<0, and is otherwise equal to x.
+
     // Determine the number of elements needed in the output array x
     int64_t n_elements = element_count_from_dims_3d(dims) ;
 
@@ -546,6 +557,8 @@ void pos_in_place_3d(float *x, int64_t dims[3])
 
 int64_t find_first_nonzero_element_3d(float *x, int64_t dims[3])
     {
+    // Determines the serial index of the first nonzero element of the stack x,
+    // or -1 if there is no such element.
     int64_t n_elements = element_count_from_dims_3d(dims) ;
     for (int64_t i=0; i<n_elements; ++i)
         {
@@ -565,9 +578,8 @@ void float_from_double(float* y, double* x, int64_t n)
 
 void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64_t* psfDims, float threshold)
 {
-    // Figure out how many elements we're going to trim
-    //float threshold = 1e-10f ;
-    //int64_t nElementsToTrim[MAX_DATA_DIMS] ;
+    // Utility function used by trim_psf_3d() to determine how many elements to trim on each side, in each dimension.
+
     for (int64_t iDim = 0; iDim < 3; iDim++)
     {
         int64_t nElementsThisDim = psfDims[iDim] ;
@@ -605,8 +617,12 @@ void determine_n_elements_to_trim_3d(int64_t* nElementsToTrim, float* psf, int64
 
 float *trim_psf_3d(int64_t* trimmed_psf_dims, float* psf, int64_t* psf_dims)
 {
+    // Given an input stack, psf, returns a "substack" that includes all samples strictly greater than 1e-10f.
+    // The substack is also centered on the original stack, i.e. the same number of slices are deleted 
+    // on each side of the original stack.  
+    // If all elements of the original stack are below threshold, simply returns the original stack.
+    // 
     // Note that on return, the value *trimmedPSFPtr is allocated on the heap via new, and will need to be deleted by the caller
-    // Trim near-zero elements on all sides, keeping the PSF centered
 
     // Figure out how many elements we're going to trim
     float threshold = 1e-10f ;

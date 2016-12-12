@@ -181,33 +181,51 @@ void imwarp_flexible(const float* input_stack, int64_t input_dims[3], double inp
 					 double A[AFFINE_3D_MATRIX_SIZE], 
 					 bool is_cubic, bool is_background_black)
 {
-	// This assumes imIn is stored Matlab-style in memory: It's a 3D array with dims [n_y n_x n_z], stored col-major.
-	// On exit, imOut will be in the same form.
+	// This assumes input_stack is stored Matlab-style in memory: It's a 3D array with dims [n_y n_x n_z] (note the order), stored col-major.
+	// On exit, output_stack will be in the same form.  output_stack must be pre-allocated.
 	// A is assumed to represent a 4x4 affine transform matrix, stored col-major.  
 	// A should be the "row form" representation of the 3D affine transform, i.e the last column should be [0 0 0 1]', and the last
 	// row should represent the translation.  In this form, output_coord = input_coord * A, with output_coord and input_coord being 
-	// row vectors of the form [x y z 1].
-	// dimsIn gives the dimensions of the input stack, in the order n_y, n_x, n_z.  (sic)
-	// dimsOut gives the desired dimensions of the output stack, in the order n_y, n_x, n_z.
-	// Each element of dimsOut must be greater than or equal to the corresponding element of dimsIn.
-	// The input stack is padded with zeros on the "high" end of each dimension out to size dimsOut before the transforming is done.
-	// Once the input stack is padded out to the same dimensions as the output stack, the affine transform is done.
-	// It is done s.t. it is equal to the Matlab commands:
+	// row vectors of the form [x y z 1].  (Again, note the order of the coords.)
+	// input_dims gives the dimensions of the input stack, in the order n_y, n_x, n_z.  (sic)
+    // The input stack is assumed to represent sampled values of a function of x, y, and z in a cartesian "input space".
+    // In particular, there is an "input cuboid" in 3-space that defines the x, y, z coordinates of each sample in input_stack.
+    // input_origin gives the coordinates of the corner of the input cuboid closest to the origin, in order xyz.
+    // input_spacing gives the spacing between samples in x, y, and z, in order xyz.
+    // Note that sample [0,0,0] occurs at the point input_origin + 0.5*input_spacing, which may or may not match your expectation.
+    // Points within the input cuboid that are not on the lattice of sample points are interpolated, using either linear interpolation or 
+    // cubic interpolation, depending on the value of is_cubic.  Points outside the input cuboid are assumed to have value 0.0f if 
+    // is_background_black is true, or are extrapolated from the outermost points in the input_stack if is_background_black is false.
+	// output_dims gives the desired dimensions of the output stack, in the order n_y, n_x, n_z.
+    // As with the input stack, the output stack is assumed to represent sampled values of a function of x, y, and z in a cartesian "output space".
+    // In particular, there is an "output cuboid" in 3-space that defines the x, y, z coordinates of each sample in output_stack.
+    // output_origin gives the coordinates of the corner of the output cuboid closest to the origin, in order xyz.
+    // output_spacing gives the spacing between samples in x, y, and z, in order xyz.
+    // Note that sample [0,0,0] occurs at the point output_origin + 0.5*output_spacing, which may or may not match your expectation.
+    // 
+    // Given all this, the output at a point output_point ([x y z 1]) is computed by first computing:
+    //
+    //   input_point = output_point * inv(A)
+    //
+    // Then, the input_stack, input_origin, and input_spacing are used to determine the value of the input_stack
+    // at input_point, using interpolation/extrapolation as needed, since input_point will not generally be exactly equal to a 
+    // sampling point in the input space.
+    //
+	// The output of this function is designed to match the Matlab commands:
 	//
-	// default_frame = ...
+	// input_frame = ...
 	//     imref3d(size(input_stack), ...
-	//	           0.5 + [0 size(input_stack, 2)], ...
-	//	           0.5 + [0 size(input_stack, 1)], ...
-	//	           0.5 + [0 size(input_stack, 3)]);
-	//
-	// output_stack = imwarp(input_stack, default_frame, ...
+	//	           input_origin(1) + input_spacing(1)*[0 size(input_stack, 2)], ...
+	//	           input_origin(2) + input_spacing(2)*[0 size(input_stack, 1)], ...
+	//	           input_origin(3) + input_spacing(3)*[0 size(input_stack, 3)]);
+    // output_frame = ...
+    //     imref3d(size(output_stack), ...
+    //	           output_origin(1) + output_spacing(1)*[0 size(output_stack, 2)], ...
+    //	           output_origin(2) + output_spacing(2)*[0 size(output_stack, 1)], ...
+    //	           output_origin(3) + output_spacing(3)*[0 size(output_stack, 3)]);
+	// output_stack = imwarp(input_stack, input_frame, ...
 	//	                     affine3d(A), ...
-	//	                     'OutputView', default_frame);
-	//
-	// That is, the element at row i, col j, page k of the input stack (using zero-based indexing) is assumed to be located at 
-	// <x,y,z> coordinate <j+1, i+1, k+1> (note that cols map to x, rows to y), and the same for the output stack.  The equation
-	// output_coord = input_coord * A then relates the output <x,y,z> coordinates to the input <x,y,z> coordinates, with 
-	// interpolation used when a given output point does not correspond exactly to an on-grid input point.
+	//	                     'OutputView', output_frame);
 
 	// Take the inverse of A once, since we need it at each voxel
 	double Ainv[AFFINE_3D_MATRIX_SIZE];
