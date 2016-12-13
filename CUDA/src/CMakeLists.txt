@@ -98,7 +98,7 @@ add_library(multiview_deconvolution_GPU ${CPP_SRCS} ${CUDA_SRCS} ${CUDA_CUDA_OBJ
 #link libraries
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
 TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU SeparableConvolution3D_CUDA_lib DCT8x8_CUDA_lib imwarpFastLib imwarp_flexible_lib)
-TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU klblib)
+TARGET_LINK_LIBRARIES(multiview_deconvolution_GPU klb_static)
 SET_TARGET_PROPERTIES(multiview_deconvolution_GPU PROPERTIES LINKER_LANGUAGE CXX)
 
 
