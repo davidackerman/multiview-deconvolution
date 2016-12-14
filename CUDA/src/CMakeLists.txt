@@ -47,7 +47,7 @@ INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 #
 include_directories("${PROJECT_SOURCE_DIR}/external/klb/src")
 add_subdirectory("${PROJECT_SOURCE_DIR}/external/klb/src" "${CMAKE_CURRENT_BINARY_DIR}/KLB")
-LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/klb/src")
+#LINK_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/klb/src")
 
 #
 # separable convolution
