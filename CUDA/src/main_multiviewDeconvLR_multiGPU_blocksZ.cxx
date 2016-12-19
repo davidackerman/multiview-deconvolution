@@ -26,6 +26,7 @@ typedef std::chrono::high_resolution_clock Clock;
 
 int main(int argc, const char** argv)
 {
+    int err = 0 ;
 	auto tStart = Clock::now();
 	auto t1 = Clock::now();
 	auto t2 = Clock::now();
@@ -79,7 +80,8 @@ int main(int argc, const char** argv)
 	for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 	{
 		cout << "Reading PSF for view " << ii << endl;
-		master.full_psf_mem.readImage(master.paramDec.filePSF[ii], -1);
+		err = master.full_psf_mem.readImage(master.paramDec.filePSF[ii], -1);
+        if (err) return err ;
         // Transform the PSF, if called for
         if (master.paramDec.isPSFAlreadyTransformed)
         {
@@ -97,7 +99,7 @@ int main(int argc, const char** argv)
 	}
 
 	//find out best dimension to perform blocks for minimal padding
-	int err = master.findBestBlockPartitionDimension_inMem();
+	err = master.findBestBlockPartitionDimension_inMem();
 	if (err > 0)
 		return err;
 
@@ -174,8 +176,9 @@ int main(int argc, const char** argv)
 		{
 			t1 = Clock::now();
 			cout << "Reading view " << ii << endl;
-			master.full_img_mem.readImage(master.paramDec.fileImg[ii], -1);
-			t2 = Clock::now();
+			err = master.full_img_mem.readImage(master.paramDec.fileImg[ii], -1);
+            if (err) return err ;
+            t2 = Clock::now();
 			std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;			
 
 			t1 = Clock::now();

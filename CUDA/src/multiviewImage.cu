@@ -342,6 +342,85 @@ void multiviewImage<imgType>::copyROI(const imgType *p, std::int64_t dims[MAX_DA
 
 
 }
+
+//=================================================================================
+template<typename imgType>
+KLB_DATA_TYPE klbDataTypeFromImgType()
+{
+    KLB_DATA_TYPE result ;
+    if (is_integral<imgType>())
+    {
+        if (is_signed<imgType>())
+        {
+            switch (sizeof(imgType))
+            {
+                case 1:
+                    result = KLB_DATA_TYPE::INT8_TYPE ;
+                    break ;
+                case 2:
+                    result = KLB_DATA_TYPE::INT16_TYPE ;
+                    break ;
+                case 4:
+                    result = KLB_DATA_TYPE::INT32_TYPE ;
+                    break ;
+                case 8:
+                    result = KLB_DATA_TYPE::INT64_TYPE ;
+                    break ;
+                default:
+                    // If get here, not a supported size.
+                    throw std::logic_error("Internal error: Bad imgType in klbDataTypeFromImgType<imgType>()") ;
+            }
+        }
+        else
+        {
+            // If get here, is unsigned
+            switch (sizeof(imgType))
+            {
+                case 1:
+                    result = KLB_DATA_TYPE::UINT8_TYPE ;
+                    break ;
+                case 2:
+                    result = KLB_DATA_TYPE::UINT16_TYPE ;
+                    break ;
+                case 4:
+                    result = KLB_DATA_TYPE::UINT32_TYPE ;
+                    break ;
+                case 8:
+                    result = KLB_DATA_TYPE::UINT64_TYPE ;
+                    break ;
+                default:
+                    // If get here, not a supported size.
+                    throw std::logic_error("Internal error: Bad imgType in klbDataTypeFromImgType<imgType>()") ;
+            }
+        }
+    }
+    else
+    {
+        // If get here, is non-integral
+        if (is_floating_point<imgType>())
+        {
+            switch (sizeof(imgType))
+            {
+                case 4:
+                    result = KLB_DATA_TYPE::FLOAT32_TYPE ;
+                    break ;
+                case 8:
+                    result = KLB_DATA_TYPE::FLOAT64_TYPE ;
+                    break ;
+                default:
+                    // If get here, not a supported size.
+                    throw std::logic_error("Internal error: Bad imgType in klbDataTypeFromImgType<imgType>()") ;
+            }
+        }
+        else
+        {
+            // If get here, neither integral nor floating-point.  
+            throw std::logic_error("Internal error: Bad imgType in klbDataTypeFromImgType<imgType>()") ;
+        }
+    }
+    return result ;
+} 
+
 //===========================================================================================
 template<class imgType>
 int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const klb_ROI& ROI)
@@ -355,61 +434,75 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 	if (err > 0)
 		return err;	
 	
-	bool int2float = false;
-	if (sizeof(imgType) > imgFull.header.getBytesPerPixel() && sizeof(imgType) == 4 && (is_floating_point<imgType>() == true))
-	{
-		int2float = true;
-	}else if (sizeof(imgType) > imgFull.header.getBytesPerPixel())
-	{
-		cout << "ERROR: multiviewImage<imgType>::readImage: class type does not match image type" << endl;
-		return 10;
-	}
+    // If imgType is float, and the file data type is uint8 or uint16, we convert on-the-fly.
+    // Otherwise, the imgType must match the file data type.
+    // Check now to avoid segfault later.
+    KLB_DATA_TYPE imgTypeAsKLBDataType = klbDataTypeFromImgType<imgType>() ;
+    KLB_DATA_TYPE fileDataType = imgFull.header.dataType ;
+    bool areConvertingIntToFloat = (imgTypeAsKLBDataType == KLB_DATA_TYPE::FLOAT32_TYPE) && (fileDataType == KLB_DATA_TYPE::UINT8_TYPE || fileDataType == KLB_DATA_TYPE::UINT16_TYPE) ;
+    if (!areConvertingIntToFloat)
+    {
+        if (imgTypeAsKLBDataType != fileDataType)
+        {
+            string imgDataTypeAsString = stringFromKLBDataType(imgTypeAsKLBDataType) ;
+            string fileDataTypeAsString = stringFromKLBDataType(fileDataType) ;
+            cout << "ERROR: multiviewImage<imgType>::readROI: image type (" << imgDataTypeAsString << ") does not match file image type (" << fileDataTypeAsString << "), and conversion is not supported" << endl;
+            return 10;
+        }
+    }
 
+    // Allocate storage for the image/ROI about to be read
 	imgType* imgA = new imgType[ROI.getSizePixels()];		
 
-	if (int2float)
+    // Read in the data, converting if necessary
+	if (areConvertingIntToFloat)
 	{
-#ifdef _DEBUG
-		cout << "WARNING: multiviewImage<imgType>::readROI: converting int image to float32" << endl;
-#endif
+        #ifdef _DEBUG
+		    cout << "WARNING: multiviewImage<imgType>::readROI: converting int image to float32" << endl;
+        #endif
 		void* imgAint = malloc(ROI.getSizePixels() * imgFull.header.getBytesPerPixel());
 
 		err = imgFull.readImage((char*)imgAint, &ROI, -1);
 		if (err > 0)
 			return err;
 		
-		switch (imgFull.header.dataType)
-		{
-		case KLB_DATA_TYPE::UINT8_TYPE:
-		{
-										  uint8_t* ptr = (uint8_t*)(imgAint);
-										  for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
-											  imgA[ii] = (float)(ptr[ii]);
-										  break;
-		}
-		case KLB_DATA_TYPE::UINT16_TYPE:
-		{
-										  uint16_t* ptr = (uint16_t*)(imgAint);
-										  for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
-											  imgA[ii] = (float)(ptr[ii]);
-										  break;
-		}
-		default:
-			cout << "ERROR: multiviewImage<imgType>::readROI: code not ready for this type of conversion " << endl;
-			free(imgAint);
-			delete[] imgA;
-			return 20;
-		}
+        switch (fileDataType)
+        {
+            case KLB_DATA_TYPE::UINT8_TYPE:
+            {
+                uint8_t* ptr = (uint8_t*)(imgAint);
+                for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
+                    imgA[ii] = (imgType)(ptr[ii]);
+                break;
+            }
+            case KLB_DATA_TYPE::UINT16_TYPE:
+            {
+                uint16_t* ptr = (uint16_t*)(imgAint);
+                for (size_t ii = 0; ii < ROI.getSizePixels(); ii++)
+                    imgA[ii] = (imgType)(ptr[ii]);
+                break;
+            }
+            default:
+                string imgDataTypeAsString = stringFromKLBDataType(imgTypeAsKLBDataType) ;
+                string fileDataTypeAsString = stringFromKLBDataType(fileDataType) ;
+                cout << "ERROR: multiviewImage<imgType>::readROI: Unable to convert " << fileDataTypeAsString<< " to " << imgDataTypeAsString << endl;
+                free(imgAint);
+                delete[] imgA;
+                return 20;
+        }
 		
 
 		free(imgAint);
 	}
-	else{//read normally
+	else
+    {
+        // Usual case with no conversion, so read normally
 		err = imgFull.readImage((char*)imgA, &ROI, -1);
 		if (err > 0)
 			return err;
 	}
 
+    // Add imgA to self, dealing with memory management issues as needed
 	if (pos < 0)
 	{
 		imgVec_CPU.push_back(imgA);
@@ -422,15 +515,15 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 		delete[] imgA;
 		return 12;
 	}
-	else{		
+	else
+    {		
 		if (imgVec_CPU[pos] != NULL)
-			delete[] (imgVec_CPU[pos]);//TODO: if it was the same size, we do not need to reallocate
+			delete[] (imgVec_CPU[pos]);  //TODO: if it was the same size, we do not need to reallocate
 
 		imgVec_CPU[pos] = imgA;		
 	}
 
-
-	//aupdate dimensions if necessary
+	// Update dimensions if necessary
 	int ndims = 0;
 	while (ndims < KLB_DATA_DIMS && ROI.getSizePixels(ndims) > 1)
 	{
@@ -439,8 +532,7 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 	}
 	dimsImgVec[pos].ndims = ndims;
 
-	
-
+    // Return
 	return err;
 }
 
