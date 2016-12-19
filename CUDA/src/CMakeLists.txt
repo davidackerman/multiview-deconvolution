@@ -11,7 +11,7 @@ project (multi-view_deconvolution_src)
 cmake_policy(SET CMP0054 OLD)
 
 
-
+ 
 #
 #Set important flags
 #
@@ -85,6 +85,10 @@ file(GLOB CUDA_HDRS *.h)
 file(GLOB CUDA_CUDA_SRCS *.cu)
 
 file(GLOB CPP_SRCS *.cpp)
+# NB: This glob works because all the C++ files that will become executables that use the MVD library have extension .cxx,
+#     so they don't get picked up in the CPP_SRCS list.
+
+#message("CPP_SRCS: ${CPP_SRCS}")
 
 file(GLOB External_xmlParser_SRCS external/xmlParser/*.cpp)
 file(GLOB External_xmlParser_HDRS external/xmlParser/*.h)
@@ -115,13 +119,13 @@ ADD_EXECUTABLE(main_multiviewDeconvLR_multiGPU_blocksZ main_multiviewDeconvLR_mu
 TARGET_LINK_LIBRARIES(main_multiviewDeconvLR_multiGPU_blocksZ multiview_deconvolution_GPU)
 
 #executable for multiview deconvolution, but only does PSF affine transforms (for testing)
-ADD_EXECUTABLE(mvd_without_mvd mvd_without_mvd.cpp )
+ADD_EXECUTABLE(mvd_without_mvd mvd_without_mvd.cxx )
 TARGET_LINK_LIBRARIES(mvd_without_mvd multiview_deconvolution_GPU)
 
 #executable for PSF trimming (for testing)
-ADD_EXECUTABLE(run_trim_psf run_trim_psf.cpp)
+ADD_EXECUTABLE(run_trim_psf run_trim_psf.cxx)
 TARGET_LINK_LIBRARIES(run_trim_psf multiview_deconvolution_GPU)
 
 #executable for transforming sampling lattice (for testing)
-ADD_EXECUTABLE(run_transform_lattice run_transform_lattice.cpp)
+ADD_EXECUTABLE(run_transform_lattice run_transform_lattice.cxx)
 TARGET_LINK_LIBRARIES(run_transform_lattice multiview_deconvolution_GPU)
