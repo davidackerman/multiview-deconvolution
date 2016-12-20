@@ -37,8 +37,8 @@ IF(NOT TARGET imwarp_flexible_lib )
 	add_library(imwarp_flexible_lib ${C_HDRS} ${C_SRCS})
 ENDIF()
 
-#standalone executable that can be used for testing
-IF(NOT TARGET run_imwarp_flexible )
-	add_executable(run_imwarp_flexible run_imwarp_flexible.cpp)
-	target_link_libraries(run_imwarp_flexible imwarp_flexible_lib multiview_deconvolution_GPU)
-ENDIF()
+# #standalone executable that can be used for testing
+# IF(NOT TARGET run_imwarp_flexible )
+	# add_executable(run_imwarp_flexible run_imwarp_flexible.cpp)
+	# target_link_libraries(run_imwarp_flexible imwarp_flexible_lib multiview_deconvolution_GPU)
+# ENDIF()

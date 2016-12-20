@@ -79,3 +79,13 @@ set(tgt run_transform_lattice)
 add_executable(${tgt} run_transform_lattice.cxx )
 target_link_libraries(${tgt} multiview_deconvolution_GPU)
 install(TARGETS ${tgt} DESTINATION bin)
+
+set(tgt run_imwarp_flexible)
+add_executable(${tgt} run_imwarp_flexible.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+install(TARGETS ${tgt} DESTINATION bin)
+
+set(tgt run_imWarpFast)
+add_executable(${tgt} run_imWarpFast.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+install(TARGETS ${tgt} DESTINATION bin)
