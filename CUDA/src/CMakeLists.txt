@@ -19,11 +19,13 @@ add_subdirectory(external/klb/src klb)
 add_subdirectory(separableConvolution3D_texture)
 add_subdirectory(dct8x8)
 add_subdirectory(external/imWarpFast imWarpFast)
+add_subdirectory(external/imwarp_flexible imwarp_flexible)
 
 set_target_properties(
 	klb klb_static
 	DCT8x8_CUDA_lib
 	imWarpFastLib
+	imwarp_flexible_lib
 	SeparableConvolution3D_CUDA_lib
 	PROPERTIES FOLDER external)
 
@@ -44,6 +46,7 @@ target_link_libraries(${tgt}
 	SeparableConvolution3D_CUDA_lib
 	DCT8x8_CUDA_lib
 	imWarpFastLib
+	imwarp_flexible_lib
 	klb_static)
 #install(TARGETS ${tgt} DESTINATION lib)
 
@@ -52,12 +55,27 @@ add_executable(${tgt} main_multiviewDeconvLR_multiGPU.cxx )
 target_link_libraries(${tgt} multiview_deconvolution_GPU)
 install(TARGETS ${tgt} DESTINATION bin)
 
-set(tgt multiview_deconvolution_LR_multiGPU_low_mem)
-add_executable(${tgt} main_multiviewDeconvLR_multiGPU_low_mem.cxx )
-target_link_libraries(${tgt} multiview_deconvolution_GPU)
-install(TARGETS ${tgt} DESTINATION bin)
+#set(tgt multiview_deconvolution_LR_multiGPU_low_mem)
+#add_executable(${tgt} main_multiviewDeconvLR_multiGPU_low_mem.cxx )
+#target_link_libraries(${tgt} multiview_deconvolution_GPU)
+#install(TARGETS ${tgt} DESTINATION bin)
 
 set(tgt main_multiviewDeconvLR_multiGPU_blocksZ)
 add_executable(${tgt} main_multiviewDeconvLR_multiGPU_blocksZ.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+install(TARGETS ${tgt} DESTINATION bin)
+
+set(tgt mvd_without_mvd)
+add_executable(${tgt} mvd_without_mvd.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+install(TARGETS ${tgt} DESTINATION bin)
+
+set(tgt run_trim_psf)
+add_executable(${tgt} run_trim_psf.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+install(TARGETS ${tgt} DESTINATION bin)
+
+set(tgt run_transform_lattice)
+add_executable(${tgt} run_transform_lattice.cxx )
 target_link_libraries(${tgt} multiview_deconvolution_GPU)
 install(TARGETS ${tgt} DESTINATION bin)
