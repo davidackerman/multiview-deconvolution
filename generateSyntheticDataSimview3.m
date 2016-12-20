@@ -21,7 +21,7 @@ imOrig = zeros(imSize);
 
 for ii = 1:length(sigmaObj)    
    cc = muObj(ii,:);   
-   imOrig(cc(1)-sigmaObj(ii):cc(1)+sigmaObj(ii),cc(2)-sigmaObj(ii):cc(2)+sigmaObj(ii), cc(3)-sigmaObj(ii):cc(3)+sigmaObj(ii)) = photonObj(ii);   
+   imOrig(cc(1)-sigmaObj(ii):cc(1)+sigmaObj(ii),cc(2)-sigmaObj(ii):cc(2)+sigmaObj(ii), cc(3)-sigmaObj(ii):cc(3)+sigmaObj(ii)) = photonsObj(ii);   
 end
 
 %save ground truth

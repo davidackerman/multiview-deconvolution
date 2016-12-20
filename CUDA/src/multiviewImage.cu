@@ -13,8 +13,8 @@
 
 #include <stdio.h>
 #include "multiviewImage.h"
-#include "klb_imageIO.h"
-#include "klb_Cwrapper.h"
+#include "external/klb/src/klb_imageIO.h"
+#include "external/klb/src/klb_Cwrapper.h"
 #include "cuda.h"
 #include "book.h"
 #include "imgUtils.h"

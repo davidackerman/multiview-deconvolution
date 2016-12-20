@@ -1,44 +1,12 @@
-#CMake file to build multi-thread affine transformation code
+file(GLOB SRC *.c *.h)
 
+set(tgt imWarpFastLib)
+add_library(${tgt} STATIC ${SRC})
+target_include_directories(${tgt} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
-
-cmake_minimum_required (VERSION 2.8)
-project (imwarp_fast_project)
-cmake_policy(SET CMP0054 OLD)
-
-
-#
-#Set important flags
-#
-#add flags for the C++11 
-if(CMAKE_COMPILER_IS_GNUCXX) 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
-	LINK_DIRECTORIES("/lib64")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
-endif()
-
-
-#to locate scripts
-set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake") 
-
-
-
-#
-# submodules: add source and header files from subfolders
-#
-file(GLOB C_HDRS *.h)
-
-file(GLOB C_SRCS *.c)
-
-
-#generate library
-IF(NOT TARGET imwarpFastLib )
-	add_library(imwarpFastLib ${C_HDRS} ${C_SRCS})
-ENDIF()
-
-#very small tests
-IF(NOT TARGET affine_3d_ops_test )
-	add_executable(affine_3d_ops_test test_affine_3d_ops.cxx)
-	target_link_libraries(affine_3d_ops_test imwarpFastLib)
-ENDIF()
+#tests
+set(tgt affine_3d_ops_test)
+add_executable(${tgt} test_affine_3d_ops.cxx)
+target_link_libraries(${tgt} imWarpFastLib)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)

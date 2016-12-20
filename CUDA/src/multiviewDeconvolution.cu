@@ -18,9 +18,9 @@
 #include "multiviewDeconvolution.h"
 #include "book.h"
 #include "cuda.h"
-#include "cufft.h"
+#include <cufft.h>
 #include "commonCUDA.h"
-#include "convolutionTexture_common.h"
+#include "separableConvolution3D_texture/convolutionTexture_common.h"
 #include "weigthsBlurryMeasure.h"
 
 
@@ -240,15 +240,16 @@ int multiviewDeconvolution<imgType>::allocate_workspace(imgType imgBackground)
 
 
 	//preparing FFT plans
+	// Note: cuffSetCompatibilityMode has been broken since CUDA 6.0.  It's fully deprecated in 8.0.
 	cufftResult_t result;
 	result = cufftPlan3d(&fftPlanFwd, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_R2C);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftPlan3d(&fftPlanInv, img.dimsImgVec[0].dims[2], img.dimsImgVec[0].dims[1], img.dimsImgVec[0].dims[0], CUFFT_C2R);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//allocate memory and precompute things for each view things for each vieww
 	cout << "===================TODO: load img and weights on the fly to CPU to avoid consuming too much memory====================" << endl;
@@ -476,12 +477,12 @@ int multiviewDeconvolution<imgType>::allocate_workspace_init_multiGPU(const uint
 	cufftResult_t result;
 	result = cufftPlan3d(&fftPlanFwd, blockDims[2], blockDims[1], blockDims[0], CUFFT_R2C);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); //for highest performance since we do not need FFTW compatibility
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE); //for highest performance since we do not need FFTW compatibility
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftPlan3d(&fftPlanInv, blockDims[2], blockDims[1], blockDims[0], CUFFT_C2R);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 
 	//allocate memory and precompute things for each view things for each vieww	
@@ -830,15 +831,16 @@ imgType* multiviewDeconvolution<imgType>::convolution3DfftCUDA(const imgType* im
 
 	cufftResult_t result;
 
-	//printf("Creating R2C & C2R FFT plans for size %i x %i x %i\n",imDim[0],imDim[1],imDim[2]);
+	// Note: cufftSetCompatibilityMode deprecated in CUDA 8.0
+
 	result = cufftPlan3d(&fftPlanFwd, imDim[0], imDim[1], imDim[2], CUFFT_R2C);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanFwd, CUFFT_COMPATIBILITY_NATIVE);  //for highest performance since we do not need FFTW compatibility
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 	result = cufftPlan3d(&fftPlanInv, imDim[0], imDim[1], imDim[2], CUFFT_C2R);
 	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
-	result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
-	if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
+	//result = cufftSetCompatibilityMode(fftPlanInv, CUFFT_COMPATIBILITY_NATIVE);
+	//if (result != CUFFT_SUCCESS) { printf("CU_FFT operation failed with result %d in file %s at line %d\n", result, __FILE__, __LINE__); exit(EXIT_FAILURE); }
 
 	//transforming convolution kernel; TODO: if I do multiple convolutions with the same kernel I could reuse the results at teh expense of using out-of place memory (and then teh layout of the data is different!!!! so imCUDAfft should also be out of place)
 	//NOTE: from CUFFT manual: If idata and odata are the same, this method does an in-place transform.

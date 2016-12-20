@@ -1,102 +1,78 @@
 
-cmake_minimum_required ( VERSION 2.8 )
-cmake_policy(SET CMP0054 OLD)
-
-#add flags for the C++11 
-if(CMAKE_COMPILER_IS_GNUCXX) 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11")
-endif()
-
 include_directories(../src/)
 
 
 #
 # Find necessary libraries
 #
-#Cuda
+
+# CUDA
+# set before FIND_PACKAGE(CUDA) in order to avoid FORCE to show them in GUI.
+# lcudart and lcuda are already added as variables with find package
 SET(CUDA_NVCC_FLAGS "-gencode arch=compute_20,code=sm_20;-gencode arch=compute_20,code=sm_21;-gencode arch=compute_30,code=sm_30;-gencode arch=compute_32,code=sm_32;-gencode arch=compute_35,code=sm_35;-gencode arch=compute_50,code=sm_50" CACHE STRING "Semi-colon delimit multiple arguments")
-SET(CUDA_NVCC_FLAGS_DEBUG -g; -G;-O0 CACHE STRING "Semi-colon delimit multiple arguments") #set before FIND_PACKAGE(CUDA) in order to avoid FORCE to show them in GUI. So user can modify them
+SET(CUDA_NVCC_FLAGS_DEBUG -g; -G;-O0 CACHE STRING "Semi-colon delimit multiple arguments") #
 SET(CUDA_NVCC_FLAGS_RELEASE -O3 CACHE STRING "Semi-colon delimit multiple arguments")
 SET(CUDA_NVCC_FLAGS_RELWITHDEBINFO -O3 CACHE STRING "Semi-colon delimit multiple arguments")
 
 FIND_PACKAGE(CUDA REQUIRED)
 SET(CUDA_VERBOSE_BUILD ON FORCE)
-INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS}) 
-#lcudart and lcuda  are already added as variables with find package
+INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
 #SET(LIBS_CUDA_CUSPARSE "cusparse" CACHE STRING "")#add CUDA libraries ignored in CUDA.cmake
 
+#test units
+set(tgt test_load_multiview_images)
+add_executable(${tgt} ${tgt}.cpp)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
+set(tgt test_multiview_deconvolution_LR)
+add_executable(${tgt} ${tgt}.cpp)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
-#test units 
-IF(NOT TARGET test_load_multiview_img )
-	add_executable(test_load_multiview_img test_load_multiview_images.cpp)
-	target_link_libraries(test_load_multiview_img multiview_deconvolution_GPU)
-ENDIF()
+set(tgt test_imWarpFast)
+add_executable(${tgt} ${tgt}.cxx)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+target_include_directories(${tgt} PRIVATE
+	../src/external/klb/src
+	../src/external/imWarpFast)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
+set(tgt test_multiview_deconvolution_LR_multiGPU)
+add_executable(${tgt} ${tgt}.cpp)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
-IF(NOT TARGET test_multiview_deconvolution_LR )
-	add_executable(test_multiview_deconvolution_LR test_multiview_deconvolution_LR.cpp)
-	target_link_libraries(test_multiview_deconvolution_LR multiview_deconvolution_GPU)
-ENDIF()
+set(tgt test_GPU_elementwise_op)
+cuda_add_executable(${tgt} test_gpu_elementwiseOp.cu)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
+set(tgt test_GPU_reduction_op)
+cuda_add_executable(${tgt} test_gpu_reductionOp.cu)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
-IF(NOT TARGET run_imWarpFast )
-	include_directories(../src/external/klb/src)
-	include_directories(../src/external/imWarpFast)
-	add_executable(run_imWarpFast run_imWarpFast.cxx)
-	target_link_libraries(run_imWarpFast multiview_deconvolution_GPU)
-ENDIF()
+set(tgt test_GPU_convolution_pr)
+cuda_add_executable(${tgt} test_GPU_convolution.cu)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
-IF(NOT TARGET test_imWarpFast )
-	include_directories(../src/external/klb/src)
-	include_directories(../src/external/imWarpFast)
-	add_executable(test_imWarpFast test_imWarpFast.cxx)
-	target_link_libraries(test_imWarpFast multiview_deconvolution_GPU)
-ENDIF()
+set(tgt test_GPU_TV)
+add_executable(${tgt} test_total_variation.cxx )
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
 
-IF(NOT TARGET test_multiview_deconvolution_LR_multiGPU )
-	add_executable(test_multiview_deconvolution_LR_multiGPU test_multiview_deconvolution_LR_multiGPU.cpp)
-	target_link_libraries(test_multiview_deconvolution_LR_multiGPU multiview_deconvolution_GPU)
-ENDIF()
-
-IF(NOT TARGET test_GPU_elementwise_op )
-	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_gpu_elementwiseOp.cu  OPTIONS ${CUOPTS})
-	add_executable(test_GPU_elementwise_op test_gpu_elementwiseOp.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_elementwise_op multiview_deconvolution_GPU)
-	TARGET_LINK_LIBRARIES(test_GPU_elementwise_op ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-	SET_TARGET_PROPERTIES(test_GPU_elementwise_op PROPERTIES LINKER_LANGUAGE CXX)
-ENDIF()
-
-IF(NOT TARGET test_GPU_reduction_op )
-	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_gpu_reductionOp.cu  OPTIONS ${CUOPTS})
-	add_executable(test_GPU_reduction_op test_gpu_reductionOp.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_reduction_op multiview_deconvolution_GPU)
-	TARGET_LINK_LIBRARIES(test_GPU_reduction_op ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-	SET_TARGET_PROPERTIES(test_GPU_reduction_op PROPERTIES LINKER_LANGUAGE CXX)
-ENDIF()
-
-IF(NOT TARGET test_GPU_convolution_pr )
-	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_convolution.cu  OPTIONS ${CUOPTS})
-	add_executable(test_GPU_convolution_pr test_GPU_convolution.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_convolution_pr multiview_deconvolution_GPU)
-	TARGET_LINK_LIBRARIES(test_GPU_convolution_pr ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-	SET_TARGET_PROPERTIES(test_GPU_convolution_pr PROPERTIES LINKER_LANGUAGE CXX)
-ENDIF()
-
-IF(NOT TARGET test_GPU_TV )	
-	add_executable(test_GPU_TV test_total_variation.cxx )
-	target_link_libraries(test_GPU_TV multiview_deconvolution_GPU)
-	TARGET_LINK_LIBRARIES(test_GPU_TV ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-ENDIF()
-
-
-IF(NOT TARGET test_GPU_LRweightsDCT )
-	include_directories(../src/external/klb/src)
-	CUDA_COMPILE(CUDA_CUDA_OBJ STATIC test_GPU_LRweightsDCT.cu  OPTIONS ${CUOPTS})
-	add_executable(test_GPU_LRweightsDCT test_GPU_LRweightsDCT.cu ${CUDA_CUDA_OBJ})
-	target_link_libraries(test_GPU_LRweightsDCT multiview_deconvolution_GPU)
-	TARGET_LINK_LIBRARIES(test_GPU_LRweightsDCT ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_cufft_LIBRARY})
-	SET_TARGET_PROPERTIES(test_GPU_LRweightsDCT PROPERTIES LINKER_LANGUAGE CXX)
-ENDIF()
+set(tgt test_GPU_LRweightsDCT)
+cuda_add_executable(${tgt} test_GPU_LRweightsDCT.cu)
+target_link_libraries(${tgt} multiview_deconvolution_GPU)
+add_test(test-${tgt} ${tgt})
+set_target_properties(${tgt} PROPERTIES FOLDER test)
