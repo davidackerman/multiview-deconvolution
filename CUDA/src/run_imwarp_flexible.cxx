@@ -7,7 +7,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include "klb_Cwrapper.h"
-#include "imwarp_flexible.h"
+#include "external/imwarp_flexible/imwarp_flexible.h"
 
 //typedef float imgType;
 

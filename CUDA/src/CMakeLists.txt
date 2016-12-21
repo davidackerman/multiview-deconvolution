@@ -20,7 +20,7 @@ add_subdirectory(separableConvolution3D_texture)
 add_subdirectory(dct8x8)
 add_subdirectory(external/imWarpFast imWarpFast)
 add_subdirectory(external/imwarp_flexible imwarp_flexible)
-include_directories(external/imwarp_flexible)  # Note sure why this is needed, but it seems to be...
+#include_directories(external/imwarp_flexible)  # Note sure why this is needed, but it seems to be...
 
 # Put these targets in an "external" folder in the MS Visual Studio solution
 set_target_properties(

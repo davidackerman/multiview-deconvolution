@@ -18,7 +18,7 @@
 #include "cuda.h"
 #include "book.h"
 #include "imgUtils.h"
-#include "imwarp_flexible.h"
+#include "external/imwarp_flexible/imwarp_flexible.h"
 
 
 using namespace std;
