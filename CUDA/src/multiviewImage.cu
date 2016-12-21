@@ -852,7 +852,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AF
                          rawPSFDims, rawPSFOrigin, rawPSFSpacing,
                          psfSpacing) ;
 
-    cout << "Origin of transformed PSF (xyz):  " << psfOrigin[0] << "  " << psfOrigin[1] << "  " << psfOrigin[2] << endl ;
+    //cout << "Origin of transformed PSF (xyz):  " << psfOrigin[0] << "  " << psfOrigin[1] << "  " << psfOrigin[2] << endl ;
 
     // Determine the number of elements needed in the output array psf
     int64_t psfElementCount = element_count_from_dims_3d(psfDims) ;
@@ -882,14 +882,14 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AF
                     A,
                     is_cubic, is_background_black) ;
 
-    // Print the size of the transformed PSF
-    cout << "Size of transformed (but not trimmed) PSF:  " << psfDims[0] << "  " << psfDims[1] << "  " << psfDims[2] << endl ;
+    //// Print the size of the transformed PSF
+    //cout << "Size of transformed (but not trimmed) PSF:  " << psfDims[0] << "  " << psfDims[1] << "  " << psfDims[2] << endl ;
 
-    // Output the transformed but-not-yet trimmed image 
-    uint32_t output_yxzct[KLB_DATA_DIMS] = { (uint32_t)psfDims[0], (uint32_t)psfDims[1], (uint32_t)psfDims[2], 1, 1 } ;
-    char output_stack_file_name[256] ;
-    sprintf(output_stack_file_name, "untrimmed_PSF_%d.klb", pos) ;
-    writeKLBstack(psf, output_stack_file_name, output_yxzct, KLB_DATA_TYPE::FLOAT32_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
+    //// Output the transformed but-not-yet trimmed image 
+    //uint32_t output_yxzct[KLB_DATA_DIMS] = { (uint32_t)psfDims[0], (uint32_t)psfDims[1], (uint32_t)psfDims[2], 1, 1 } ;
+    //char output_stack_file_name[256] ;
+    //sprintf(output_stack_file_name, "untrimmed_PSF_%d.klb", pos) ;
+    //writeKLBstack(psf, output_stack_file_name, output_yxzct, KLB_DATA_TYPE::FLOAT32_TYPE, -1, NULL, NULL, KLB_COMPRESSION_TYPE::BZIP2, NULL);
 
     int64_t i_nonzero = find_first_nonzero_element_3d(psf, psfDims) ;  // this is just for debugging
 
