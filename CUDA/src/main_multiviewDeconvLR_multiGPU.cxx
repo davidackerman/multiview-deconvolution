@@ -92,7 +92,7 @@ int main(int argc, const char** argv)
         }
 
 	t1 = Clock::now();
-	cout << "Calculating constrast weights for each view in GPU" << endl;
+	cout << "Calculating contrast weights for each view in GPU" << endl;
 	master.calculateWeights();
 	t2 = Clock::now();
 	std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
@@ -138,12 +138,7 @@ int main(int argc, const char** argv)
 		cout << "Saving transformed images and PSFs for all views in file " << filenameXML << "*" << endl ;
 		for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 		{
-			char buffer[256];
-/*			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
-			master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);
-			sprintf(buffer, "%s_debug_weigths_%d.klb", filenameXML.c_str(), ii);
-			master.full_weights_mem.writeImage_uint16(string(buffer), ii, 100);
-			*/
+            char buffer[1024]={0};
 			
 			sprintf(buffer, "%s_debug_img_%d.klb", filenameXML.c_str(), ii);
 			master.full_img_mem.writeImage(string(buffer), ii);
@@ -153,7 +148,7 @@ int main(int argc, const char** argv)
 		}
 	}
 
-	//precalculate number of planes per GPU we can do (including padding to avoid border effect)
+	//calculate number of planes per GPU we can do (including padding to avoid border effect)
 	master.findMaxBlockPartitionDimensionPerGPU_inMem();
 
 	t1 = Clock::now();
@@ -173,15 +168,6 @@ int main(int argc, const char** argv)
 	//write result
     if (!wasOutputFileNameGiven)
     {
-        //char fileoutName[256] = { 0 };
-        //sprintf(
-        //    fileoutName, 
-        //    "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", 
-        //    master.paramDec.fileImg[0].c_str(), 
-        //    master.paramDec.outputFilePrefix.c_str(), 
-        //    master.paramDec.numIters, 
-        //    (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
-        //outputFileName = fileoutName ;
         int lambdaAsInt(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)) ;
         stringstream lambdaAsStringStream;
         lambdaAsStringStream << setw(6) << setfill('0') << lambdaAsInt ;

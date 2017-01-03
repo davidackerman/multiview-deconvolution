@@ -56,7 +56,7 @@ struct paramDeconvolution
 
     bool isPSFAlreadyTransformed ;
 
-	//default paramaters
+	//default parameters
 	void setDefaultParam()
 	{
 		numIters = 40;

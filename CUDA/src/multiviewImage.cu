@@ -821,15 +821,15 @@ void multiviewImage<float>::apply_affine_transformation_img(int pos, std::int64_
 //=========================================================================
 template<class imgType>
 void multiviewImage<imgType>::apply_affine_transformation_psf(int pos, double A[AFFINE_3D_MATRIX_SIZE], int interpMode)
-    {
+{
     cout << "ERROR: TODO: multiviewImage<imgType>::apply_affine_transformation_psf: not implemented for types other than float" << endl;
     exit(3);
-    }
+}
 
 //=========================================================================
 template<>
 void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AFFINE_3D_MATRIX_SIZE], int interpMode)
-    {
+{
     // If pos is out-of-range, return
     if (imgVec_CPU.size() < pos)
         return;
@@ -860,20 +860,7 @@ void multiviewImage<float>::apply_affine_transformation_psf(int pos, double A[AF
     //allocate memory for transformed image
     float* psf = new float[psfElementCount] ;
 
-    //// Make float versions of origins and spacing, and transform
-    //float AAsFloat[16] ;
-    //float_from_double(AAsFloat, A, 16) ;
-    //float rawPSFOriginAsFloat[3] ;
-    //float_from_double(rawPSFOriginAsFloat, rawPSFOrigin, 3) ;
-    //float rawPSFSpacingAsFloat[3] ;
-    //float_from_double(rawPSFSpacingAsFloat, rawPSFSpacing, 3) ;
-    //float psfOriginAsFloat[3] ;
-    //float_from_double(psfOriginAsFloat, psfOrigin, 3) ;
-    //float psfSpacingAsFloat[3] ;
-    //float_from_double(psfSpacingAsFloat, psfSpacing, 3) ;
-
-    //perform transformation
-    //imwarpFast_MatlabEquivalent(getPointer_CPU(pos), psf, rawPSFDims, psfDims, A, interpMode) ;
+    //perform transformation    
     float* rawPSF = getPointer_CPU(pos) ;
     bool is_background_black = (interpMode & 1) ;  // bit 0 indicates whether background should be treated as black or extrapolated
     bool is_cubic = (interpMode & 2) ; // bit 1 indicates whether cubic interpolation should be used (as opposed to linear)
@@ -925,7 +912,7 @@ void multiviewImage<imgType>::subtractBackground(size_t pos, imgType imgBackgrou
 }
 
 //============================================================================
-//declare all possible instantitation for the template
+//declare all possible instantiations for the template
 template class multiviewImage<uint16_t>;
 template class multiviewImage<uint8_t>;
 template class multiviewImage<float>;

@@ -60,7 +60,7 @@ int main(int argc, const char** argv)
 		return 2;
 	}
 
-	//make sure block size in Z is conveninet for FFT
+	//make sure block size in Z is convenient for FFT
 	master.paramDec.blockZsize = master.ceilToGoodFFTsize(master.paramDec.blockZsize);
 
 	//check number of GPUs and the memory available for each of them
@@ -127,7 +127,7 @@ int main(int argc, const char** argv)
 
 	//variables to keep track of copies between block and final result
 	imgTypeDeconvolution* JfullImg = new imgTypeDeconvolution[imRefSize];
-	int64_t JoffsetIni = 0, JoffsetEnd;//useful slices in J (global final outout) are from [JoffsetIni,JoffsetEnd)
+	int64_t JoffsetIni = 0, JoffsetEnd;//useful slices in J (global final output) are from [JoffsetIni,JoffsetEnd)
 	int64_t BoffsetIni;//useful slices in ROI (local input) are from [BoffsetIni, BoffsetEnd]. Thus, at the end we copy J(:,.., JoffsetIni:JoffsetEnd-1,:,..:) = Jobj->J(:,.., BoffsetIni:BoffsetEnd-1,:,..:)
 	const int dimBlockParition = 2;//along z
 	const int64_t stride = dimsOut[0] * dimsOut[1];//number of pixels on each plane
@@ -150,7 +150,7 @@ int main(int argc, const char** argv)
 	{
 		cout << "Processing block in Z with starting useful plane = " << JoffsetIni << endl;
 
-		//calculate subblock
+		//calculate sub-block
 		klb_ROI ROI;
 		ROI.defineSlice(JoffsetIni, dimBlockParition, xyzct);//this would be a slice through dimsBlockParitiondimension equal to offset
 		BoffsetIni = PSFpadding;
@@ -158,7 +158,7 @@ int main(int argc, const char** argv)
 		{
 			ROI.xyzctLB[dimBlockParition] -= PSFpadding;
 		}
-		else{//we can process more slices in the block since we are at the beggining
+		else{//we can process more slices in the block since we are at the beginning
 			ROI.xyzctLB[dimBlockParition] = 0;
 			BoffsetIni -= (PSFpadding - JoffsetIni);
 		}
@@ -182,7 +182,7 @@ int main(int argc, const char** argv)
 			std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;			
 
 			t1 = Clock::now();
-			cout << "Calculating constrast weights for view "<<ii<< " in GPU" << endl;
+			cout << "Calculating contrast weights for view "<<ii<< " in GPU" << endl;
 			master.calculateWeights(ii,master.getDevCUDA_maxMem());
 			t2 = Clock::now();
 			std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
@@ -236,7 +236,7 @@ int main(int argc, const char** argv)
 			cout << "Saving transformed images, weights, and PSFs for all views in file " << filenameXML << "*" << endl;
 			for (int ii = 0; ii < master.paramDec.Nviews; ii++)
 			{
-				char buffer[256];
+				char buffer[1024]={0};
 				sprintf(buffer, "%s_debug_img_%d_iter_%.2d.klb", filenameXML.c_str(), ii, iter);
 				master.full_img_mem.writeImage_uint16(string(buffer), ii, 4096.0f);
 				sprintf(buffer, "%s_debug_weights_%d_iter_%.2d.klb", filenameXML.c_str(), ii, iter);
@@ -246,7 +246,7 @@ int main(int argc, const char** argv)
 			}
 		}
 
-		//precalculate number of planes per GPU we can do (including padding to avoid border effect)
+		//calculate number of planes per GPU we can do (including padding to avoid border effect)
 		master.findMaxBlockPartitionDimensionPerGPU_inMem();
 
 		t1 = Clock::now();
@@ -291,8 +291,6 @@ int main(int argc, const char** argv)
             lambdaAsStringStream.str() + 
             ".klb" ;
     }
-	//char fileoutName[256];
-	//sprintf(fileoutName, "%s_dec_LR_multiGPU_%s_iter%d_lambdaTV%.6d.klb", master.paramDec.fileImg[0].c_str(), master.paramDec.outputFilePrefix.c_str(), master.paramDec.numIters, (int)(1e6f * std::max(master.paramDec.lambdaTV, 0.0f)));
 	t1 = Clock::now();
     cout << "Writing result to " << outputFileName << endl;
 	if (master.paramDec.saveAsUINT16)
