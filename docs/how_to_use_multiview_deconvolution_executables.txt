@@ -1,0 +1,82 @@
+The main executable is named multiview_deconvolution_LR_multiGPU.exe.
+You invoke it at the command-line like so:
+
+    multiview_deconvolution_LR_multiGPU test.smv.xml
+
+test.smv.xml is an XML file that specifies the input files to use,
+the affine transform associated with each view, and other parameters.
+
+For instance, test.smv.xml might look like this:
+
+-----
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document>
+<view A="1.001075776437 -0.010936977052 -0.164122835223 63.287321427545   0.001776679760  0.006780638086  4.828371846752  -17.192561664142     0.001520490349 -1.026133422794 -0.005627060142 1007.639574262694      0.000000000000  0.000000000000  0.000000000000    1.000000000000"    imgFilename="view-0.klb"      psfFilename="psf-view-0.klb"/>
+<view A="1.001698238498  0.010432002817  0.045181863869  49.111696698502    0.002254824545 -0.011559784577  4.850466002688  -8.666284124545      0.001091859609  1.028916752169 -0.008298255710 -81.435274385348      0.000000000000  0.000000000000  0.000000000000   1.000000000000"    imgFilename="view-1.klb"      psfFilename="psf-view-1.klb"/>
+<view A="1.000000000000 0.000000000000 0.000000000000 0.000000000000    0.000000000000 1.000000000000 0.000000000000 0.000000000000    0.000000000000 0.000000000000 5.002463054187 0.000000000000     0.000000000000 0.000000000000 0.000000000000 1.000000000000"    imgFilename="view-2.klb"    psfFilename="psf-view-2.klb"/>
+<deconvolution blockZsize="-1" imBackground="100.000000" lambdaTV="0.000100" numIter="15" verbose="1" isPSFAlreadyTransformed="1"/>
+</document>
+-----
+
+Each "view" element specifies a single view, with the image data in
+the file indicated by the "imgFileName" attribute, and the point-spread
+function (PSF) for the view in the file indicated by the "psfFileName"
+attribute.  Both these files should be KLB files.
+
+The "A" attribute of the view element specifies the affine transform
+associated with that view, as a list of 16 real numbers which
+represent a 4x4 affine transform matrix.  The 16 numbers represent the
+'row form' of the transform matrix.  This means that the matrix A
+takes a point s in 3D space represented as [x_s y_s z_s 1] (a row
+vector), and takes it to a 3D point t represented as [x_y y_t z_t 1]
+(also a row vector) via t = s*A, where * is matrix multiplication.
+Being in row form, the matrix A should be such that the last column is
+[0 0 0 1]', and the last row represents the translation.  The "A"
+attribute then gives this matrix in column-major order.  (Note that
+the numbers would be in the same order if they represented the 'column
+form' of the affine transform in row-major order.  You're free to
+think of it that way if you want.)
+
+The "deconvolution" element specifies parameters to be used by the
+multiview deconvolution algorithm.
+
+The "blockZsize" attribute gives the number of z planes to be used in
+each 'block', where each GPU handles one block at a time.  It defaults
+to -1, which means that the executable picks a convenient block size.
+
+The "imBackground" attribute specifies a background level.  This level
+is subtracted from all voxels early in processing, and voxels below
+this level are set to zero.
+
+The "lambdaTV" attribute specifies the regularization parameter used
+when doing total variance regularization.  
+
+The "numIter" attribute specifies the number of Lucy-Richardson
+iterations to perform.
+
+The "verbose" attribute, if nonzero, causes the executable to output
+KLB files representing various intermediate stages of image
+processing.  The "verbose" attribute defaults to zero if not given.
+
+The "isPSFAlreadyTransformed" attribute , if nonzero, means that the
+PSFs have already been transformed by the given affine transform, and
+so the executable will not transform then further.  If zero, it means
+the given PSFs have *not* been transformed, and the executable does
+the transformation internally using the given affine transform matrix.
+The "isPSFAlreadyTransformed" attribute defaults to one if not given,
+i.e. PSFs are assumed to be already transformed, and are not
+transformed further.  If you want to switch to giving the MVD
+executable untransformed PSFs, you should use the Matlab procedure
+generateUntransformedPSF.m in places where you used to use
+generateTransformedPSF.m.
+
+The other executable of note is
+main_multiviewDeconvLR_multiGPU_blocksZ.exe.  This is called from the
+command line in the same way as multiview_deconvolution_LR_multiGPU,
+i.e. it takes a single argument, the name of a .xml file specifying
+the input data and parameters.  This executable is used incases where
+the input stacks are too large to fit in main memory, and so it reads
+in and works on one z-block from disk at a time.
+
+Adam L. Taylor
+2017-01-03
