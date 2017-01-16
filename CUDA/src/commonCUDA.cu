@@ -510,13 +510,19 @@ T reductionOperation(const T* A, std::uint64_t arrayLength, op_reduction_type op
 
 			break;
 		case op_reduction_type::max_elem:
-			reductionOperation_kernel << <numBlocks, numThreads >> >(ptr, reduction_GPU, length, max_func<T>(), numeric_limits<T>::min()); HANDLE_ERROR_KERNEL;
+            // Should the default value here really be numeric_limits<T>::min() ?   
+            // Why not -1.0*numeric_limits<T>::infinity() , which is the identity value under the max(x,y) operation?
+            // Or maybe numeric_limits<T>::lower(), which is a negative number with a large absolute value?
+            // (numeric_limits<T>::min() is a positive number with a small absolute value...)
+            // Or maybe just make the caller supply the default value explicitly?
+            reductionOperation_kernel << <numBlocks, numThreads >> >(ptr, reduction_GPU, length, max_func<T>(), numeric_limits<T>::min()); HANDLE_ERROR_KERNEL;
 			HANDLE_ERROR(cudaMemcpy(reduction_CPU, reduction_GPU, numBlocks * sizeof(T), cudaMemcpyDeviceToHost));
 			for (int ii = 0; ii < numBlocks; ii++)
 				finalVal = max(reduction_CPU[ii], finalVal);
 
 			break;
 		case op_reduction_type::min_elem:
+            // Should the default value here really be numeric_limits<T>::max() ?   Why not numeric_limits<T>::infinity() , which is the identity value under the min(x,y) operation?
 			reductionOperation_kernel << <numBlocks, numThreads >> >(ptr, reduction_GPU, length, min_func<T>(), numeric_limits<T>::max()); HANDLE_ERROR_KERNEL;
 			HANDLE_ERROR(cudaMemcpy(reduction_CPU, reduction_GPU, numBlocks * sizeof(T), cudaMemcpyDeviceToHost));
 			for (int ii = 0; ii < numBlocks; ii++)
