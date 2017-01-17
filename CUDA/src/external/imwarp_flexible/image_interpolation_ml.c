@@ -8,17 +8,18 @@
 /* power of integers */
 static __inline double pow2(double val) { return val*val; }
 static __inline double pow3(double val) { return val*val*val; }
-static __inline double pow4(double val) { return pow2(val)*pow2(val); }
-static __inline float pow2_float(float val) { return val*val; }
-static __inline float pow3_float(float val) { return val*val*val; }
-static __inline float pow4_float(float val) { return pow2_float(val)*pow2_float(val); }
+//static __inline double pow4(double val) { return pow2(val)*pow2(val); }
+//static __inline float pow2_float(float val) { return val*val; }
+//static __inline float pow3_float(float val) { return val*val*val; }
+//static __inline float pow4_float(float val) { return pow2_float(val)*pow2_float(val); }
 
-
+/*
 #ifdef __LCC__
 static __inline float floorfloat(float val) { return (float)floor((double)val); }
 #else
 static __inline float floorfloat(float val) { return floorf(val); }
 #endif
+*/
 
 /* Image and Volume interpolation 
  *
@@ -196,9 +197,9 @@ float interpolate_3d_float_cubic_black_ml(double x, double y, double z, int64_t 
     tx=x-fTlocalx; ty=y-fTlocaly; tz=z-fTlocalz;
     
     /* Determine the t vectors */
-    vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2_float(tx); vector_tx[3]= con*pow3_float(tx);
-    vector_ty[0]= con; vector_ty[1]= con*ty; vector_ty[2]= con*pow2_float(ty); vector_ty[3]= con*pow3_float(ty);
-    vector_tz[0]= con; vector_tz[1]= con*tz; vector_tz[2]= con*pow2_float(tz); vector_tz[3]= con*pow3_float(tz);
+    vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2(tx); vector_tx[3]= con*pow3(tx);
+    vector_ty[0]= con; vector_ty[1]= con*ty; vector_ty[2]= con*pow2(ty); vector_ty[3]= con*pow3(ty);
+    vector_tz[0]= con; vector_tz[1]= con*tz; vector_tz[2]= con*pow2(tz); vector_tz[3]= con*pow3(tz);
     
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */
     vector_qx[0]= (double)-1.0*vector_tx[1]+(double)2.0*vector_tx[2]-(double)1.0*vector_tx[3];
@@ -282,9 +283,9 @@ float interpolate_3d_float_cubic_ml(double x, double y, double z, int64_t *dims,
     tx=x-fTlocalx; ty=y-fTlocaly; tz=z-fTlocalz;
     
     /* Determine the t vectors */
-    vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2_float(tx); vector_tx[3]= con*pow3_float(tx);
-    vector_ty[0]= con; vector_ty[1]= con*ty; vector_ty[2]= con*pow2_float(ty); vector_ty[3]= con*pow3_float(ty);
-    vector_tz[0]= con; vector_tz[1]= con*tz; vector_tz[2]= con*pow2_float(tz); vector_tz[3]= con*pow3_float(tz);
+    vector_tx[0]= con; vector_tx[1]= con*tx; vector_tx[2]= con*pow2(tx); vector_tx[3]= con*pow3(tx);
+    vector_ty[0]= con; vector_ty[1]= con*ty; vector_ty[2]= con*pow2(ty); vector_ty[3]= con*pow3(ty);
+    vector_tz[0]= con; vector_tz[1]= con*tz; vector_tz[2]= con*pow2(tz); vector_tz[3]= con*pow3(tz);
     
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */
     /* t vector multiplied with 4x4 bicubic kernel gives the to q vectors */

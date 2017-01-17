@@ -62,8 +62,15 @@ __global__ void CUDAkernelDCTShannonEntropyFloat(float *SrcDst, int Stride, floa
 	//__syncthreads();
 
 	//calculate entropy term for each elements
-	DCTcoeff[cacheIndex] /= sqrtf(DCTcoeffAbs[0]);
-	DCTcoeff[cacheIndex] = DCTcoeff[cacheIndex] * log2(DCTcoeff[cacheIndex] + 1e-7);//add epsilon to avoid 0 * inf = NaN
+    if (DCTcoeff[cacheIndex] == 0.0f && DCTcoeffAbs[0] == 0.0f)
+    {
+        // Do nothing, want DCTcoeff[cacheIndex] to be zero
+    }
+    else
+    {
+        DCTcoeff[cacheIndex] /= sqrtf(DCTcoeffAbs[0]) ;
+        DCTcoeff[cacheIndex] = DCTcoeff[cacheIndex] * log2(DCTcoeff[cacheIndex] + 1e-7);//add epsilon to avoid 0 * inf = NaN
+    }
 	__syncthreads();
 
 	//calculate entropy

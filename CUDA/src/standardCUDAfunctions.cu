@@ -44,7 +44,7 @@ bool isDeviceCUDAusedByDisplay(int devCUDA)
 {
 	int has_timeout;
 	HANDLE_ERROR( cudaDeviceGetAttribute(&has_timeout, cudaDevAttrKernelExecTimeout, devCUDA) );
-	std::cout << has_timeout << std::endl;
+	//std::cout << has_timeout << std::endl;
 	return (has_timeout > 0);
 }
 

@@ -567,7 +567,7 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t th
 		blockDims[ii] = xyzct[ii];//image size except a long the dimension of partition
 	blockDims[dimBlockParition] = std::min(GPUinfoVec[threadIdx].maxSizeDimBlockPartition, imgDims[dimBlockParition]);;
 
-	const bool useWeights = (paramDec.filePatternWeights.length() > 1 );    
+	const bool useWeights = (paramDec.filePatternWeights.length() > 1 );  // This is the fundamental place where behavior is switched depending on whether there is one view or many
 	Jobj->allocate_workspace_init_multiGPU(blockDims, useWeights);
 
     //main loop
