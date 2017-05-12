@@ -102,7 +102,7 @@ public:
 	void copyView_extPtr_to_CPU(size_t pos, const imgType* ptr, std::int64_t dims[MAX_DATA_DIMS]);
 	void setImgDims(size_t pos, const dimsImg &d);
 
-	void padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad);
+	void padArrayWithConstant(size_t pos, const std::uint32_t *dimsAfterPad, imgType constant);
 
 	
 protected:

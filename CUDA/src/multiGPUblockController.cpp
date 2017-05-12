@@ -628,8 +628,8 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromFile(size_t th
 			//the last block has to be padded at the end to match the block dimensions
 			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
 			{
-				Jobj->padArrayWithZeros(blockDims, ii, "weight");
-				Jobj->padArrayWithZeros(blockDims, ii, "img");
+				Jobj->padArrayWithConstant(blockDims, ii, "weight",0);
+				Jobj->padArrayWithConstant(blockDims, ii, "img",this->paramDec.imgBackground);
 			}
 		}
 
@@ -772,8 +772,8 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_fromMem(size_t thr
 			//the last block has to be padded at the end to match the block dimensions
 			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
 			{
-				Jobj->padArrayWithZeros(blockDims, ii, "weight");
-				Jobj->padArrayWithZeros(blockDims, ii, "img");
+				Jobj->padArrayWithConstant(blockDims, ii, "weight",0);
+				Jobj->padArrayWithConstant(blockDims, ii, "img",paramDec.imgBackground);
 			}
 		}
 
@@ -922,8 +922,8 @@ void multiGPUblockController::multiviewDeconvolutionBlockWise_lowMem(size_t thre
 			//the last block has to be padded at the end to match the block dimensions
 			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
 			{
-				Jobj->padArrayWithZeros(blockDims, ii, "weight");
-				Jobj->padArrayWithZeros(blockDims, ii, "img");
+				Jobj->padArrayWithConstant(blockDims, ii, "weight",0.0);
+				Jobj->padArrayWithConstant(blockDims, ii, "img",paramDec.imgBackground);
 			}
 		}
 

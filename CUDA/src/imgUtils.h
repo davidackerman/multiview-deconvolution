@@ -18,7 +18,7 @@
 #include <string>
 
 template<class imgType>
-imgType* fa_padArrayWithZeros(const imgType* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims);
+imgType* fa_padArrayWithConstant(const imgType* im, const std::int64_t *dimsNow, const std::uint32_t *dimsAfterPad, int ndims,imgType constant);
 
 std::string generateTempFilename(const char* prefix);
 

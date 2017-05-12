@@ -182,14 +182,14 @@ int multiviewDeconvolution<imgType>::readImage(const std::string& filename, int 
 
 //=======================================================
 template<class imgType>
-void multiviewDeconvolution<imgType>::padArrayWithZeros(const std::uint32_t *dimsAfterPad, int pos, const std::string& type)
+void multiviewDeconvolution<imgType>::padArrayWithConstant(const std::uint32_t *dimsAfterPad, int pos, const std::string& type,imgType constant)
 {
 	if (type.compare("weight") == 0)
-		return weights.padArrayWithZeros(pos, dimsAfterPad);
+		return weights.padArrayWithConstant(pos, dimsAfterPad,constant);
 	else if (type.compare("psf") == 0)
-		return psf.padArrayWithZeros(pos, dimsAfterPad);
+        return psf.padArrayWithConstant(pos,dimsAfterPad,constant);
 	else if (type.compare("img") == 0)
-		return img.padArrayWithZeros(pos, dimsAfterPad);
+        return img.padArrayWithConstant(pos,dimsAfterPad,constant);
 
 	cout << "ERROR: multiviewDeconvolution<imgType>::readImage :option " << type << " not recognized" << endl;
 }

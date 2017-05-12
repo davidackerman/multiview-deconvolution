@@ -538,9 +538,9 @@ int multiviewImage<imgType>::readROI(const std::string& filename, int pos, const
 
 //===========================================================================================
 template<class imgType>
-void multiviewImage<imgType>::padArrayWithZeros(size_t pos, const std::uint32_t *dimsAfterPad)
+void multiviewImage<imgType>::padArrayWithConstant(size_t pos, const std::uint32_t *dimsAfterPad, imgType constant)
 { 
-	imgType *aux = fa_padArrayWithZeros(imgVec_CPU[pos],dimsImgVec[pos].dims, dimsAfterPad, dimsImgVec[pos].ndims); 
+	imgType *aux = fa_padArrayWithConstant(imgVec_CPU[pos],dimsImgVec[pos].dims, dimsAfterPad, dimsImgVec[pos].ndims,constant); 
 
     //swap
 	delete[] (imgVec_CPU[pos]);

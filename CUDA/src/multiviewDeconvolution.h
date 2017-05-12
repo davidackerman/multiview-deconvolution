@@ -65,7 +65,7 @@ public:
 	void setNumberOfViews(int numViews);
 	void copyDeconvoutionResultToCPU(){ J.copyView_GPU_to_CPU(0); };
 	std::int64_t numElements_img(size_t pos){ return img.numElements(pos); };
-	void padArrayWithZeros(const std::uint32_t *dimsAfterPad, int pos, const std::string& type);
+	void padArrayWithConstant(const std::uint32_t *dimsAfterPad, int pos, const std::string& type,imgType constant);
 	outputType* getJpointer() const { return J.getPointer_CPU(0); };
 
 	//straight deconvolution from beginning to end

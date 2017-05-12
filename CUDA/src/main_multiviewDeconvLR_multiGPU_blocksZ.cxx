@@ -189,7 +189,7 @@ int main(int argc, const char** argv)
 
 			t1 = Clock::now();
 			cout << "Applying affine transformation to view " << ii << endl;
-			master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 3);//cubic interpolation with border pixels assigned to 0
+			master.full_img_mem.apply_affine_transformation_img(ii, dimsOut, &(master.paramDec.Acell[ii][0]), 2);//cubic interpolation with border pixels clamped to edge
 			t2 = Clock::now();
 			std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
 
@@ -224,8 +224,8 @@ int main(int argc, const char** argv)
 			//the last block has to be padded at the end to match the block dimensions
 			if (ROI.getSizePixels(dimBlockParition) != blockDims[dimBlockParition])
 			{
-				master.full_img_mem.padArrayWithZeros(ii, blockDims);
-				master.full_weights_mem.padArrayWithZeros(ii, blockDims);
+				master.full_img_mem.padArrayWithConstant(ii, blockDims,master.paramDec.imgBackground);
+				master.full_weights_mem.padArrayWithConstant(ii, blockDims,0);
 			}
 
 		}
